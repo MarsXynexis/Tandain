@@ -19,6 +19,15 @@ class User
         return $this->db->single();
     }
 
+    public function findByUsername($username)
+    {
+        $this->db->query("SELECT * FROM " . $this->table . " WHERE email = :username OR identity_number = :username LIMIT 1");
+
+        $this->db->bind('username', $username);
+
+        return $this->db->single();
+    }
+
     public function findById($id)
     {
         $this->db->query("SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1");

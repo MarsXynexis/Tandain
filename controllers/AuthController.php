@@ -12,11 +12,11 @@ class AuthController extends Controller
         $data['error'] = '';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email    = trim($_POST['email'] ?? '');
+            $username = trim($_POST['username'] ?? $_POST['email'] ?? '');
             $password = trim($_POST['password'] ?? '');
-            $captcha  = trim($_POST['captcha'] ?? '');
+            $captcha = trim($_POST['captcha'] ?? '');
 
-            if (empty($email) || empty($password) || empty($captcha)) {
+            if (empty($username) || empty($password) || empty($captcha)) {
                 $data['error'] = 'Data tidak boleh kosong.';
 
             } elseif ($captcha !== ($_SESSION['captcha_code'] ?? '')) {
@@ -25,16 +25,16 @@ class AuthController extends Controller
             } else {
                 $userModel = $this->model('User');
 
-                $user = $userModel->findByEmail($email);
+                $user = $userModel->findByUsername($username);
 
                 if ($user && password_verify($password, $user['password_hash'])) {
                     unset($_SESSION['captcha_code']);
 
                     $_SESSION['user'] = [
-                        'id'        => $user['id'],
+                        'id' => $user['id'],
                         'full_name' => $user['full_name'],
-                        'email'     => $user['email'],
-                        'role_id'   => $user['role_id'],
+                        'email' => $user['email'],
+                        'role_id' => $user['role_id'],
                     ];
 
                     $this->redirect('/Tandain/dashboard');
