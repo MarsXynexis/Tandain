@@ -3,49 +3,128 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title><?= $data['title'] ?? 'Tandain'; ?></title>
+  <title><?= $data['title'] ?? 'Tandain - Platform Tanda Tangan & Segel Elektronik PNJ'; ?></title>
 
-  <link href="/Tandain/assets/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/Tandain/assets/css/style.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-primary-container": "#7e83ab",
+            "surface-container-highest": "#e0e3e5",
+            "primary-container": "#151b3d",
+            "on-tertiary": "#ffffff",
+            "surface-variant": "#e0e3e5",
+            "inverse-on-surface": "#eff1f3",
+            "on-error": "#ffffff",
+            "on-primary-fixed-variant": "#3f4469",
+            "on-tertiary-fixed-variant": "#003ea8",
+            "error-container": "#ffdad6",
+            "surface-container": "#eceef0",
+            "secondary-container": "#6860ef",
+            "background": "#f7f9fb",
+            "on-secondary-fixed": "#100069",
+            "on-surface": "#191c1e",
+            "on-primary": "#ffffff",
+            "on-primary-fixed": "#13193b",
+            "tertiary-container": "#001950",
+            "surface-dim": "#d8dadc",
+            "inverse-primary": "#bfc4ef",
+            "error": "#ba1a1a",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed-dim": "#b4c5ff",
+            "on-error-container": "#93000a",
+            "surface-container-high": "#e6e8ea",
+            "primary-fixed": "#dee0ff",
+            "on-secondary-container": "#fffbff",
+            "surface-bright": "#f7f9fb",
+            "surface-tint": "#565c82",
+            "secondary-fixed": "#e3dfff",
+            "secondary-fixed-dim": "#c3c0ff",
+            "surface-container-low": "#f2f4f6",
+            "outline-variant": "#c7c5cf",
+            "inverse-surface": "#2d3133",
+            "tertiary-fixed": "#dbe1ff",
+            "tertiary": "#000315",
+            "secondary": "#4e45d5",
+            "primary": "#00021c",
+            "on-surface-variant": "#46464e",
+            "on-tertiary-fixed": "#00174b",
+            "outline": "#77767f",
+            "surface": "#f7f9fb",
+            "on-background": "#191c1e",
+            "on-tertiary-container": "#4c7eff",
+            "on-secondary": "#ffffff",
+            "on-secondary-fixed-variant": "#372abf",
+            "primary-fixed-dim": "#bfc4ef"
+          },
+          borderRadius: {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          spacing: {
+            "space-sm": "0.5rem",
+            "gutter-mobile": "1rem",
+            "space-xl": "2.5rem",
+            "gutter": "1.5rem",
+            "space-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem",
+            "margin-mobile": "1rem",
+            "margin": "2rem"
+          },
+          fontFamily: {
+            "body-lg": ["Inter"],
+            "label-lg": ["Inter"],
+            "body-sm": ["Inter"],
+            "headline-xl": ["Plus Jakarta Sans"],
+            "body-md": ["Inter"],
+            "code-tabular": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "headline-xl-mobile": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-md": ["Inter"]
+          },
+          fontSize: {
+            "body-lg": ["16px", { lineHeight: "26px", letterSpacing: "-0.005em", fontWeight: "400" }],
+            "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }],
+            "body-sm": ["12px", { lineHeight: "18px", letterSpacing: "0.005em", fontWeight: "400" }],
+            "headline-xl": ["36px", { lineHeight: "44px", letterSpacing: "-0.025em", fontWeight: "700" }],
+            "body-md": ["14px", { lineHeight: "22px", letterSpacing: "0", fontWeight: "400" }],
+            "code-tabular": ["13px", { lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "500" }],
+            "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "700" }],
+            "headline-lg": ["30px", { lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "headline-sm": ["18px", { lineHeight: "24px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "headline-xl-mobile": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "headline-lg-mobile": ["24px", { lineHeight: "32px", letterSpacing: "-0.015em", fontWeight: "700" }],
+            "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.015em", fontWeight: "600" }],
+            "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
 </head>
 
-<body>
-
-  <header id="header" class="header fixed-top d-flex align-items-center">
-
-    <div class="d-flex align-items-center justify-content-between">
-      <a href="/Tandain" class="logo d-flex align-items-center text-decoration-none">
-        <span class="d-none d-lg-block fw-bold fs-5">Tandain</span>
-      </a>
-
-      <i class="toggle-sidebar-btn fs-4 ms-2" style="cursor: pointer;">&#9776;</i>
-    </div>
-
-    <nav class="header-nav ms-auto">
-      <ul class="d-flex align-items-center m-0 p-0 list-unstyled">
-
-        <li class="nav-item dropdown pe-3">
-          <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
-            <span class="d-none d-md-block dropdown-toggle ps-1 fw-semibold text-dark"><?= $_SESSION['user']['name'] ?? ''; ?></span>
-          </a>
-
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile mt-2 shadow-sm">
-            <li class="dropdown-header text-start px-3 py-2">
-              <h6 class="m-0 fw-bold"><?= $_SESSION['user']['name'] ?? ''; ?></h6>
-              <small class="text-muted"><?= $_SESSION['user']['email'] ?? ''; ?></small>
-            </li>
-
-            <li><hr class="dropdown-divider my-1"></li>
-
-            <li>
-              <a class="dropdown-item d-flex align-items-center text-danger py-2" href="/Tandain/logout">
-                <span>Logout</span>
-              </a>
-            </li>
-          </ul>
-        </li>
-
-      </ul>
-    </nav>
-
-  </header>
+<body class="bg-background text-on-surface antialiased min-h-screen flex selection:bg-secondary selection:text-on-secondary">
