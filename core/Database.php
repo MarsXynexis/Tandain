@@ -3,6 +3,7 @@
 class Database
 {
     private $host;
+    private $port;
     private $user;
     private $pass;
     private $db_name;
@@ -12,12 +13,13 @@ class Database
     public function __construct()
     {
         $env = parse_ini_file('.env');
-        $this->host = $env['DB_HOST'];
-        $this->user = $env['DB_USER'];
-        $this->pass = $env['DB_PASS'];
-        $this->db_name = $env['DB_NAME'];
+        $this->host = $env['DB_HOST'] ?? 'localhost';
+        $this->port = $env['DB_PORT'] ?? '5432';
+        $this->user = $env['DB_USER'] ?? 'postgres';
+        $this->pass = $env['DB_PASS'] ?? '';
+        $this->db_name = $env['DB_NAME'] ?? 'tandain';
 
-        $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8mb4";
+        $dsn = "pgsql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name;
 
         try {
             $this->dbh = new PDO($dsn, $this->user, $this->pass);

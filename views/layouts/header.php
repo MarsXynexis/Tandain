@@ -5,12 +5,10 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title><?= $data['title'] ?? 'Tandain - Platform Tanda Tangan & Segel Elektronik PNJ'; ?></title>
 
-  <link href="https://fonts.googleapis.com" rel="preconnect">
-  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="/Tandain/assets/css/fonts.css" rel="stylesheet">
+  <link href="/Tandain/assets/css/material-symbols.css" rel="stylesheet">
 
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="/Tandain/assets/js/tailwind.js"></script>
   <script>
     tailwind.config = {
       darkMode: "class",

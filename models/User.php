@@ -48,7 +48,7 @@ class User
 
     public function create($data)
     {
-        $this->db->query("INSERT INTO " . $this->table . " (id, role_id, full_name, identity_number, email, password_hash) VALUES (UUID(), :role_id, :full_name, :identity_number, :email, :password_hash)");
+        $this->db->query("INSERT INTO " . $this->table . " (role_id, full_name, identity_number, email, password_hash) VALUES (:role_id, :full_name, :identity_number, :email, :password_hash)");
 
         $this->db->bind('role_id', $data['role_id']);
         $this->db->bind('full_name', $data['full_name']);
