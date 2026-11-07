@@ -17,18 +17,18 @@
           <span class="material-symbols-outlined text-[64px]" aria-hidden="true">upload_file</span>
         </div>
         <div class="mt-3">
-          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Ajukan Dokumen</h2>
-          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Unggah draf dokumen baru untuk pengesahan</p>
+          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Kirim Dokumen Baru</h2>
+          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Unggah berkas atau pilih template untuk meminta tanda tangan.</p>
         </div>
       </a>
 
-      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/document/signed">
+      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/inbox">
         <div class="flex h-32 items-center justify-center rounded-lg bg-[#dceafe] text-[#1d4ed8] transition-colors group-hover:bg-[#cfe0fc]">
           <span class="material-symbols-outlined text-[64px]" aria-hidden="true">draw</span>
         </div>
         <div class="mt-3">
-          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Review &amp; Tandatangani</h2>
-          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Periksa dan bubuhkan TTE digital</p>
+          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Tandatangani Surat</h2>
+          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Periksa dan beri tanda tangan pada surat yang Anda terima.</p>
         </div>
       </a>
 
@@ -37,8 +37,8 @@
           <span class="material-symbols-outlined text-[64px]" aria-hidden="true">folder_shared</span>
         </div>
         <div class="mt-3">
-          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Daftar Dokumen</h2>
-          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Telusuri seluruh arsip &amp; berkas Anda</p>
+          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Riwayat &amp; Status Surat</h2>
+          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Pantau proses persetujuan dan unduh surat yang sudah selesai.</p>
         </div>
       </a>
 
