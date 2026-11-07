@@ -21,7 +21,7 @@ class User
 
     public function findByUsername($username)
     {
-        $this->db->query("SELECT * FROM " . $this->table . " WHERE email = :username OR identity_number = :username LIMIT 1");
+        $this->db->query("SELECT users.*, roles.display_name AS role_display_name FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id WHERE users.email = :username OR users.identity_number = :username LIMIT 1");
 
         $this->db->bind('username', $username);
 

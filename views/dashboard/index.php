@@ -12,44 +12,35 @@
 
     <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-      <div class="p-6 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between hover:border-secondary transition-all group">
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <span class="font-label-md text-label-md text-on-surface-variant font-medium">Menunggu Tanda Tangan</span>
-            <span class="font-headline-xl text-headline-xl font-bold text-primary tracking-tight mt-2">3</span>
-          </div>
-
-          <div class="w-11 h-11 rounded-lg bg-[#fef3c7] text-[#b45309] flex items-center justify-center border border-[#fde68a]">
-            <span class="material-symbols-outlined text-[24px]">pending_actions</span>
-          </div>
+      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/document/create">
+        <div class="flex h-32 items-center justify-center rounded-lg bg-[#e8e7ff] text-[#5145d8] transition-colors group-hover:bg-[#dedcff]">
+          <span class="material-symbols-outlined text-[64px]" aria-hidden="true">upload_file</span>
         </div>
-      </div>
-
-      <div class="p-6 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between hover:border-secondary transition-all group">
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <span class="font-label-md text-label-md text-on-surface-variant font-medium">Pengajuan Berjalan</span>
-            <span class="font-headline-xl text-headline-xl font-bold text-primary tracking-tight mt-2">7</span>
-          </div>
-
-          <div class="w-11 h-11 rounded-lg bg-[#dbeafe] text-[#1d4ed8] flex items-center justify-center border border-[#bfdbfe]">
-            <span class="material-symbols-outlined text-[24px]">sync_alt</span>
-          </div>
+        <div class="mt-3">
+          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Ajukan Dokumen</h2>
+          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Unggah draf dokumen baru untuk pengesahan</p>
         </div>
-      </div>
+      </a>
 
-      <div class="p-6 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between hover:border-secondary transition-all group">
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <span class="font-label-md text-label-md text-on-surface-variant font-medium">Dokumen Selesai</span>
-            <span class="font-headline-xl text-headline-xl font-bold text-[#15803d] tracking-tight mt-2">48</span>
-          </div>
-
-          <div class="w-11 h-11 rounded-lg bg-[#dcfce7] text-[#15803d] flex items-center justify-center border border-[#bbf7d0]">
-            <span class="material-symbols-outlined text-[24px]">verified</span>
-          </div>
+      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/document/signed">
+        <div class="flex h-32 items-center justify-center rounded-lg bg-[#dceafe] text-[#1d4ed8] transition-colors group-hover:bg-[#cfe0fc]">
+          <span class="material-symbols-outlined text-[64px]" aria-hidden="true">draw</span>
         </div>
-      </div>
+        <div class="mt-3">
+          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Review &amp; Tandatangani</h2>
+          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Periksa dan bubuhkan TTE digital</p>
+        </div>
+      </a>
+
+      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/document">
+        <div class="flex h-32 items-center justify-center rounded-lg bg-[#dcfce7] text-[#15803d] transition-colors group-hover:bg-[#c8f7d8]">
+          <span class="material-symbols-outlined text-[64px]" aria-hidden="true">folder_shared</span>
+        </div>
+        <div class="mt-3">
+          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Daftar Dokumen</h2>
+          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Telusuri seluruh arsip &amp; berkas Anda</p>
+        </div>
+      </a>
 
     </section>
 
@@ -113,7 +104,7 @@
 
               <td class="py-4 px-6 text-center">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#b45309]"></span>
+                  <span class="material-symbols-outlined text-[14px]">hourglass_top</span>
                   Menunggu Giliran Anda
                 </span>
               </td>
@@ -149,7 +140,7 @@
 
               <td class="py-4 px-6 text-center">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#dbeafe] text-[#1d4ed8] border border-[#bfdbfe]">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#1d4ed8]"></span>
+                  <span class="material-symbols-outlined text-[14px]">sync</span>
                   Sedang Diproses
                 </span>
               </td>
@@ -185,17 +176,13 @@
 
               <td class="py-4 px-6 text-center">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#15803d]"></span>
-                  Selesai Tersegel
+                  <span class="material-symbols-outlined text-[14px]">check</span>
+                  Selesai Ditandatangani
                 </span>
               </td>
 
               <td class="py-4 px-6 text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors" title="Unduh Dokumen Bersegel">
-                    <span class="material-symbols-outlined text-[16px]">verified</span>
-                  </button>
-
                   <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors">
                     <span class="material-symbols-outlined text-[16px]">visibility</span>
                     <span>Lihat Detail</span>
@@ -227,7 +214,7 @@
 
               <td class="py-4 px-6 text-center">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#b45309]"></span>
+                  <span class="material-symbols-outlined text-[14px]">hourglass_top</span>
                   Menunggu Giliran Anda
                 </span>
               </td>

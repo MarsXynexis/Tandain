@@ -10,7 +10,7 @@ class DocumentController extends Controller
         $data['active_menu'] = 'uploaded';
         $data['user'] = $_SESSION['user'];
 
-        $this->view('document/uploaded', $data);
+        $this->view('document/index', $data);
     }
 
     public function create()
@@ -24,26 +24,14 @@ class DocumentController extends Controller
         $this->view('document/create', $data);
     }
 
-    public function uploaded()
-    {
-        $this->authCheck();
-
-        $data['title'] = 'Dokumen Diunggah - Tandain';
-        $data['active_menu'] = 'uploaded';
-        $data['user'] = $_SESSION['user'];
-
-        $this->view('document/uploaded', $data);
-    }
-
     public function signed()
     {
         $this->authCheck();
 
-        $data['title'] = 'Dokumen Ditandatangani - Tandain';
+        $data['title'] = 'Pesetujuan Dokumen - Tandain';
         $data['active_menu'] = 'signed';
         $data['user'] = $_SESSION['user'];
 
         $this->view('document/signed', $data);
     }
 }
-

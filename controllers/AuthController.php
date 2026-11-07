@@ -35,6 +35,8 @@ class AuthController extends Controller
                         'full_name' => $user['full_name'],
                         'email' => $user['email'],
                         'role_id' => $user['role_id'],
+                        'position' => $user['position'],
+                        'role_display_name' => $user['role_display_name'],
                     ];
 
                     $this->redirect('/Tandain/dashboard');

@@ -86,8 +86,8 @@
                     <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Original</span>
                   </button>
-                  <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#004B87] text-white hover:bg-[#003865] font-label-md text-[12px] font-medium shadow-sm transition-all">
-                    <span class="material-symbols-outlined text-[15px]">verified</span>
+                  <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#15803d] text-white hover:bg-[#003865] font-label-md text-[12px] font-medium shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Signed</span>
                   </button>
                 </div>
@@ -133,7 +133,7 @@
                     <span>Original</span>
                   </button>
                   <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-outline cursor-not-allowed font-label-md text-[12px] font-medium" disabled title="Dokumen belum selesai ditandatangani semua pihak">
-                    <span class="material-symbols-outlined text-[15px]">verified</span>
+                    <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Signed</span>
                   </button>
                 </div>
@@ -178,8 +178,8 @@
                     <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Original</span>
                   </button>
-                  <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#004B87] text-white hover:bg-[#003865] font-label-md text-[12px] font-medium shadow-sm transition-all">
-                    <span class="material-symbols-outlined text-[15px]">verified</span>
+                  <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#15803d] text-white hover:bg-[#003865] font-label-md text-[12px] font-medium shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Signed</span>
                   </button>
                 </div>
@@ -224,8 +224,8 @@
                     <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Original</span>
                   </button>
-                  <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#004B87] text-white hover:bg-[#003865] font-label-md text-[12px] font-medium shadow-sm transition-all">
-                    <span class="material-symbols-outlined text-[15px]">verified</span>
+                  <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#15803d] text-white hover:bg-[#003865] font-label-md text-[12px] font-medium shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Signed</span>
                   </button>
                 </div>
@@ -246,8 +246,8 @@
               <td class="py-4 px-6">
                 <div class="w-full max-w-[160px]">
                   <div class="flex justify-between items-center mb-1.5">
-                    <span class="font-label-sm text-[11px] font-semibold text-[#b45309]">0/1 Signer</span>
-                    <span class="font-code-tabular text-[11px] text-[#b45309] font-bold">0%</span>
+                    <span class="font-label-sm text-[11px] font-semibold text-[#BA1A1A]">0/1 Signer</span>
+                    <span class="font-code-tabular text-[11px] text-[#BA1A1A] font-bold">0%</span>
                   </div>
                   <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
                     <div class="bg-amber-400 h-2 rounded-full w-0"></div>
@@ -255,9 +255,9 @@
                 </div>
               </td>
               <td class="py-4 px-6 text-center">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
-                  <span class="material-symbols-outlined text-[14px]">hourglass_top</span>
-                  <span>Diproses</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#FFDAD6] text-[#BA1A1A] border border-[#FFC5C5]">
+                  <span class="material-symbols-outlined text-[14px]">cancel</span>
+                  <span>Ditolak</span>
                 </span>
               </td>
               <td class="py-4 px-6 text-right">
@@ -271,7 +271,7 @@
                     <span>Original</span>
                   </button>
                   <button class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-outline cursor-not-allowed font-label-md text-[12px] font-medium" disabled title="Dokumen belum selesai ditandatangani semua pihak">
-                    <span class="material-symbols-outlined text-[15px]">verified</span>
+                    <span class="material-symbols-outlined text-[15px]">download</span>
                     <span>Signed</span>
                   </button>
                 </div>
