@@ -31,20 +31,25 @@ class AuthController extends Controller
                 $user = $userModel->findByUsername($username);
 
                 if ($user && password_verify($password, $user['password_hash'])) {
-                    unset($_SESSION['captcha_code']);
+                    if ($user['status'] !== 'ACTIVE') {
+                        $data['error'] = 'Akun Anda ditangguhkan. Hubungi Administrator Tata Usaha.';
+                    } else {
+                        unset($_SESSION['captcha_code']);
 
-                    $_SESSION['user'] = [
-                        'id' => $user['id'],
-                        'full_name' => $user['full_name'],
-                        'email' => $user['email'],
-                        'role_id' => $user['role_id'],
-                        'role_name' => $user['role_name'],
-                        'position' => $user['position'],
-                        'role_display_name' => $user['role_display_name'],
-                    ];
+                        session_regenerate_id(true);
 
-                    $this->redirect('/Tandain/dashboard');
+                        $_SESSION['user'] = [
+                            'id' => $user['id'],
+                            'full_name' => $user['full_name'],
+                            'email' => $user['email'],
+                            'role_id' => $user['role_id'],
+                            'role_name' => $user['role_name'],
+                            'position' => $user['position'],
+                            'role_display_name' => $user['role_display_name'],
+                        ];
 
+                        $this->redirect('/Tandain/dashboard');
+                    }
                 } else {
                     $data['error'] = 'Email atau password salah.';
                 }
@@ -57,62 +62,14 @@ class AuthController extends Controller
     public function register()
     {
         if (isset($_SESSION['user'])) {
-            $this->redirect('/Tandain/dashboard');
+            $redirectUrl = '/Tandain/dashboard';
+        } else {
+            $this->setFlash('info', 'Pendaftaran akun hanya dapat dilakukan oleh Administrator Tata Usaha.');
+
+            $redirectUrl = '/Tandain/login';
         }
 
-        $data['title'] = 'Register - Tandain';
-        $data['error'] = '';
-        $data['validate'] = '';
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $fullName = trim($_POST['full_name'] ?? '');
-            $identityNumber = trim($_POST['identity_number'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $password = trim($_POST['password'] ?? '');
-            $repassword = trim($_POST['repassword'] ?? '');
-            $captcha = trim($_POST['captcha'] ?? '');
-
-            if (empty($fullName) || empty($identityNumber) || empty($email) || empty($password) || empty($repassword) || empty($captcha)) {
-                $data['error'] = 'Data tidak boleh kosong.';
-
-            } elseif ($captcha !== ($_SESSION['captcha_code'] ?? '')) {
-                $data['error'] = 'Kode captcha salah.';
-
-            } elseif ($password !== $repassword) {
-                $data['validate'] = 'Password tidak sama.';
-
-            } else {
-                $userModel = $this->model('User');
-
-                $existing = $userModel->findByEmail($email);
-
-                if ($existing) {
-                    $data['error'] = 'Email sudah terdaftar.';
-
-                } else {
-                    $role = $userModel->findRoleByName('mahasiswa');
-
-                    $result = $userModel->create([
-                        'full_name' => $fullName,
-                        'identity_number' => $identityNumber,
-                        'email' => $email,
-                        'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                        'role_id' => $role['id'],
-                    ]);
-
-                    if ($result) {
-                        unset($_SESSION['captcha_code']);
-
-                        $this->redirect('/Tandain/login');
-
-                    } else {
-                        $data['error'] = 'Registrasi gagal, coba lagi.';
-                    }
-                }
-            }
-        }
-
-        $this->view('auth/register', $data);
+        $this->redirect($redirectUrl);
     }
 
     public function logout()

@@ -29,4 +29,24 @@ class Controller
             $this->redirect('/Tandain/login');
         }
     }
+
+    public function adminCheck()
+    {
+        $this->authCheck();
+
+        $role = $_SESSION['user']['role_name'] ?? '';
+        $roleDisplay = $_SESSION['user']['role_display_name'] ?? '';
+
+        if ($role !== 'admin_tu' && $roleDisplay !== 'Administrator Tata Usaha') {
+            $this->redirect('/Tandain/dashboard');
+        }
+    }
+
+    protected function setFlash($type, $message)
+    {
+        $_SESSION['flash'] = [
+            'type' => $type,
+            'message' => $message,
+        ];
+    }
 }

@@ -77,8 +77,8 @@
 
     <section class="w-full md:w-[54%] bg-white p-8 sm:p-10 md:p-12 flex flex-col justify-center">
       <div class="mb-7">
-        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Selamat datang</h2>
-        <p class="text-sm text-slate-500 mt-1 leading-relaxed">Silahkan masuk menggunakan akun resmi PNJ Anda.</p>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk ke akun</h2>
+        <p class="text-sm text-slate-500 mt-1 leading-relaxed">Gunakan NIM, NIP, atau email kampus beserta kata sandi Anda.</p>
       </div>
 
       <?php if (!empty($data['error'])) : ?>
@@ -89,6 +89,8 @@
           <span><?= htmlspecialchars($data['error']); ?></span>
         </div>
       <?php endif; ?>
+
+      <?php require_once 'views/layouts/flash.php'; ?>
 
       <form action="/Tandain/login" class="space-y-4" method="POST">
 
@@ -137,7 +139,7 @@
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"></path>
               <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
-            <span>Login dengan SSO</span>
+            <span>Masuk</span>
           </button>
         </div>
 
@@ -169,8 +171,7 @@
         </p>
 
         <p class="text-xs text-slate-500 mt-3">
-          Belum memiliki akun?
-          <a href="/Tandain/register" class="font-bold text-indigo-600 hover:text-indigo-800 transition duration-150">Daftar akun</a>
+          Belum memiliki akun? Hubungi Administrator Tata Usaha untuk pendaftaran akun kampus.
         </p>
       </div>
     </section>
