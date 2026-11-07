@@ -12,7 +12,7 @@ class User
 
     public function findByEmail($email)
     {
-        $this->db->query("SELECT * FROM " . $this->table . " WHERE email = :email LIMIT 1");
+        $this->db->query("SELECT users.*, roles.name AS role_name, roles.display_name AS role_display_name FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id WHERE users.email = :email LIMIT 1");
 
         $this->db->bind('email', $email);
 
@@ -21,7 +21,7 @@ class User
 
     public function findByUsername($username)
     {
-        $this->db->query("SELECT users.*, roles.display_name AS role_display_name FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id WHERE users.email = :username OR users.identity_number = :username LIMIT 1");
+        $this->db->query("SELECT users.*, roles.name AS role_name, roles.display_name AS role_display_name FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id WHERE users.email = :username OR users.identity_number = :username LIMIT 1");
 
         $this->db->bind('username', $username);
 
@@ -30,7 +30,7 @@ class User
 
     public function findById($id)
     {
-        $this->db->query("SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1");
+        $this->db->query("SELECT users.*, roles.name AS role_name, roles.display_name AS role_display_name FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id WHERE users.id = :id LIMIT 1");
 
         $this->db->bind('id', $id);
 

@@ -100,7 +100,7 @@
                 <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
               </svg>
             </div>
-            <input class="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" id="username" name="username" placeholder="Masukkan NIM, NIP, atau email" required="" type="text">
+            <input class="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" id="username" name="username" placeholder="Masukkan NIM, NIP, atau email" required="" type="text" value="<?= htmlspecialchars($data['username'] ?? ''); ?>">
           </div>
         </div>
 

@@ -10,11 +10,14 @@ class AuthController extends Controller
 
         $data['title'] = 'Login - Tandain';
         $data['error'] = '';
+        $data['username'] = '';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? $_POST['email'] ?? '');
             $password = trim($_POST['password'] ?? '');
             $captcha = trim($_POST['captcha'] ?? '');
+
+            $data['username'] = $username;
 
             if (empty($username) || empty($password) || empty($captcha)) {
                 $data['error'] = 'Data tidak boleh kosong.';
@@ -35,6 +38,7 @@ class AuthController extends Controller
                         'full_name' => $user['full_name'],
                         'email' => $user['email'],
                         'role_id' => $user['role_id'],
+                        'role_name' => $user['role_name'],
                         'position' => $user['position'],
                         'role_display_name' => $user['role_display_name'],
                     ];
@@ -89,11 +93,11 @@ class AuthController extends Controller
                     $role = $userModel->findRoleByName('mahasiswa');
 
                     $result = $userModel->create([
-                        'full_name'       => $fullName,
+                        'full_name' => $fullName,
                         'identity_number' => $identityNumber,
-                        'email'           => $email,
-                        'password_hash'   => password_hash($password, PASSWORD_DEFAULT),
-                        'role_id'         => $role['id'],
+                        'email' => $email,
+                        'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                        'role_id' => $role['id'],
                     ]);
 
                     if ($result) {

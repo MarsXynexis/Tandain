@@ -20,6 +20,7 @@
       ],
       'verification' => [['label' => 'Verifikasi Dokumen']],
       'approval' => [['label' => 'Persetujuan Dokumen']],
+      'triage' => [['label' => 'Disposisi Dokumen']],
       'accounts' => [
           ['label' => 'Administrasi'],
           ['label' => 'Manajemen Akun'],

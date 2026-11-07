@@ -10,14 +10,19 @@
       <p class="font-body-md text-body-md text-on-surface-variant">Kelola spesimen goresan tanda tangan visual untuk pembubuhan dokumen.</p>
     </section>
 
-    <section class="flex items-center gap-6 border border-[#cbd5e1] bg-[#dbeafe] p-6 text-on-surface-variant">
-      <span class="material-symbols-outlined shrink-0 text-[32px] text-[#004b87]" aria-hidden="true">info</span>
-      <p class="font-body-md text-body-md font-semibold">
-        Gambar Tanda Tangan digunakan sebagai representasi visual pada berkas yang disetujui. Pastikan Anda mengunggah gambar berlatar belakang transparan (PNG) atau menggores langsung pada kanvas agar hasil stempel pada surat resmi kampus terlihat rapi dan jelas.
-      </p>
+    <section class="flex items-start gap-4 rounded-xl border border-blue-200/80 bg-blue-50/70 p-5 text-on-surface-variant shadow-sm">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-[#004B87]">
+        <span class="material-symbols-outlined text-[24px]" aria-hidden="true">info</span>
+      </div>
+
+      <div class="flex-1 min-w-0 pt-0.5">
+        <p class="font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
+          Gambar Tanda Tangan digunakan sebagai representasi visual pada berkas yang disetujui. Pastikan Anda mengunggah gambar berlatar belakang transparan (PNG) atau menggores langsung pada kanvas agar hasil stempel pada surat resmi kampus terlihat rapi dan jelas.
+        </p>
+      </div>
     </section>
 
-    <section class="flex flex-col gap-6 rounded-lg border border-surface-container-high bg-surface-container-lowest p-5 shadow-sm md:p-6">
+    <section class="flex flex-col gap-6 rounded-xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-sm md:p-6">
       <header class="border-b border-surface-container-high pb-4">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-[20px] text-secondary">signature</span>

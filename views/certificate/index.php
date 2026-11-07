@@ -8,14 +8,19 @@
       <p class="font-body-md text-body-md text-on-surface-variant">Kelola kredensial kriptografis dan passphrase Anda untuk penandatanganan elektronik.</p>
     </section>
 
-    <section class="flex items-center gap-6 border border-[#cbd5e1] bg-[#dbeafe] p-6 text-on-surface-variant">
-      <span class="material-symbols-outlined shrink-0 text-[32px] text-[#004b87]" aria-hidden="true">info</span>
-      <p class="font-body-md text-body-md font-semibold">
-        Sertifikat digital adalah identitas resmi elektronik Anda di aplikasi Tandain. Sertifikat digital bertindak sebagai stempel dan tanda tangan resmi berbasis kode unik. Fitur ini memastikan identitas Penandatangan valid serta mengunci dokumen secara digital agar keaslian dan keabsahan surat resmi kampus terjamin.
-      </p>
+    <section class="flex items-start gap-4 rounded-xl border border-blue-200/80 bg-blue-50/70 p-5 text-on-surface-variant shadow-sm">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-[#004B87]">
+        <span class="material-symbols-outlined text-[24px]" aria-hidden="true">info</span>
+      </div>
+
+      <div class="flex-1 min-w-0 pt-0.5">
+        <p class="font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
+          Sertifikat digital adalah identitas resmi elektronik Anda di aplikasi Tandain. Sertifikat digital bertindak sebagai stempel dan tanda tangan resmi berbasis kode unik. Fitur ini memastikan identitas Penandatangan valid serta mengunci dokumen secara digital agar keaslian dan keabsahan surat resmi kampus terjamin.
+        </p>
+      </div>
     </section>
 
-    <section class="flex flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm">
+    <section class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm">
       <div class="flex flex-col gap-4 border-b border-outline-variant p-6 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex flex-col gap-1">
           <h2 class="flex items-center gap-2 font-headline-sm text-headline-sm font-bold text-primary">
