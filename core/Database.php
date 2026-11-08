@@ -29,6 +29,11 @@ class Database
         }
     }
 
+    public function getConnection(): PDO
+{
+    return $this->dbh;
+}
+
     public function query($query)
     {
         $this->stmt = $this->dbh->prepare($query);
