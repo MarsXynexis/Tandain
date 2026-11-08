@@ -20,38 +20,50 @@
 
     <?php require_once 'views/layouts/flash.php'; ?>
 
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
 
-      <a class="group flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/accounts">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Total Akun</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_users'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Total Akun</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_users'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Civitas terdaftar</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-secondary" aria-hidden="true">groups</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8e7ff] text-[#5145d8]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">groups</span>
+        </div>
       </a>
 
-      <a class="group flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/accounts?role=pegawai">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Dosen &amp; Tendik</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_pegawai'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts?role=pegawai">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Dosen &amp; Tendik</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_pegawai'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Pendidik dan tendik</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-secondary" aria-hidden="true">badge</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dceafe] text-[#1d4ed8]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">badge</span>
+        </div>
       </a>
 
-      <a class="group flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/accounts?role=mahasiswa">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Mahasiswa</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_mahasiswa'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts?role=mahasiswa">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Mahasiswa</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_mahasiswa'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Akun mahasiswa</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-secondary" aria-hidden="true">school</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ede9fe] text-[#6d28d9]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">school</span>
+        </div>
       </a>
 
-      <a class="group flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/accounts?status=ACTIVE">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Akun Aktif</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_active'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts?status=ACTIVE">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Akun Aktif</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_active'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Akses aktif</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-[#15803d]" aria-hidden="true">verified_user</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">verified_user</span>
+        </div>
       </a>
 
     </section>

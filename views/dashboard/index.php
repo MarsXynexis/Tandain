@@ -29,38 +29,50 @@
 
     <?php if ($isAdmin): ?>
 
-      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
 
-        <div class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3">
-          <div>
-            <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Total Dokumen</p>
-            <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['doc_stats']['total_documents'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+        <div class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm">
+          <div class="min-w-0">
+            <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Total Dokumen</p>
+            <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_documents'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Berkas terdaftar</p>
           </div>
-          <span class="material-symbols-outlined text-[22px] text-secondary" aria-hidden="true">folder_open</span>
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8e7ff] text-[#5145d8]">
+            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">folder_open</span>
+          </div>
         </div>
 
-        <a class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/triage?status=pending">
-          <div>
-            <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Menunggu Disposisi</p>
-            <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['doc_stats']['total_pending_triage'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+        <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/triage?status=pending">
+          <div class="min-w-0">
+            <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Menunggu Disposisi</p>
+            <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_pending_triage'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Perlu ditelaah TU</p>
           </div>
-          <span class="material-symbols-outlined text-[22px] text-[#b45309]" aria-hidden="true">hourglass_top</span>
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#fef3c7] text-[#b45309]">
+            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">hourglass_top</span>
+          </div>
         </a>
 
-        <div class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3">
-          <div>
-            <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Sedang Diproses</p>
-            <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['doc_stats']['total_in_progress'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+        <div class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm">
+          <div class="min-w-0">
+            <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Sedang Diproses</p>
+            <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_in_progress'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Dalam alur TTE</p>
           </div>
-          <span class="material-symbols-outlined text-[22px] text-[#1d4ed8]" aria-hidden="true">sync</span>
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dbeafe] text-[#1d4ed8]">
+            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">sync</span>
+          </div>
         </div>
 
-        <a class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/archive?status=COMPLETED">
-          <div>
-            <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Dokumen Selesai</p>
-            <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['doc_stats']['total_completed'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+        <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/archive?status=COMPLETED">
+          <div class="min-w-0">
+            <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Dokumen Selesai</p>
+            <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_completed'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Tersimpan di arsip</p>
           </div>
-          <span class="material-symbols-outlined text-[22px] text-[#15803d]" aria-hidden="true">verified</span>
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d]">
+            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">verified</span>
+          </div>
         </a>
 
       </section>
