@@ -2,20 +2,20 @@
 <?php require_once 'views/layouts/sidebar.php'; ?>
 <?php require_once 'views/layouts/navbar.php'; ?>
 
-  <main class="flex-1 p-8 mx-auto w-full max-w-full">
+  <main class="flex-1 min-w-0 w-full max-w-none p-5 lg:p-6">
 
-    <div class="mb-8">
+    <div class="mb-5">
       <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight font-bold">Ajukan Dokumen Baru</h1>
       <p class="font-body-md text-body-md text-on-surface-variant mt-1" id="page-subtitle">Unggah berkas PDF dan tentukan alur pihak penandatangan</p>
     </div>
 
-    <form class="space-y-6" method="POST" action="/Tandain/document/create" enctype="multipart/form-data">
+    <form class="space-y-4" method="POST" action="/Tandain/document/create" enctype="multipart/form-data">
 
       <input id="submission-mode" name="submission_mode" type="hidden" value="upload">
 
-      <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+      <section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 shadow-sm">
 
-        <div class="flex items-center gap-2 mb-4 pb-2 border-b border-surface-container">
+        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-surface-container">
           <span class="material-symbols-outlined text-secondary text-[22px]">description</span>
           <h2 class="font-headline-sm text-headline-sm text-primary font-semibold">Berkas &amp; Informasi Dokumen</h2>
         </div>
@@ -32,9 +32,9 @@
           </button>
         </div>
 
-        <div class="space-y-6" id="tab-upload-content">
+        <div class="space-y-4" id="tab-upload-content">
 
-          <div class="border-2 border-dashed border-outline-variant hover:border-secondary rounded-xl p-8 text-center bg-surface hover:bg-surface-container-low transition-colors cursor-pointer group" id="drop-zone" onclick="document.getElementById('file-upload').click();">
+          <div class="border-2 border-dashed border-outline-variant hover:border-secondary rounded-lg p-6 text-center bg-surface hover:bg-surface-container-low transition-colors cursor-pointer group" id="drop-zone" onclick="document.getElementById('file-upload').click();">
             <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-surface-container flex items-center justify-center text-primary-container group-hover:bg-secondary-fixed transition-colors">
               <span class="material-symbols-outlined text-[32px] text-error" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
             </div>
@@ -121,11 +121,11 @@
 
       </section>
 
-      <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm" id="section-signers">
+      <section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 shadow-sm" id="section-signers">
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-container mb-3 pb-3">
+        <div class="flex flex-col gap-3 border-b border-surface-container mb-3 pb-3">
 
-          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full">
+          <div class="flex flex-col gap-3 w-full">
 
             <div>
               <div class="flex items-center gap-2">
@@ -136,9 +136,9 @@
               <p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Tentukan pihak berwenang dan urutan penandatanganan dokumen elektronik</p>
             </div>
 
-            <div class="flex flex-col sm:flex-row sm:items-center gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
 
-              <div class="flex items-start gap-2.5">
+              <div class="flex items-start gap-2.5 order-2">
                 <input class="mt-1 w-4 h-4 rounded border-outline-variant text-blue-600 focus:ring-blue-600 cursor-pointer" id="tu-triage-check" name="is_triage" type="checkbox" value="1">
                 <label class="cursor-pointer" for="tu-triage-check">
                   <span class="font-label-md text-label-md text-primary block leading-tight font-semibold">Saya tidak tahu alur pejabat penandatangan</span>
@@ -146,7 +146,7 @@
                 </label>
               </div>
 
-              <div class="flex items-start md:items-center gap-3 shrink-0 pt-2 sm:pt-0 sm:border-l sm:border-surface-container sm:pl-6 transition-opacity duration-200" id="sequential-toggle-container">
+              <div class="flex items-start gap-3 transition-opacity duration-200 order-1" id="sequential-toggle-container">
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input checked class="sr-only peer" id="sequential-check" name="is_sequential" type="checkbox" value="1">
                   <div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#004B87]"></div>
@@ -166,8 +166,8 @@
 
         <div class="space-y-4 transition-opacity duration-200" id="signers-flow-container">
 
-          <div class="flex flex-wrap items-center gap-3">
-            <button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[#004B87] hover:bg-[#003d6d] text-white font-label-md text-label-md font-semibold shadow-sm transition" type="button">
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-green-700 hover:bg-green-800 text-white font-label-md text-label-md font-semibold shadow-sm transition" type="button">
               <span class="material-symbols-outlined text-[18px] mr-1">add</span>
               <span>Tambah Penandatangan</span>
             </button>
@@ -177,9 +177,9 @@
             </button>
           </div>
 
-          <div class="space-y-3">
+          <div class="space-y-2">
 
-            <div class="flex items-center justify-between p-4 rounded-xl border border-outline-variant bg-surface-container-lowest hover:border-blue-500 transition gap-4">
+            <div class="flex items-center justify-between p-3 rounded-lg border border-outline-variant bg-surface-container-lowest hover:border-blue-500 transition gap-4">
               <div class="flex items-center gap-4 flex-1 min-w-0">
                 <div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0">1</div>
 
@@ -194,7 +194,7 @@
               </button>
             </div>
 
-            <div class="flex items-center justify-between p-4 rounded-xl border border-outline-variant bg-surface-container-lowest hover:border-blue-500 transition gap-4">
+            <div class="flex items-center justify-between p-3 rounded-lg border border-outline-variant bg-surface-container-lowest hover:border-blue-500 transition gap-4">
               <div class="flex items-center gap-4 flex-1 min-w-0">
                 <div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0">2</div>
 
@@ -209,7 +209,7 @@
               </button>
             </div>
 
-            <div class="flex flex-col md:flex-row items-center justify-between p-4 rounded-xl border border-dashed border-outline bg-surface gap-4">
+            <div class="flex flex-col md:flex-row items-center justify-between p-3 rounded-lg border border-dashed border-outline bg-surface gap-4">
               <div class="flex items-center gap-4 flex-1 w-full">
                 <div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0">3</div>
 
@@ -267,7 +267,7 @@
 
       </section>
 
-      <div class="flex justify-between items-center pt-5 border-t border-outline-variant">
+      <div class="flex justify-between items-center pt-4 border-t border-outline-variant">
         <a class="border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface px-6 py-2.5 rounded-lg font-label-lg text-label-lg font-medium transition inline-block" href="/Tandain/dashboard">
           Batal
         </a>
