@@ -2,6 +2,34 @@
 
 class DocumentController extends Controller
 {
+    private const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+
+    private ?PDO $pdo = null;
+
+    /** Koneksi PDO (satu kali per request) */
+    private function db(): PDO
+    {
+        if ($this->pdo === null) {
+            $this->pdo = (new Database)->getConnection();
+        }
+        return $this->pdo;
+    }
+
+    private function userId(): string
+    {
+        return $_SESSION['user']['id'];
+    }
+
+    private function backWithError(string $msg): void
+    {
+        $_SESSION['error'] = $msg;
+        header('Location: /Tandain/document/create');
+        exit;
+    }
+
+    // ------------------------------------------------------------------
+    // Daftar dokumen (kode teman, tidak diubah)
+    // ------------------------------------------------------------------
     public function index()
     {
         $this->authCheck();
@@ -33,33 +61,36 @@ class DocumentController extends Controller
         $this->view('document/list', $data);
     }
 
-    // Punyamu, tidak diubah
+    // ------------------------------------------------------------------
+    // Form ajukan dokumen: GET = tampilkan form, POST = proses
+    // ------------------------------------------------------------------
     public function create()
-{
-    $this->authCheck();
+    {
+        $this->authCheck();
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        return $this->store();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            return $this->store();
+        }
+
+        // Daftar calon penandatangan untuk fitur pencarian di form
+        $stmt = $this->db()->query(
+            "SELECT u.id, u.full_name, u.identity_number, u.email, u.position
+             FROM users u
+             JOIN roles r ON r.id = u.role_id
+             WHERE r.name = 'pegawai' AND u.status = 'ACTIVE'
+             ORDER BY u.full_name"
+        );
+
+        $data['title'] = 'Ajukan Dokumen - Tandain';
+        $data['active_menu'] = 'apply';
+        $data['user'] = $_SESSION['user'];
+        $data['candidates'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $data['error'] = $_SESSION['error'] ?? null;
+        unset($_SESSION['error']);
+
+        $this->view('document/create', $data);
     }
 
-    // Daftar calon penandatangan untuk fitur pencarian di form
-    $stmt = $this->db()->query(
-        "SELECT u.id, u.full_name, u.identity_number, u.email, u.position
-         FROM users u
-         JOIN roles r ON r.id = u.role_id
-         WHERE r.name = 'pegawai' AND u.status = 'ACTIVE'
-         ORDER BY u.full_name"
-    );
-
-    $data['title'] = 'Ajukan Dokumen - Tandain';
-    $data['active_menu'] = 'apply';
-    $data['user'] = $_SESSION['user'];
-    $data['candidates'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $data['error'] = $_SESSION['error'] ?? null;
-    unset($_SESSION['error']);
-
-    $this->view('document/create', $data);
-}
     /** Proses submit form (mode unggah PDF) */
     private function store()
     {
@@ -144,7 +175,9 @@ class DocumentController extends Controller
 
             $pdo->commit();
         } catch (Throwable $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             @unlink($dir . $filename);
             $this->backWithError('Gagal menyimpan dokumen: ' . $e->getMessage());
         }
@@ -157,6 +190,10 @@ class DocumentController extends Controller
         }
         exit;
     }
+
+    // ------------------------------------------------------------------
+    // Atur posisi TTE
+    // ------------------------------------------------------------------
 
     /** Halaman atur posisi TTE: /document/position/{id} */
     public function position($id = null)
@@ -181,6 +218,7 @@ class DocumentController extends Controller
         $data['pdfUrl'] = '/Tandain/document/file/' . $doc['id'];
         $data['error'] = $_SESSION['error'] ?? null;
         unset($_SESSION['error']);
+
         $this->view('document/position', $data);
     }
 
@@ -255,7 +293,9 @@ class DocumentController extends Controller
 
             $pdo->commit();
         } catch (Throwable $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             $_SESSION['error'] = 'Gagal menyimpan posisi: ' . $e->getMessage();
             header('Location: /Tandain/document/position/' . $doc['id']);
             exit;
@@ -268,14 +308,15 @@ class DocumentController extends Controller
     /** Ambil dokumen milik user yang login, atau 404 */
     private function findOwnedDocument($id): array
     {
-        $stmt = $this->db()->prepare(
-            'SELECT * FROM documents WHERE id = ? AND requester_id = ?'
-        );
-        // id UUID tidak valid akan membuat error, jadi dicek dulu
+        // id UUID tidak valid akan membuat error di PostgreSQL, jadi dicek dulu
         if (!preg_match('/^[0-9a-f-]{36}$/i', (string)$id)) {
             http_response_code(404);
             exit('Dokumen tidak ditemukan.');
         }
+
+        $stmt = $this->db()->prepare(
+            'SELECT * FROM documents WHERE id = ? AND requester_id = ?'
+        );
         $stmt->execute([$id, $this->userId()]);
         $doc = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$doc) {
@@ -285,6 +326,9 @@ class DocumentController extends Controller
         return $doc;
     }
 
+    // ------------------------------------------------------------------
+    // Persetujuan dokumen (kode teman, tidak diubah)
+    // ------------------------------------------------------------------
     public function signed()
     {
         $this->authCheck();
