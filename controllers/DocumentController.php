@@ -2,37 +2,38 @@
 
 class DocumentController extends Controller
 {
-    private const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
-
-    // SESUAIKAN: ambil koneksi PDO dari core/Database.php kamu
-    private function db(): PDO
-    {
-        return (new Database)->getConnection();
-    }
-
-    private function userId(): string
-    {
-        return $_SESSION['user']['id']; // SESUAIKAN kalau key-nya beda
-    }
-
-    private function backWithError(string $msg): void
-    {
-        $_SESSION['error'] = $msg;
-        header('Location: /Tandain/document/create');
-        exit;
-    }
-
     public function index()
     {
         $this->authCheck();
 
+        $documentModel = $this->model('DocumentList');
+        $userId = $_SESSION['user']['id'];
+
+        $search = trim($_GET['q'] ?? '');
+        $filter = $_GET['status'] ?? 'all';
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = 8;
+        $offset = ($page - 1) * $perPage;
+
+        $total = $documentModel->countDocuments($userId, $search, $filter);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+
         $data['title'] = 'Dokumen Diunggah - Tandain';
         $data['active_menu'] = 'uploaded';
         $data['user'] = $_SESSION['user'];
+        $data['documents'] = $documentModel->getDocuments($userId, $search, $filter, $perPage, $offset);
+        $data['counts'] = $documentModel->getStatusCounts($userId);
+        $data['search'] = $search;
+        $data['filter'] = $filter;
+        $data['page'] = $page;
+        $data['perPage'] = $perPage;
+        $data['total'] = $total;
+        $data['totalPages'] = $totalPages;
 
-        $this->view('document/index', $data);
+        $this->view('document/list', $data);
     }
 
+    // Punyamu, tidak diubah
     public function create()
 {
     $this->authCheck();
