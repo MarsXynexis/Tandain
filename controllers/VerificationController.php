@@ -4,6 +4,11 @@ class VerificationController extends Controller
 {
     public function index()
     {
-        $this->view('verification/index');
+        $status = $_GET['status'] ?? 'upload';
+
+        $data['title'] = 'Verifikasi Dokumen - Tandain';
+        $data['status'] = $status;
+
+        $this->view('verification/index', $data);
     }
 }
