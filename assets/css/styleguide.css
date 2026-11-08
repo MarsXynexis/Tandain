@@ -1,0 +1,21 @@
+:root {
+  --variable-collection-darkblue: rgba(0, 75, 135, 1);
+  --variable-collection-red: rgba(186, 26, 26, 1);
+  --variable-collection-blue: rgba(29, 78, 216, 1);
+  --variable-collection-purple: rgba(78, 69, 213, 1);
+  --variable-collection-green: rgba(21, 128, 61, 1);
+  --variable-collection-color: rgba(220, 252, 231, 1);
+  --variable-collection-color-2: rgba(219, 234, 254, 1);
+  --variable-collection-color-3: rgba(231, 230, 255, 1);
+  --variable-collection-color-4: rgba(255, 218, 214, 0.4);
+  --variable-collection-stroke-green: rgba(187, 247, 208, 1);
+  --variable-collection-stroke-blue: rgba(196, 222, 254, 1);
+  --variable-collection-stroke-purple: rgba(205, 201, 255, 1);
+  --variable-collection-stroke-orange: rgba(253, 230, 138, 1);
+  --variable-collection-orange: rgba(180, 83, 9, 1);
+  --variable-collection-color-5: rgba(254, 243, 199, 1);
+    display: flex;
+    width: 1440px;
+    flex-direction: column;
+    align-items: flex-start;
+}
