@@ -21,19 +21,38 @@
       'verification' => [['label' => 'Verifikasi Dokumen']],
       'approval' => [['label' => 'Persetujuan Dokumen']],
       'triage' => [['label' => 'Disposisi Dokumen']],
+      'triage_review' => [
+          ['label' => 'Disposisi Dokumen', 'href' => '/Tandain/triage'],
+          ['label' => 'Telaah Dokumen'],
+      ],
       'accounts' => [
           ['label' => 'Administrasi'],
           ['label' => 'Manajemen Akun'],
+      ],
+      'accounts_create' => [
+          ['label' => 'Administrasi'],
+          ['label' => 'Manajemen Akun', 'href' => '/Tandain/accounts'],
+          ['label' => 'Tambah Akun'],
+      ],
+      'accounts_edit' => [
+          ['label' => 'Administrasi'],
+          ['label' => 'Manajemen Akun', 'href' => '/Tandain/accounts'],
+          ['label' => 'Ubah Akun'],
       ],
       'templates' => [
           ['label' => 'Administrasi'],
           ['label' => 'Template Surat'],
       ],
+      'audit' => [
+          ['label' => 'Administrasi'],
+          ['label' => 'Log Audit Dokumen'],
+      ],
       'archive' => [
           ['label' => 'Administrasi'],
-          ['label' => 'Dokumen Arsip & Tolak'],
+          ['label' => 'Arsip Dokumen'],
       ],
   ];
+
   $breadcrumbs = $breadcrumbsByMenu[$data['active_menu'] ?? ''] ?? [['label' => 'Beranda']];
   ?>
 
@@ -46,6 +65,7 @@
             <?php if ($index > 0): ?>
               <span class="font-body-sm text-body-sm text-on-surface-variant" aria-hidden="true">/</span>
             <?php endif; ?>
+
             <?php if (!$isCurrent && isset($breadcrumb['href'])): ?>
               <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="<?= htmlspecialchars($breadcrumb['href'], ENT_QUOTES, 'UTF-8'); ?>">
                 <?= htmlspecialchars($breadcrumb['label'], ENT_QUOTES, 'UTF-8'); ?>
@@ -64,10 +84,12 @@
       <div class="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-on-surface-variant">
         <span class="material-symbols-outlined text-[18px]" aria-hidden="true">account_circle</span>
       </div>
+
       <div class="flex min-w-0 flex-col">
         <span class="max-w-[220px] truncate font-label-md text-label-md font-semibold leading-tight text-primary">
           <?= htmlspecialchars($data['user']['full_name'] ?? 'Pengguna', ENT_QUOTES, 'UTF-8'); ?>
         </span>
+
         <?php $userRoleLabel = $data['user']['position'] ?? $data['user']['role_display_name'] ?? ''; ?>
         <?php if ($userRoleLabel !== ''): ?>
           <span class="max-w-[220px] truncate text-[11px] leading-4 text-on-surface-variant">

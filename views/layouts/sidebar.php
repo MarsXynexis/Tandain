@@ -13,7 +13,9 @@ if (empty($userRole) && isset($_SESSION['user']['role_display_name'])) {
 
 $isAdmin = ($userRole === 'admin_tu');
 $signatureActive = in_array($activeMenu, ['signature_image', 'certificate', 'certificate_create'], true);
-$administrationActive = in_array($activeMenu, ['accounts', 'templates', 'archive', 'triage'], true);
+$administrationActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accounts_edit', 'templates', 'archive', 'audit'], true);
+$isTriageActive = in_array($activeMenu, ['triage', 'triage_review'], true);
+$isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accounts_edit'], true);
 ?>
 
 <aside class="fixed top-0 left-0 h-screen w-[280px] bg-surface-container-lowest border-r border-outline-variant z-40 flex flex-col justify-between p-4 select-none overflow-y-auto">
@@ -39,8 +41,8 @@ $administrationActive = in_array($activeMenu, ['accounts', 'templates', 'archive
 
       <?php if ($isAdmin): ?>
 
-        <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $activeMenu === 'triage' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/triage" <?= $activeMenu === 'triage' ? 'aria-current="page"' : ''; ?>>
-          <span class="material-symbols-outlined text-[20px]" style="<?= $activeMenu === 'triage' ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">move_to_inbox</span>
+        <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $isTriageActive ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/triage" <?= $isTriageActive ? 'aria-current="page"' : ''; ?>>
+          <span class="material-symbols-outlined text-[20px]" style="<?= $isTriageActive ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">move_to_inbox</span>
           <span class="font-label-md text-label-md">Disposisi Dokumen</span>
         </a>
 
@@ -54,9 +56,10 @@ $administrationActive = in_array($activeMenu, ['accounts', 'templates', 'archive
           </button>
 
           <div class="ml-8 pl-3 pr-2 flex flex-col gap-1 border-l border-dashed border-secondary/60 transition-all duration-200 overflow-hidden <?= $administrationActive ? 'max-h-48 opacity-100 py-1' : 'max-h-0 opacity-0 py-0'; ?>" id="admin-submenu">
-            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'accounts' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/accounts" <?= $activeMenu === 'accounts' ? 'aria-current="page"' : ''; ?>>Manajemen Akun</a>
+            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $isAccountsActive ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/accounts" <?= $isAccountsActive ? 'aria-current="page"' : ''; ?>>Manajemen Akun</a>
             <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'templates' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/template" <?= $activeMenu === 'templates' ? 'aria-current="page"' : ''; ?>>Template Surat</a>
-            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'archive' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/archive" <?= $activeMenu === 'archive' ? 'aria-current="page"' : ''; ?>>Dokumen Arsip &amp; Tolak</a>
+            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'audit' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/audit" <?= $activeMenu === 'audit' ? 'aria-current="page"' : ''; ?>>Log Audit Dokumen</a>
+            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'archive' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/archive" <?= $activeMenu === 'archive' ? 'aria-current="page"' : ''; ?>>Arsip Dokumen</a>
           </div>
         </div>
 
