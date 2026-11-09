@@ -203,4 +203,13 @@ class User
 
         return $this->db->single();
     }
+
+    public function getSignerCandidates()
+    {
+        $sql = "SELECT u.id, u.full_name, u.identity_number, u.email, u.position FROM " . $this->table . " u JOIN roles r ON r.id = u.role_id WHERE r.name = 'pegawai' AND u.status = 'ACTIVE' ORDER BY u.full_name ASC";
+
+        $this->db->query($sql);
+
+        return $this->db->resultSet();
+    }
 }

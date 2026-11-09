@@ -433,4 +433,126 @@ class Document
 
         return $document;
     }
+
+    public function createDocument($data, $signerIds = [])
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $sql = "INSERT INTO " . $this->table . " (title, requester_id, original_file_path, initial_sha256_hash, status, routing_type, is_sequential, expires_at) VALUES (:title, :requester_id, :original_file_path, :initial_sha256_hash, :status, :routing_type, :is_sequential, :expires_at) RETURNING id";
+
+            $this->db->query($sql);
+            $this->db->bind('title', $data['title']);
+            $this->db->bind('requester_id', $data['requester_id']);
+            $this->db->bind('original_file_path', $data['original_file_path']);
+            $this->db->bind('initial_sha256_hash', $data['initial_sha256_hash']);
+            $this->db->bind('status', $data['status']);
+            $this->db->bind('routing_type', $data['routing_type']);
+            $this->db->bind('is_sequential', !empty($data['is_sequential']) ? 'true' : 'false');
+            $this->db->bind('expires_at', !empty($data['expires_at']) ? $data['expires_at'] : null);
+
+            $result = $this->db->single();
+
+            if (!$result || empty($result['id'])) {
+                throw new Exception('Gagal membuat dokumen baru.');
+            }
+
+            $docId = $result['id'];
+
+            if (!empty($signerIds)) {
+                $order = 1;
+
+                foreach ($signerIds as $signerId) {
+                    $signerSql = "INSERT INTO document_signers (document_id, signer_id, signing_order) VALUES (:doc_id, :signer_id, :signing_order)";
+
+                    $this->db->query($signerSql);
+                    $this->db->bind('doc_id', $docId);
+                    $this->db->bind('signer_id', $signerId);
+                    $this->db->bind('signing_order', $order);
+                    $this->db->execute();
+
+                    $order++;
+                }
+            }
+
+            $auditSql = "INSERT INTO document_audit_logs (document_id, user_id, action, notes) VALUES (:doc_id, :user_id, 'CREATED', 'Dokumen diajukan')";
+
+            $this->db->query($auditSql);
+            $this->db->bind('doc_id', $docId);
+            $this->db->bind('user_id', $data['requester_id']);
+            $this->db->execute();
+
+            $this->db->commit();
+
+            return $docId;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+
+            return false;
+        }
+    }
+
+    public function getSignersForPositioning($documentId)
+    {
+        $sql = "SELECT ds.signer_id AS id, ds.signing_order, u.full_name AS name FROM document_signers ds JOIN users u ON u.id = ds.signer_id WHERE ds.document_id = :doc_id ORDER BY ds.signing_order ASC";
+
+        $this->db->query($sql);
+        $this->db->bind('doc_id', $documentId);
+
+        return $this->db->resultSet();
+    }
+
+    public function updateSignerPositions($documentId, $positions, $isSequential, $userId)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $updatePosSql = "UPDATE document_signers SET page_number = :page, coord_x = :coord_x, coord_y = :coord_y WHERE document_id = :doc_id AND signer_id = :signer_id";
+
+            foreach ($positions as $p) {
+                $page = max(1, (int)($p['page'] ?? 1));
+                $coordX = max(0, min(1, (float)($p['x'] ?? 0)));
+                $coordY = max(0, min(1, (float)($p['y'] ?? 0)));
+
+                $this->db->query($updatePosSql);
+                $this->db->bind('page', $page);
+                $this->db->bind('coord_x', $coordX);
+                $this->db->bind('coord_y', $coordY);
+                $this->db->bind('doc_id', $documentId);
+                $this->db->bind('signer_id', $p['signer_id']);
+                $this->db->execute();
+            }
+
+            if ($isSequential) {
+                $turnSql = "UPDATE document_signers SET status = 'CURRENT_TURN' WHERE document_id = :doc_id AND signing_order = 1";
+            } else {
+                $turnSql = "UPDATE document_signers SET status = 'CURRENT_TURN' WHERE document_id = :doc_id";
+            }
+
+            $this->db->query($turnSql);
+            $this->db->bind('doc_id', $documentId);
+            $this->db->execute();
+
+            $docStatusSql = "UPDATE " . $this->table . " SET status = 'IN_PROGRESS', updated_at = CURRENT_TIMESTAMP WHERE id = :doc_id";
+
+            $this->db->query($docStatusSql);
+            $this->db->bind('doc_id', $documentId);
+            $this->db->execute();
+
+            $auditSql = "INSERT INTO document_audit_logs (document_id, user_id, action, notes) VALUES (:doc_id, :user_id, 'POSITIONS_SET', 'Posisi TTE ditetapkan, dokumen dikirim')";
+
+            $this->db->query($auditSql);
+            $this->db->bind('doc_id', $documentId);
+            $this->db->bind('user_id', $userId);
+            $this->db->execute();
+
+            $this->db->commit();
+
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+
+            return false;
+        }
+    }
 }
