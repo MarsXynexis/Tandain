@@ -37,12 +37,26 @@ if (!empty($data['search'])) {
 
       <div class="p-5 border-b border-surface-container-high flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-surface-container-lowest">
 
-        <form method="GET" action="/Tandain/triage" class="relative flex-1 max-w-md">
+        <form method="GET" action="/Tandain/triage" class="flex items-center gap-2 flex-1 max-w-lg">
           <input type="hidden" name="status" value="<?= htmlspecialchars($data['current_status'], ENT_QUOTES, 'UTF-8'); ?>">
-          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
-            <span class="material-symbols-outlined text-[20px]">search</span>
-          </span>
-          <input name="search" value="<?= htmlspecialchars($data['search'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all" placeholder="Cari judul dokumen, nama pemohon, atau NIM..." type="text">
+
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+              <span class="material-symbols-outlined text-[20px]">search</span>
+            </span>
+            <input name="search" value="<?= htmlspecialchars($data['search'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all" placeholder="Cari judul dokumen, nama pemohon, atau NIM..." type="text">
+          </div>
+
+          <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-container-low hover:bg-surface-container text-primary border border-outline-variant rounded-lg font-label-md text-label-md font-semibold transition-colors shrink-0">
+            <span class="material-symbols-outlined text-[18px]">search</span>
+            <span>Cari</span>
+          </button>
+
+          <?php if (!empty($data['search'])): ?>
+            <a href="/Tandain/triage?status=<?= urlencode($data['current_status']); ?>" class="px-2.5 py-2 text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors shrink-0">
+              Reset
+            </a>
+          <?php endif; ?>
         </form>
 
         <div class="flex items-center gap-1 p-1 bg-surface-container rounded-lg self-start lg:self-auto overflow-x-auto">

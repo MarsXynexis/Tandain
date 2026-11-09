@@ -2,16 +2,16 @@
 
 class DocumentController extends Controller
 {
-    private const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+    private const MAX_SIZE = 2097152;
 
     private ?PDO $pdo = null;
 
-    /** Koneksi PDO (satu kali per request) */
     private function db(): PDO
     {
         if ($this->pdo === null) {
             $this->pdo = (new Database)->getConnection();
         }
+
         return $this->pdo;
     }
 
@@ -27,14 +27,11 @@ class DocumentController extends Controller
         exit;
     }
 
-    // ------------------------------------------------------------------
-    // Daftar dokumen (kode teman, tidak diubah)
-    // ------------------------------------------------------------------
     public function index()
     {
         $this->authCheck();
 
-        $documentModel = $this->model('DocumentList');
+        $documentModel = $this->model('Document');
         $userId = $_SESSION['user']['id'];
 
         $search = trim($_GET['q'] ?? '');
@@ -43,14 +40,14 @@ class DocumentController extends Controller
         $perPage = 8;
         $offset = ($page - 1) * $perPage;
 
-        $total = $documentModel->countDocuments($userId, $search, $filter);
+        $total = $documentModel->countUserDocuments($userId, $search, $filter);
         $totalPages = max(1, (int) ceil($total / $perPage));
 
         $data['title'] = 'Dokumen Diunggah - Tandain';
         $data['active_menu'] = 'uploaded';
         $data['user'] = $_SESSION['user'];
-        $data['documents'] = $documentModel->getDocuments($userId, $search, $filter, $perPage, $offset);
-        $data['counts'] = $documentModel->getStatusCounts($userId);
+        $data['documents'] = $documentModel->getUserDocuments($userId, $search, $filter, $perPage, $offset);
+        $data['counts'] = $documentModel->getUserStatusCounts($userId);
         $data['search'] = $search;
         $data['filter'] = $filter;
         $data['page'] = $page;
@@ -58,12 +55,9 @@ class DocumentController extends Controller
         $data['total'] = $total;
         $data['totalPages'] = $totalPages;
 
-        $this->view('document/list', $data);
+        $this->view('document/index', $data);
     }
 
-    // ------------------------------------------------------------------
-    // Form ajukan dokumen: GET = tampilkan form, POST = proses
-    // ------------------------------------------------------------------
     public function create()
     {
         $this->authCheck();
@@ -72,7 +66,6 @@ class DocumentController extends Controller
             return $this->store();
         }
 
-        // Daftar calon penandatangan untuk fitur pencarian di form
         $stmt = $this->db()->query(
             "SELECT u.id, u.full_name, u.identity_number, u.email, u.position
              FROM users u
@@ -91,52 +84,57 @@ class DocumentController extends Controller
         $this->view('document/create', $data);
     }
 
-    /** Proses submit form (mode unggah PDF) */
     private function store()
     {
         if (($_POST['submission_mode'] ?? 'upload') !== 'upload') {
             $this->backWithError('Mode template surat belum tersedia.');
         }
 
-        $title      = trim($_POST['title'] ?? '');
-        $expiresAt  = trim($_POST['expires_at'] ?? '') ?: null;
-        $isTriage   = !empty($_POST['is_triage']);
+        $title = trim($_POST['title'] ?? '');
+        $expiresAt = trim($_POST['expires_at'] ?? '') ?: null;
+        $isTriage = !empty($_POST['is_triage']);
         $sequential = !empty($_POST['is_sequential']);
-        $signerIds  = array_values(array_unique($_POST['signers'] ?? []));
+        $signerIds = array_values(array_unique($_POST['signers'] ?? []));
 
-        // --- Validasi ---
         if ($title === '') {
             $this->backWithError('Judul dokumen wajib diisi.');
         }
+
         if (!$isTriage && count($signerIds) === 0) {
             $this->backWithError('Pilih minimal satu penandatangan.');
         }
 
         $file = $_FILES['document_file'] ?? null;
+
         if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
             $this->backWithError('Berkas PDF wajib diunggah.');
         }
+
         if ($file['size'] > self::MAX_SIZE) {
             $this->backWithError('Ukuran berkas maksimal 2 MB.');
         }
+
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+
         if ($mime !== 'application/pdf') {
             $this->backWithError('Berkas harus berformat PDF.');
         }
 
-        // --- Simpan file ---
         $dir = dirname(__DIR__) . '/uploads/documents/';
+
         if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
         }
+
         $filename = bin2hex(random_bytes(16)) . '.pdf';
+
         if (!move_uploaded_file($file['tmp_name'], $dir . $filename)) {
             $this->backWithError('Gagal menyimpan berkas.');
         }
-        $hash = hash_file('sha256', $dir . $filename);
 
-        // --- Simpan ke database ---
+        $hash = hash_file('sha256', $dir . $filename);
         $pdo = $this->db();
+
         try {
             $pdo->beginTransaction();
 
@@ -146,6 +144,7 @@ class DocumentController extends Controller
                   status, routing_type, is_sequential, expires_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id'
             );
+
             $stmt->execute([
                 $title,
                 $this->userId(),
@@ -156,6 +155,7 @@ class DocumentController extends Controller
                 $sequential ? 'true' : 'false',
                 $expiresAt,
             ]);
+
             $docId = $stmt->fetchColumn();
 
             if (!$isTriage) {
@@ -163,6 +163,7 @@ class DocumentController extends Controller
                     'INSERT INTO document_signers (document_id, signer_id, signing_order)
                      VALUES (?, ?, ?)'
                 );
+
                 foreach ($signerIds as $i => $sid) {
                     $ins->execute([$docId, $sid, $i + 1]);
                 }
@@ -178,24 +179,20 @@ class DocumentController extends Controller
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
+
             @unlink($dir . $filename);
             $this->backWithError('Gagal menyimpan dokumen: ' . $e->getMessage());
         }
 
-        // Triage: Admin TU yang menentukan penandatangan, tidak perlu atur posisi
         if ($isTriage) {
             header('Location: /Tandain/document');
         } else {
             header('Location: /Tandain/document/position/' . $docId);
         }
+
         exit;
     }
 
-    // ------------------------------------------------------------------
-    // Atur posisi TTE
-    // ------------------------------------------------------------------
-
-    /** Halaman atur posisi TTE: /document/position/{id} */
     public function position($id = null)
     {
         $this->authCheck();
@@ -208,6 +205,7 @@ class DocumentController extends Controller
              WHERE ds.document_id = ?
              ORDER BY ds.signing_order'
         );
+
         $stmt->execute([$doc['id']]);
 
         $data['title'] = 'Atur Posisi TTE - Tandain';
@@ -222,30 +220,31 @@ class DocumentController extends Controller
         $this->view('document/position', $data);
     }
 
-    /** Menampilkan PDF ke PDF.js: /document/file/{id} */
     public function file($id = null)
     {
         $this->authCheck();
         $doc = $this->findOwnedDocument($id);
 
         $path = dirname(__DIR__) . '/' . $doc['original_file_path'];
+
         if (!is_file($path)) {
             http_response_code(404);
             exit('Berkas tidak ditemukan.');
         }
+
         header('Content-Type: application/pdf');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;
     }
 
-    /** Simpan posisi kotak TTE: /document/savePositions/{id} (POST) */
     public function savePositions($id = null)
     {
         $this->authCheck();
         $doc = $this->findOwnedDocument($id);
 
         $positions = json_decode($_POST['positions'] ?? '[]', true);
+
         if (!is_array($positions) || count($positions) === 0) {
             $_SESSION['error'] = 'Tempatkan kotak TTE dulu.';
             header('Location: /Tandain/document/position/' . $doc['id']);
@@ -253,6 +252,7 @@ class DocumentController extends Controller
         }
 
         $pdo = $this->db();
+
         try {
             $pdo->beginTransaction();
 
@@ -261,6 +261,7 @@ class DocumentController extends Controller
                  SET page_number = ?, coord_x = ?, coord_y = ?
                  WHERE document_id = ? AND signer_id = ?'
             );
+
             foreach ($positions as $p) {
                 $upd->execute([
                     max(1, (int)$p['page']),
@@ -271,7 +272,6 @@ class DocumentController extends Controller
                 ]);
             }
 
-            // Giliran pertama (atau semua, kalau tidak berurutan)
             if ($doc['is_sequential']) {
                 $pdo->prepare(
                     "UPDATE document_signers SET status = 'CURRENT_TURN'
@@ -296,6 +296,7 @@ class DocumentController extends Controller
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
+
             $_SESSION['error'] = 'Gagal menyimpan posisi: ' . $e->getMessage();
             header('Location: /Tandain/document/position/' . $doc['id']);
             exit;
@@ -305,10 +306,8 @@ class DocumentController extends Controller
         exit;
     }
 
-    /** Ambil dokumen milik user yang login, atau 404 */
     private function findOwnedDocument($id): array
     {
-        // id UUID tidak valid akan membuat error di PostgreSQL, jadi dicek dulu
         if (!preg_match('/^[0-9a-f-]{36}$/i', (string)$id)) {
             http_response_code(404);
             exit('Dokumen tidak ditemukan.');
@@ -317,18 +316,58 @@ class DocumentController extends Controller
         $stmt = $this->db()->prepare(
             'SELECT * FROM documents WHERE id = ? AND requester_id = ?'
         );
+
         $stmt->execute([$id, $this->userId()]);
         $doc = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if (!$doc) {
             http_response_code(404);
             exit('Dokumen tidak ditemukan.');
         }
+
         return $doc;
     }
 
-    // ------------------------------------------------------------------
-    // Persetujuan dokumen (kode teman, tidak diubah)
-    // ------------------------------------------------------------------
+    public function detail()
+    {
+        $this->authCheck();
+
+        $id = $_GET['id'] ?? '';
+        $documentModel = $this->model('Document');
+        $document = $documentModel->getDocumentByIdAndUser($id, $_SESSION['user']['id']);
+
+        if (!$document) {
+            $this->redirect('/Tandain/document');
+        } else {
+            $signers = $documentModel->getSignersByDocumentId($document['id']);
+            $signedCount = 0;
+
+            foreach ($signers as $signer) {
+                if ($signer['status'] === 'SIGNED') {
+                    $signedCount++;
+                }
+            }
+
+            $totalSigners = count($signers);
+            $percent = 0;
+
+            if ($totalSigners > 0) {
+                $percent = (int) (($signedCount / $totalSigners) * 100);
+            }
+
+            $data['title'] = 'Detail Dokumen - Tandain';
+            $data['active_menu'] = 'uploaded';
+            $data['user'] = $_SESSION['user'];
+            $data['document'] = $document;
+            $data['signers'] = $signers;
+            $data['signedCount'] = $signedCount;
+            $data['totalSigners'] = $totalSigners;
+            $data['percent'] = $percent;
+
+            $this->view('document/detail', $data);
+        }
+    }
+
     public function signed()
     {
         $this->authCheck();

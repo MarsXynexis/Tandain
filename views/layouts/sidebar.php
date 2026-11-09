@@ -34,7 +34,7 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
         <span class="font-label-md text-label-md">Beranda</span>
       </a>
 
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $activeMenu === 'verification' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="#" <?= $activeMenu === 'verification' ? 'aria-current="page"' : ''; ?>>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $activeMenu === 'verification' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/verification" <?= $activeMenu === 'verification' ? 'aria-current="page"' : ''; ?>>
         <span class="material-symbols-outlined text-[20px]">verified_user</span>
         <span class="font-label-md text-label-md">Verifikasi Dokumen</span>
       </a>

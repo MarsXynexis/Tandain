@@ -31,38 +31,50 @@ $badgeClasses = [
       </div>
     </div>
 
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
 
-      <a class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/audit">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Total Peristiwa</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_logs'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/audit">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Total Peristiwa</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_logs'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Aktivitas dokumen</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-secondary" aria-hidden="true">history</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8e7ff] text-[#5145d8]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">history</span>
+        </div>
       </a>
 
-      <a class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/audit?action=DOCUMENT_SIGNED">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Tanda Tangan Sah</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_signed'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/audit?action=DOCUMENT_SIGNED">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Tanda Tangan Sah</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_signed'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Tanda tangan berhasil</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-[#15803d]" aria-hidden="true">draw</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">draw</span>
+        </div>
       </a>
 
-      <a class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors hover:border-secondary" href="/Tandain/audit?action=TRIAGE_ASSIGNED">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Disposisi Tata Usaha</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_triage'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/audit?action=TRIAGE_ASSIGNED">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Disposisi Tata Usaha</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_triage'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Alur penandatangan</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-[#1d4ed8]" aria-hidden="true">move_to_inbox</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dceafe] text-[#1d4ed8]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">move_to_inbox</span>
+        </div>
       </a>
 
-      <div class="flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3">
-        <div>
-          <p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Tolak &amp; Pembatalan</p>
-          <p class="font-headline-lg text-xl font-bold text-primary mt-1"><?= htmlspecialchars((string)($data['stats']['total_rejected_or_cancelled'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+      <div class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm">
+        <div class="min-w-0">
+          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Tolak &amp; Pembatalan</p>
+          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_rejected_or_cancelled'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Tidak dilanjutkan</p>
         </div>
-        <span class="material-symbols-outlined text-[22px] text-[#b91c1c]" aria-hidden="true">cancel</span>
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#fee2e2] text-[#b91c1c]">
+          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">cancel</span>
+        </div>
       </div>
 
     </section>

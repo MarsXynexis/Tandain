@@ -287,4 +287,150 @@ class Document
 
         return $this->db->single();
     }
+
+    public function countUserDocuments($userId, $search = '', $filter = 'all')
+    {
+        $sql = "SELECT COUNT(*) AS total FROM " . $this->table . " d WHERE d.requester_id = :user_id";
+
+        if (!empty($search)) {
+            $sql .= " AND (d.title ILIKE :search OR d.document_number ILIKE :search)";
+        }
+
+        if ($filter === 'completed') {
+            $sql .= " AND d.status = 'COMPLETED'";
+        } else if ($filter === 'in_progress') {
+            $sql .= " AND d.status IN ('PENDING_TRIAGE', 'IN_PROGRESS')";
+        }
+
+        $this->db->query($sql);
+        $this->db->bind('user_id', $userId);
+
+        if (!empty($search)) {
+            $this->db->bind('search', '%' . $search . '%');
+        }
+
+        $row = $this->db->single();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function getUserDocuments($userId, $search = '', $filter = 'all', $limit = 8, $offset = 0)
+    {
+        $sql = "SELECT d.id, d.title, d.document_number, d.status, d.created_at, d.original_file_path, d.final_file_path, 
+                (SELECT COUNT(*) FROM document_signers s WHERE s.document_id = d.id) AS total_signers, 
+                (SELECT COUNT(*) FROM document_signers s WHERE s.document_id = d.id AND s.status = 'SIGNED') AS signed_count 
+                FROM " . $this->table . " d WHERE d.requester_id = :user_id";
+
+        if (!empty($search)) {
+            $sql .= " AND (d.title ILIKE :search OR d.document_number ILIKE :search)";
+        }
+
+        if ($filter === 'completed') {
+            $sql .= " AND d.status = 'COMPLETED'";
+        } else if ($filter === 'in_progress') {
+            $sql .= " AND d.status IN ('PENDING_TRIAGE', 'IN_PROGRESS')";
+        }
+
+        $sql .= " ORDER BY d.created_at DESC LIMIT :limit OFFSET :offset";
+
+        $this->db->query($sql);
+        $this->db->bind('user_id', $userId);
+
+        if (!empty($search)) {
+            $this->db->bind('search', '%' . $search . '%');
+        }
+
+        $this->db->bind('limit', (int) $limit);
+        $this->db->bind('offset', (int) $offset);
+
+        return $this->db->resultSet();
+    }
+
+    public function getUserStatusCounts($userId)
+    {
+        $sql = "SELECT COUNT(*) AS total_all, 
+                COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS total_completed, 
+                COUNT(CASE WHEN status IN ('PENDING_TRIAGE', 'IN_PROGRESS') THEN 1 END) AS total_in_progress 
+                FROM " . $this->table . " WHERE requester_id = :user_id";
+
+        $this->db->query($sql);
+        $this->db->bind('user_id', $userId);
+
+        return $this->db->single();
+    }
+
+    public function getDocumentByIdAndUser($id, $userId)
+    {
+        if (!preg_match('/^[0-9a-f-]{36}$/i', $id)) {
+            return false;
+        }
+
+        $this->db->query("SELECT * FROM " . $this->table . " WHERE id = :id AND requester_id = :user_id LIMIT 1");
+        $this->db->bind('id', $id);
+        $this->db->bind('user_id', $userId);
+
+        return $this->db->single();
+    }
+
+    public function getSignersByDocumentId($documentId)
+    {
+        $sql = "SELECT u.full_name, u.email, u.position, s.status, s.signed_at, s.rejection_reason 
+                FROM document_signers s 
+                JOIN users u ON u.id = s.signer_id 
+                WHERE s.document_id = :document_id 
+                ORDER BY s.signing_order ASC";
+
+        $this->db->query($sql);
+        $this->db->bind('document_id', $documentId);
+
+        return $this->db->resultSet();
+    }
+
+    public function verifyDocument($search)
+    {
+        $search = trim($search);
+
+        if (empty($search)) {
+            return false;
+        }
+
+        $sql = "SELECT d.*, u.full_name AS requester_name, u.identity_number AS requester_nim, u.position AS requester_position 
+                FROM " . $this->table . " d 
+                JOIN users u ON u.id = d.requester_id 
+                WHERE d.document_number = :search 
+                   OR d.final_sha256_hash = :search 
+                   OR d.initial_sha256_hash = :search";
+
+        if (preg_match('/^[0-9a-f-]{36}$/i', $search)) {
+            $sql .= " OR d.id = :search_uuid";
+        }
+
+        $sql .= " LIMIT 1";
+
+        $this->db->query($sql);
+        $this->db->bind('search', $search);
+
+        if (preg_match('/^[0-9a-f-]{36}$/i', $search)) {
+            $this->db->bind('search_uuid', $search);
+        }
+
+        $document = $this->db->single();
+
+        if (!$document) {
+            return false;
+        }
+
+        $signersSql = "SELECT s.*, u.full_name, u.identity_number, u.position, c.certificate_serial, c.status AS cert_status, c.valid_from, c.valid_until 
+                       FROM document_signers s 
+                       JOIN users u ON u.id = s.signer_id 
+                       LEFT JOIN signer_certificates c ON c.id = s.certificate_id 
+                       WHERE s.document_id = :doc_id 
+                       ORDER BY s.signing_order ASC";
+
+        $this->db->query($signersSql);
+        $this->db->bind('doc_id', $document['id']);
+        $document['signers'] = $this->db->resultSet();
+
+        return $document;
+    }
 }

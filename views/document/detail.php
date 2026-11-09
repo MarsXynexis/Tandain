@@ -10,7 +10,6 @@ $bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 
 $time = strtotime($document['created_at']);
 $tanggal = date('d', $time) . ' ' . $bulan[date('n', $time) - 1] . ' ' . date('Y', $time);
 
-// Label dan warna status dokumen
 if ($document['status'] === 'COMPLETED') {
     $label = 'Selesai';
     $badge = 'bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]';
@@ -28,8 +27,8 @@ if ($document['status'] === 'COMPLETED') {
     $badge = 'bg-surface-container text-on-surface-variant border border-outline-variant';
 }
 
-// File yang ditampilkan di pratinjau: hasil akhir kalau sudah ada, kalau belum file asli
 $previewFile = $document['original_file_path'];
+
 if (!empty($document['final_file_path'])) {
     $previewFile = $document['final_file_path'];
 }

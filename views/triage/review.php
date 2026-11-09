@@ -230,11 +230,9 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
 
           <div class="flex flex-col gap-3" id="signers-list">
 
-            <?php if (empty($data['current_signers'])): ?>
-              <div class="rounded-xl border border-dashed border-outline bg-surface px-4 py-6 text-center text-on-surface-variant font-body-sm text-body-sm" id="signers-empty">
-                Belum ada penandatangan yang ditetapkan.
-              </div>
-            <?php endif; ?>
+            <div class="rounded-xl border border-dashed border-outline bg-surface px-4 py-6 text-center text-on-surface-variant font-body-sm text-body-sm <?= !empty($data['current_signers']) ? 'hidden' : ''; ?>" id="signers-empty" style="<?= !empty($data['current_signers']) ? 'display: none;' : ''; ?>">
+              Belum ada penandatangan yang ditetapkan.
+            </div>
 
             <?php $order = 1; ?>
             <?php foreach ($data['current_signers'] as $signer): ?>
@@ -468,8 +466,6 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
     const dispositionErrorText = document.getElementById('disposition-error-text');
     const nextSignerOrder = document.getElementById('next-signer-order');
 
-    let searchTimer = null;
-
     function getSignerRows() {
       return signersList.querySelectorAll('.signer-row');
     }
@@ -487,7 +483,13 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
       });
 
       if (emptyState) {
-        emptyState.classList.toggle('hidden', rows.length > 0);
+        if (rows.length > 0) {
+          emptyState.classList.add('hidden');
+          emptyState.style.display = 'none';
+        } else {
+          emptyState.classList.remove('hidden');
+          emptyState.style.display = 'block';
+        }
       }
 
       if (nextSignerOrder) {
@@ -526,6 +528,13 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
     }
 
     function addSigner(user) {
+      const emptyState = document.getElementById('signers-empty');
+
+      if (emptyState) {
+        emptyState.classList.add('hidden');
+        emptyState.style.display = 'none';
+      }
+
       const row = signerTemplate.content.firstElementChild.cloneNode(true);
 
       row.querySelector('[data-field="name"]').textContent = user.full_name;
@@ -651,46 +660,36 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
     }
 
     if (signerSearchInput) {
-      signerSearchInput.addEventListener('input', function () {
-        clearTimeout(searchTimer);
-
-        const query = signerSearchInput.value.trim();
-
-        if (query.length < 2) {
-          searchResultsBox.innerHTML = '';
-          searchResultsBox.classList.add('hidden');
-          searchResultsBox.classList.remove('flex');
-          return;
-        }
-
-        searchTimer = setTimeout(function () {
-          runSignerSearch(query);
-        }, 300);
-      });
-
       signerSearchInput.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
           event.preventDefault();
-          clearTimeout(searchTimer);
 
           const query = signerSearchInput.value.trim();
 
-          if (query.length >= 2) {
-            runSignerSearch(query);
+          if (query.length < 2) {
+            searchResultsBox.innerHTML = '<div class="p-3 text-center text-on-surface-variant font-body-sm text-body-sm">Ketik minimal 2 karakter nama, NIP, atau email.</div>';
+            searchResultsBox.classList.remove('hidden');
+            searchResultsBox.classList.add('flex');
+            return;
           }
+
+          runSignerSearch(query);
         }
       });
     }
 
     if (signerSearchBtn) {
       signerSearchBtn.addEventListener('click', function () {
-        clearTimeout(searchTimer);
-
         const query = signerSearchInput.value.trim();
 
-        if (query.length >= 2) {
-          runSignerSearch(query);
+        if (query.length < 2) {
+          searchResultsBox.innerHTML = '<div class="p-3 text-center text-on-surface-variant font-body-sm text-body-sm">Ketik minimal 2 karakter nama, NIP, atau email.</div>';
+          searchResultsBox.classList.remove('hidden');
+          searchResultsBox.classList.add('flex');
+          return;
         }
+
+        runSignerSearch(query);
       });
     }
 
