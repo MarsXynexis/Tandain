@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -97,19 +98,71 @@
             "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"]
           },
           fontSize: {
-            "body-lg": ["16px", { lineHeight: "26px", letterSpacing: "-0.005em", fontWeight: "400" }],
-            "body-md": ["14px", { lineHeight: "22px", letterSpacing: "0", fontWeight: "400" }],
-            "headline-xl-mobile": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "700" }],
-            "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.015em", fontWeight: "600" }],
-            "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }],
-            "body-sm": ["12px", { lineHeight: "18px", letterSpacing: "0.005em", fontWeight: "400" }],
-            "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "700" }],
-            "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }],
-            "code-tabular": ["13px", { lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "500" }],
-            "headline-xl": ["36px", { lineHeight: "44px", letterSpacing: "-0.025em", fontWeight: "700" }],
-            "headline-sm": ["18px", { lineHeight: "24px", letterSpacing: "-0.01em", fontWeight: "600" }],
-            "headline-lg-mobile": ["24px", { lineHeight: "32px", letterSpacing: "-0.015em", fontWeight: "700" }],
-            "headline-lg": ["30px", { lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700" }]
+            "body-lg": ["16px", {
+              lineHeight: "26px",
+              letterSpacing: "-0.005em",
+              fontWeight: "400"
+            }],
+            "body-md": ["14px", {
+              lineHeight: "22px",
+              letterSpacing: "0",
+              fontWeight: "400"
+            }],
+            "headline-xl-mobile": ["28px", {
+              lineHeight: "36px",
+              letterSpacing: "-0.02em",
+              fontWeight: "700"
+            }],
+            "headline-md": ["22px", {
+              lineHeight: "28px",
+              letterSpacing: "-0.015em",
+              fontWeight: "600"
+            }],
+            "label-md": ["12px", {
+              lineHeight: "16px",
+              letterSpacing: "0.02em",
+              fontWeight: "600"
+            }],
+            "body-sm": ["12px", {
+              lineHeight: "18px",
+              letterSpacing: "0.005em",
+              fontWeight: "400"
+            }],
+            "label-sm": ["11px", {
+              lineHeight: "14px",
+              letterSpacing: "0.04em",
+              fontWeight: "700"
+            }],
+            "label-lg": ["14px", {
+              lineHeight: "20px",
+              letterSpacing: "0.01em",
+              fontWeight: "600"
+            }],
+            "code-tabular": ["13px", {
+              lineHeight: "18px",
+              letterSpacing: "0.02em",
+              fontWeight: "500"
+            }],
+            "headline-xl": ["36px", {
+              lineHeight: "44px",
+              letterSpacing: "-0.025em",
+              fontWeight: "700"
+            }],
+            "headline-sm": ["18px", {
+              lineHeight: "24px",
+              letterSpacing: "-0.01em",
+              fontWeight: "600"
+            }],
+            "headline-lg-mobile": ["24px", {
+              lineHeight: "32px",
+              letterSpacing: "-0.015em",
+              fontWeight: "700"
+            }],
+            "headline-lg": ["30px", {
+              lineHeight: "38px",
+              letterSpacing: "-0.02em",
+              fontWeight: "700"
+            }]
           }
         }
       }
@@ -121,7 +174,16 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    h1, h2, h3, h4, h5, h6, .font-headline-lg, .font-headline-md, .font-headline-sm, .font-headline-xl {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .font-headline-lg,
+    .font-headline-md,
+    .font-headline-sm,
+    .font-headline-xl {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
@@ -474,28 +536,37 @@
         </div>
 
         <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-8 sm:p-10 shadow-sm space-y-8">
-          <div class="border-2 border-dashed border-outline-variant rounded-xl py-12 px-8 flex flex-col items-center justify-center text-center bg-surface-container-low">
-            <div class="w-14 h-14 rounded-xl bg-surface-container-lowest border border-outline-variant/50 flex items-center justify-center text-[#004B87] shadow-sm mb-4">
-              <span class="material-symbols-outlined text-[32px]">picture_as_pdf</span>
-            </div>
-            <h3 class="font-headline-sm text-headline-sm font-semibold text-primary mb-1.5">Tarik file PDF ke sini, atau klik Pilih File</h3>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mb-6">Format PDF (Maks. 2 MB)</p>
-            <a href="/Tandain/verification?status=success" class="bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low text-primary font-label-lg text-label-lg py-2.5 px-6 rounded-lg inline-flex items-center gap-2 shadow-sm transition-colors duration-150">
-              <span class="material-symbols-outlined text-[20px]">upload_file</span>
-              <span>Pilih File</span>
-            </a>
-          </div>
+          <form method="POST" action="/Tandain/verification/check" enctype="multipart/form-data" class="space-y-8">
+            <div class="border-2 border-dashed border-outline-variant hover:border-secondary rounded-xl py-12 px-8 flex flex-col items-center justify-center text-center bg-surface-container-low cursor-pointer transition-colors duration-200" id="drop-zone">
+              <div class="w-14 h-14 rounded-xl bg-surface-container-lowest border border-outline-variant/50 flex items-center justify-center text-[#004B87] shadow-sm mb-4">
+                <span class="material-symbols-outlined text-[32px]">picture_as_pdf</span>
+              </div>
 
-          <div class="flex flex-col gap-3 pt-1">
-            <a href="/Tandain/verification?status=success" class="w-full bg-[#004B87] hover:bg-[#003b6b] active:scale-[0.99] text-white font-label-lg text-label-lg py-3 px-5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all duration-150">
-              <span class="material-symbols-outlined text-[20px]">verified</span>
-              <span>Periksa Dokumen</span>
-            </a>
-            <a href="/Tandain/verification?status=error" class="w-full bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low active:scale-[0.99] text-primary font-label-lg text-label-lg py-3 px-5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all duration-150">
-              <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
-              <span>Pindai Kode QR</span>
-            </a>
-          </div>
+              <h3 id="drop-zone-text" class="font-headline-sm text-headline-sm font-semibold text-primary mb-1.5">Tarik file PDF ke sini, atau klik Pilih File</h3>
+              <p id="drop-zone-subtext" class="font-body-sm text-body-sm text-on-surface-variant mb-6">Format PDF (Maks. 2 MB)</p>
+
+              <input type="file" name="document_file" accept="application/pdf,.pdf" class="hidden" id="file-upload">
+              <button type="button" id="browse-btn" class="bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low text-primary font-label-lg text-label-lg py-2.5 px-6 rounded-lg inline-flex items-center gap-2 shadow-sm transition-colors duration-150">
+                <span class="material-symbols-outlined text-[20px]">upload_file</span>
+                <span>Pilh File</span>
+              </button>
+            </div>
+
+
+
+
+            <div class="flex flex-col gap-3 pt-1">
+              <button type="submit" class="w-full bg-[#004B87] hover:bg-[#003b6b] active:scale-[0.99] text-white font-label-lg text-label-lg py-3 px-5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all duration-150">
+                <span class="material-symbols-outlined text-[20px]">verified</span>
+                <span>Periksa Dokumen</span>
+              </button>
+
+              <a href="/Tandain/verification?status=error" class="w-full bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low active:scale-[0.99] text-primary font-label-lg text-label-lg py-3 px-5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all duration-150">
+                <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                <span>Pindai Kode QR</span>
+              </a>
+            </div>
+          </form>
         </div>
       </div>
     </main>
@@ -509,4 +580,94 @@
   </footer>
 
 </body>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const dropZone = document.getElementById('drop-zone');
+    const fileUpload = document.getElementById('file-upload');
+    const browseBtn = document.getElementById('browse-btn');
+    const dropZoneText = document.getElementById('drop-zone-text');
+    const dropZoneSubtext = document.getElementById('drop-zone-subtext');
+
+    if (!dropZone || !fileUpload) return;
+    
+    const defaultText = dropZoneText.textContent;
+    const defaultSubtext = dropZoneSubtext.textContent;
+    const MAX_SIZE = 2 * 1024 * 1024; 
+
+    // fungsi untuk validasi berkas dan memperbarui tampilan teksi di dropzone
+    function handleFile() {
+      const file = fileUpload.files && fileUpload.files[0];
+      if (!file) return;
+
+      // Validasi format PDF
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdf) {
+        alert('Format berkas tidak valid. Harap pilih berkas PDF.');
+        resetDropZone();
+        return;
+      }
+
+      // Validasi ukuran maksimal file
+      if (file.size > MAX_SIZE) {
+        alert('Ukuran berkas melebihi batas maksimal 2 MB.');
+        resetDropZone();
+        return;
+      }
+
+      // Perbarui teks di dalam dropzone jika file valid 
+      dropZoneText.textContent = file.name;
+      dropZoneSubtext.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB Berkas siap diperiksa';
+      
+      dropZone.classList.add('border-emerald-500', 'bg-emerald-50/40');
+    }
+
+    function resetDropZone() {
+      fileUpload.value = '';
+      dropZoneText.textContent = defaultText;
+      dropZoneSubtext.textContent = defaultSubtext;
+      dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+    }
+
+    // 1. Klik area kotak dropzone untuk buka file picker
+    dropZone.addEventListener('click', () => {
+      fileUpload.click();
+    });
+
+    // 2. Klik tombol "Pilih FIle" (mencegah double trigger)
+    browseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileUpload.click();
+    });
+
+    // 3. saat file dipilih melalui dialog file picker
+    fileUpload.addEventListener('change', handleFile);
+
+    // 4. Mencegah browser membuka file langsung saat file ditarik ke layar
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('border-secondary', 'bg-surface-container');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('border-secondary', 'bg-surface-container');
+      });
+    });
+
+    // 5. Menangkap file saat di-drop
+    dropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        fileUpload.files = e.dataTransfer.files // Masukkan file hasil drop ke input file
+        handleFile();
+      }
+    });
+  });
+</script>
+
 </html>
