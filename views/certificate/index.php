@@ -43,77 +43,79 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant/60">
-            <tr class="text-sm text-on-surface">
-              <td class="whitespace-nowrap px-5 py-4 font-label-md text-label-md font-semibold text-primary">CERT-PNJ-TIK-2026-0002</td>
-              <td class="px-5 py-4">
-                <p class="font-label-md text-label-md font-semibold text-primary">Dr. Bambang W., M.T.</p>
-                <p class="font-body-sm text-body-sm text-outline">(NIP: 198003152005011002)</p>
-              </td>
-              <td class="whitespace-nowrap px-5 py-4 text-right font-body-sm text-body-sm text-on-surface-variant">
-                <p>Dibuat: 24 Februari 2026</p>
-                <p>Berakhir: 24 Februari 2027</p>
-              </td>
-              <td class="px-5 py-4 text-center">
-                <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[#bbf7d0] bg-[#dcfce7] px-2.5 py-1 text-[11px] font-bold text-[#15803d]">
-                  <span class="material-symbols-outlined text-[14px]" aria-hidden="true">check</span>
-                  Sedang Digunakan
-                </span>
-              </td>
-              <td class="px-5 py-4">
-                <div class="flex items-center justify-end gap-3">
-                  <button type="button" class="inline-flex items-center gap-1.5 rounded border border-outline-variant px-3 py-1.5 font-label-md text-label-md font-semibold text-on-surface transition-colors hover:bg-surface-container-low">
-                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
-                    History
-                  </button>
-                  <button type="button" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded bg-[#ba1a1a] px-3 py-1.5 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#93000a]">
-                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">disabled_by_default</span>
-                    Cabut Sertifikat
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr class="text-sm text-on-surface">
-              <td class="whitespace-nowrap px-5 py-4 font-label-md text-label-md font-semibold text-primary">CERT-PNJ-TIK-2026-0001</td>
-              <td class="px-5 py-4">
-                <p class="font-label-md text-label-md font-semibold text-primary">Dr. Bambang W., M.T.</p>
-                <p class="font-body-sm text-body-sm text-outline">(NIP: 198003152005011002)</p>
-              </td>
-              <td class="whitespace-nowrap px-5 py-4 text-right font-body-sm text-body-sm text-on-surface-variant">
-                <p>Dibuat: 1 Februari 2026</p>
-                <p>Berakhir: 24 Februari 2026</p>
-              </td>
-              <td class="px-5 py-4 text-center">
-                <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[#f1c5c1] bg-[#fff1f0] px-2.5 py-1 text-[11px] font-semibold text-error">
-                  <span class="material-symbols-outlined text-[14px]" aria-hidden="true">cancel</span>
-                  Tidak Digunakan
-                </span>
-              </td>
-              <td class="px-5 py-4">
-                <div class="flex items-center justify-end gap-3">
-                  <button type="button" class="inline-flex items-center gap-1.5 rounded border border-outline-variant px-3 py-1.5 font-label-md text-label-md font-semibold text-on-surface transition-colors hover:bg-surface-container-low">
-                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
-                    History
-                  </button>
-                  <button type="button" disabled class="inline-flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap rounded bg-[#ba1a1a]/50 px-3 py-1.5 font-label-md text-label-md font-semibold text-white">
-                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">disabled_by_default</span>
-                    Cabut Sertifikat
-                  </button>
-                </div>
-              </td>
-            </tr>
+            <?php $certificates = $data['certificates'] ?? []; ?>
+            <?php foreach ($certificates as $certificate): ?>
+              <?php
+              $status = $certificate['status'] ?? '';
+              $statusLabels = [
+                  'ACTIVE' => ['Aktif', 'border-[#bbf7d0] bg-[#dcfce7] text-[#15803d]', 'check'],
+                  'REVOKED' => ['Dicabut', 'border-[#f1c5c1] bg-[#fff1f0] text-error', 'cancel'],
+                  'EXPIRED' => ['Kedaluwarsa', 'border-outline-variant bg-surface-container-low text-on-surface-variant', 'schedule'],
+              ];
+              [$statusLabel, $statusClasses, $statusIcon] = $statusLabels[$status] ?? [
+                  htmlspecialchars($status !== '' ? $status : 'Tidak diketahui', ENT_QUOTES, 'UTF-8'),
+                  'border-outline-variant bg-surface-container-low text-on-surface-variant',
+                  'help',
+              ];
+              ?>
+              <tr class="text-sm text-on-surface">
+                <td class="whitespace-nowrap px-5 py-4 font-label-md text-label-md font-semibold text-primary">
+                  <?= htmlspecialchars($certificate['certificate_serial'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
+                </td>
+                <td class="px-5 py-4">
+                  <p class="font-label-md text-label-md font-semibold text-primary">
+                    <?= htmlspecialchars($data['user']['full_name'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
+                  </p>
+                  <p class="font-body-sm text-body-sm text-outline">
+                    (NIP/NIM: <?= htmlspecialchars($certificate['identity_number'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>)
+                  </p>
+                </td>
+                <td class="whitespace-nowrap px-5 py-4  font-body-sm text-body-sm text-on-surface-variant">
+                  <p>Dibuat: <?= !empty($certificate['valid_from']) ? htmlspecialchars(date('d F Y', strtotime($certificate['valid_from'])), ENT_QUOTES, 'UTF-8') : '-'; ?></p>
+                  <?php if ($status === 'ACTIVE'): ?>
+                    <p>Berakhir: <?= !empty($certificate['valid_until']) ? htmlspecialchars(date('d F Y', strtotime($certificate['valid_until'])), ENT_QUOTES, 'UTF-8') : '-'; ?></p>
+                  <?php endif; ?>
+                  <?php if ($status === 'REVOKED' && !empty($certificate['revoked_at'])): ?>
+                    <p>Dicabut: <?= htmlspecialchars(date('d F Y', strtotime($certificate['revoked_at'])), ENT_QUOTES, 'UTF-8'); ?></p>
+                  <?php endif; ?>
+                </td>
+                <td class="px-5 py-4 text-center">
+                  <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold <?= $statusClasses; ?>">
+                    <span class="material-symbols-outlined text-[14px]" aria-hidden="true"><?= $statusIcon; ?></span>
+                    <?= $statusLabel; ?>
+                  </span>
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center justify-end">
+                    <?php if ($status === 'ACTIVE'): ?>
+                      <button type="button" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded bg-[#ba1a1a] px-3 py-1.5 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#93000a]">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">disabled_by_default</span>
+                        Cabut Sertifikat
+                      </button>
+                    <?php elseif ($status === 'REVOKED'): ?>
+                      <span class="text-xs text-on-surface-variant">Sertifikat sudah dicabut</span>
+                    <?php else: ?>
+                      <span class="text-xs text-on-surface-variant">-</span>
+                    <?php endif; ?>
+                  </div>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+            <?php if (empty($certificates)): ?>
+              <tr>
+                <td class="px-5 py-8 text-center text-sm text-on-surface-variant" colspan="5">
+                  Anda belum memiliki sertifikat digital.
+                </td>
+              </tr>
+            <?php endif; ?>
           </tbody>
         </table>
       </div>
 
       <footer class="flex flex-col gap-4 border-t border-outline-variant bg-surface-container-low p-4 lg:flex-row lg:items-center lg:justify-between">
         <p class="font-body-sm text-body-sm text-on-surface-variant">
-          Menampilkan <strong class="text-primary">4</strong> dari <strong class="text-primary">58</strong> permohonan aktif
+          Menampilkan <strong class="text-primary"><?= count($certificates); ?></strong> sertifikat
         </p>
-        <div class="flex flex-wrap items-center justify-center gap-2">
-          <button type="button" disabled class="rounded border border-outline-variant bg-white px-3 py-1.5 font-label-md text-label-md font-semibold text-on-surface-variant opacity-50">Sebelumnya</button>
-          <span class="px-3 py-1 font-label-md text-label-md font-semibold text-primary">Halaman 1 dari 15</span>
-          <button type="button" class="rounded border border-outline-variant bg-white px-3 py-1.5 font-label-md text-label-md font-semibold text-on-surface transition-colors hover:bg-surface-container-lowest">Selanjutnya</button>
-        </div>
         <a href="/Tandain/certificate/create" class="inline-flex items-center justify-center gap-1.5 rounded bg-[#004b87] px-3.5 py-2 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#003865]">
           <span class="material-symbols-outlined text-[16px]" aria-hidden="true">note_add</span>
           Buat Sertifikat Baru

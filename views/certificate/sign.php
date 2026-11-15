@@ -2,7 +2,17 @@
 <?php require_once 'views/layouts/sidebar.php'; ?>
 <?php require_once 'views/layouts/navbar.php'; ?>
 
-<?php $signatureUserName = $data['user']['full_name'] ?? 'Pengguna'; ?>
+<?php
+$signatureUserName = $data['user']['full_name'] ?? 'Pengguna';
+$storedSignaturePath = $data['user']['signature_image_path'] ?? '';
+$signaturePreviewUrl = '/Tandain/assets/img/signature-sample.png';
+if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za-z0-9._-]+\.png\z/D', $storedSignaturePath)) {
+    $storedSignatureFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $storedSignaturePath);
+    if (is_file($storedSignatureFile)) {
+        $signaturePreviewUrl = '/Tandain/' . $storedSignaturePath . '?v=' . filemtime($storedSignatureFile);
+    }
+}
+?>
 
   <main class="flex-1 w-full p-8 flex flex-col gap-6">
     <section class="flex flex-col gap-1">
@@ -37,27 +47,20 @@
             <span class="material-symbols-outlined text-[14px]" aria-hidden="true">verified</span>
             Tanda Tangan Aktif Digunakan
           </span>
-          <span class="font-label-md text-label-md text-outline">Dimensi: 1080 × 480 px</span>
         </div>
 
         <div class="relative flex min-h-[280px] flex-wrap items-center justify-center gap-6 overflow-hidden rounded border border-outline-variant bg-[#f1f5f9] p-6 shadow-inner">
           <div class="flex h-40 w-full max-w-[448px] items-center justify-center bg-white shadow-sm">
-            <img id="signature-preview" class="max-h-24 max-w-[240px] object-contain" src="/Tandain/assets/img/signature-sample.png" alt="Pratinjau tanda tangan">
+            <img id="signature-preview" class="max-h-24 max-w-[240px] object-contain" src="<?= htmlspecialchars($signaturePreviewUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Pratinjau tanda tangan">
           </div>
 
           <div class="flex w-full max-w-[448px] items-center justify-center bg-white p-4 shadow-sm">
-            <div class="relative h-32 w-32 shrink-0" aria-label="Kode QR verifikasi">
-              <img class="absolute left-0 top-0 h-32 w-32" src="/Tandain/assets/img/signature-qr-base.svg" alt="">
-              <img class="absolute left-[3px] top-[3px] h-[122.435px] w-[122.433px]" src="/Tandain/assets/img/signature-qr-pattern.svg" alt="">
-              <img class="absolute left-[3px] top-[3px] h-[25.971px] w-[25.971px]" src="/Tandain/assets/img/signature-qr-corner-top-left.svg" alt="">
-              <img class="absolute left-[10px] top-[10px] h-[11.13px] w-[11.13px]" src="/Tandain/assets/img/signature-qr-dot-top-left.svg" alt="">
-              <img class="absolute left-[99px] top-[3px] h-[25.971px] w-[25.971px]" src="/Tandain/assets/img/signature-qr-corner-top-right.svg" alt="">
-              <img class="absolute left-[107px] top-[10px] h-[11.13px] w-[11.13px]" src="/Tandain/assets/img/signature-qr-dot-top-right.svg" alt="">
-              <img class="absolute left-[3px] top-[99px] h-[25.971px] w-[25.971px]" src="/Tandain/assets/img/signature-qr-corner-bottom-left.svg" alt="">
-              <img class="absolute left-[10px] top-[107px] h-[11.13px] w-[11.13px]" src="/Tandain/assets/img/signature-qr-dot-bottom-left.svg" alt="">
+            <div class="flex h-32 w-32 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant bg-surface-container-low px-3 text-center" aria-label="Kode QR verifikasi per dokumen">
+              <span class="material-symbols-outlined text-[38px] text-secondary" aria-hidden="true">qr_code_2</span>
+              <span class="mt-1 font-label-md text-label-md font-semibold text-primary">QR per dokumen</span>
             </div>
             <div class="ml-1 flex min-h-[128px] min-w-0 flex-col items-center justify-center border-y border-r border-black px-2">
-              <img class="h-[85px] w-[212px] max-w-full object-contain" src="/Tandain/assets/img/signature-sample.png" alt="Contoh tanda tangan digital">
+              <img id="signed-signature-preview" class="h-[85px] w-[212px] max-w-full object-contain" src="<?= htmlspecialchars($signaturePreviewUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Contoh tanda tangan digital">
               <span class="self-start text-[10px] text-black">Digitally Signed | Tandain.pnj.ac.id</span>
             </div>
           </div>
@@ -90,19 +93,23 @@
         </div>
 
         <div id="upload-panel" role="tabpanel" aria-labelledby="upload-tab">
+          <input id="signature-csrf-token" type="hidden" value="<?= htmlspecialchars($data['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
           <label id="upload-dropzone" class="flex min-h-[146px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low p-6 text-center transition-colors hover:border-secondary">
             <span class="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container-high">
               <span class="material-symbols-outlined text-[24px] text-primary" aria-hidden="true">cloud_upload</span>
             </span>
             <span class="font-body-md text-body-md font-medium text-primary">Tarik berkas PNG transparan ke sini atau <span class="font-semibold text-secondary underline">pilih berkas dari komputer</span>.</span>
             <span class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Maksimal 2MB, latar belakang transparan.</span>
+            <span id="upload-preview-container" class="mt-4 hidden w-full max-w-[320px] rounded-lg border border-outline-variant bg-white p-3">
+              <img id="upload-preview-image" class="mx-auto max-h-32 max-w-full object-contain" alt="Pratinjau berkas tanda tangan yang dipilih">
+            </span>
             <input id="signature-file" class="sr-only" type="file" accept="image/png">
           </label>
         </div>
 
         <div id="draw-panel" class="hidden flex-col gap-3" role="tabpanel" aria-labelledby="draw-tab" hidden>
           <div class="overflow-hidden rounded-lg border-2 border-dashed border-outline-variant bg-white">
-            <canvas id="signature-canvas" class="block h-40 w-full touch-none cursor-crosshair"></canvas>
+            <canvas id="signature-canvas" class="block h-full w-full touch-none cursor-crosshair"></canvas>
           </div>
           <div class="flex items-center justify-between gap-3">
             <p class="font-body-sm text-body-sm text-on-surface-variant">Goreskan tanda tangan Anda pada area kanvas.</p>
@@ -133,11 +140,16 @@
       const drawPanel = document.getElementById('draw-panel');
       const fileInput = document.getElementById('signature-file');
       const dropzone = document.getElementById('upload-dropzone');
+      const uploadPreviewContainer = document.getElementById('upload-preview-container');
+      const uploadPreviewImage = document.getElementById('upload-preview-image');
       const canvas = document.getElementById('signature-canvas');
       const preview = document.getElementById('signature-preview');
+      const signedPreview = document.getElementById('signed-signature-preview');
       const feedback = document.getElementById('signature-feedback');
+      const updateButton = document.getElementById('update-signature');
       const context = canvas.getContext('2d');
       let selectedImage = null;
+      let selectedFile = null;
       let drawing = false;
       let changed = false;
 
@@ -149,6 +161,11 @@
       const clearFeedback = () => {
         feedback.textContent = '';
         feedback.classList.add('hidden');
+      };
+
+      const clearUploadPreview = () => {
+        uploadPreviewImage.removeAttribute('src');
+        uploadPreviewContainer.classList.add('hidden');
       };
 
       const setMode = (mode) => {
@@ -168,6 +185,9 @@
         drawTab.classList.toggle('text-on-surface-variant', !drawMode);
         drawTab.setAttribute('aria-selected', String(drawMode));
         changed = false;
+        if (drawMode) {
+          selectedFile = null;
+        }
         clearFeedback();
       };
 
@@ -177,26 +197,46 @@
         if (file.type !== 'image/png') {
           showFeedback('Pilih berkas PNG.');
           fileInput.value = '';
+          selectedImage = null;
+          selectedFile = null;
+          changed = false;
+          clearUploadPreview();
           return;
         }
         if (file.size > 2 * 1024 * 1024) {
           showFeedback('Ukuran berkas maksimal 2MB.');
           fileInput.value = '';
+          selectedImage = null;
+          selectedFile = null;
+          changed = false;
+          clearUploadPreview();
           return;
         }
 
+        selectedFile = file;
         const reader = new FileReader();
         reader.onload = () => {
           const image = new Image();
           image.onload = () => {
             selectedImage = image;
             changed = true;
-            showFeedback('Berkas siap dipratinjau. Klik “Perbarui Tanda Tangan” untuk memperbarui pratinjau.');
+            uploadPreviewImage.src = image.src;
+            uploadPreviewContainer.classList.remove('hidden');
+            showFeedback('Pratinjau berkas berhasil dimuat. Klik “Perbarui Tanda Tangan” untuk menerapkannya.');
           };
-          image.onerror = () => showFeedback('Berkas PNG tidak dapat dibaca.');
+          image.onerror = () => {
+            selectedImage = null;
+            selectedFile = null;
+            changed = false;
+            clearUploadPreview();
+            showFeedback('Berkas PNG tidak dapat dibaca.');
+          };
           image.src = reader.result;
         };
-        reader.onerror = () => showFeedback('Berkas tidak dapat dibaca. Silakan pilih ulang.');
+        reader.onerror = () => {
+          clearUploadPreview();
+          showFeedback('Berkas tidak dapat dibaca. Silakan pilih ulang.');
+        };
         reader.readAsDataURL(file);
       };
 
@@ -227,6 +267,7 @@
       drawTab.addEventListener('click', () => {
         setMode('draw');
         selectedImage = null;
+        clearUploadPreview();
         requestAnimationFrame(resizeCanvas);
       });
       fileInput.addEventListener('change', () => loadFile(fileInput.files[0]));
@@ -265,19 +306,51 @@
         selectedImage = null;
         clearFeedback();
       });
-      document.getElementById('update-signature').addEventListener('click', () => {
+      updateButton.addEventListener('click', async () => {
         clearFeedback();
         if (!changed) {
           showFeedback('Unggah berkas PNG atau buat tanda tangan di kanvas terlebih dahulu.');
           return;
         }
-        if (selectedImage) {
-          preview.src = selectedImage.src;
-        } else {
-          preview.src = canvas.toDataURL('image/png');
+
+        updateButton.disabled = true;
+        updateButton.classList.add('opacity-60', 'cursor-wait');
+        try {
+          const formData = new FormData();
+          formData.append('csrf_token', document.getElementById('signature-csrf-token').value);
+          if (selectedFile) {
+            formData.append('signature_file', selectedFile, selectedFile.name);
+          } else {
+            const imageBlob = await new Promise((resolve, reject) => {
+              canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Gagal menyiapkan gambar dari kanvas.')), 'image/png');
+            });
+            formData.append('signature_file', imageBlob, 'signature.png');
+          }
+
+          const response = await fetch('/Tandain/certificate/updateSignature', {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.message || 'Gagal menyimpan tanda tangan.');
+          }
+
+          preview.src = result.image_url;
+          signedPreview.src = result.image_url;
+          selectedImage = null;
+          selectedFile = null;
+          fileInput.value = '';
+          changed = false;
+          clearUploadPreview();
+          showFeedback(result.message);
+        } catch (error) {
+          showFeedback(error.message || 'Terjadi kesalahan saat menyimpan tanda tangan.');
+        } finally {
+          updateButton.disabled = false;
+          updateButton.classList.remove('opacity-60', 'cursor-wait');
         }
-        changed = false;
-        showFeedback('Pratinjau diperbarui untuk sesi ini. Perubahan belum disimpan ke akun.');
       });
 
       window.addEventListener('resize', () => {

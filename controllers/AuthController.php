@@ -19,11 +19,11 @@ class AuthController extends Controller
 
             $data['username'] = $username;
 
-            if (empty($username) || empty($password) || empty($captcha)) {
+            if (empty($username) || empty($password)) {
                 $data['error'] = 'Data tidak boleh kosong.';
 
-            } elseif ($captcha !== ($_SESSION['captcha_code'] ?? '')) {
-                $data['error'] = 'Kode captcha salah.';
+            // } elseif ($captcha !== ($_SESSION['captcha_code'] ?? '')) {
+            //     $data['error'] = 'Kode captcha salah.';
 
             } else {
                 $userModel = $this->model('User');

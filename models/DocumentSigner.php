@@ -10,15 +10,324 @@ class DocumentSigner
         $this->db = new Database;
     }
 
-    public function getByDocumentId($documentId)
+    public function getSignerByDocumentId($documentId)
     {
-        $sql = "SELECT ds.*, u.full_name AS signer_name, u.identity_number AS signer_nim_nip, u.email AS signer_email, u.position AS signer_position, CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert FROM " . $this->table . " ds JOIN users u ON u.id = ds.signer_id LEFT JOIN signer_certificates sc ON sc.user_id = u.id AND sc.status = 'ACTIVE' WHERE ds.document_id = :document_id ORDER BY ds.signing_order ASC";
+        $sql = "SELECT
+            ds.*,
+            u.full_name AS signer_name,
+            u.signature_image_path AS signer_signature_image_path,
+            d.original_file_path AS original_file_path,
+            u.identity_number AS signer_nim_nip,
+            u.email AS signer_email,
+            u.position AS signer_position,
+            CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert
+        FROM " . $this->table . " ds
+        JOIN users u ON u.id = ds.signer_id
+        JOIN documents d ON d.id = ds.document_id
+        LEFT JOIN signer_certificates sc
+            ON sc.user_id = u.id AND sc.status = 'ACTIVE'
+        WHERE ds.document_id = :document_id
+        ORDER BY ds.signing_order ASC";
 
         $this->db->query($sql);
         $this->db->bind('document_id', $documentId);
 
         return $this->db->resultSet();
     }
+
+    public function getDetailDocumentById($documentId, $signerId)
+    {
+        $sql = "SELECT
+            d.*,
+            d.created_at AS submitted_at,
+            req.full_name AS requester_name,
+            req.identity_number AS requester_nim,
+            req.email AS requester_email,
+            req.position AS requester_position,
+            ds.status AS signer_status,
+            ds.stamp_type AS signer_stamp_type
+        FROM documents d
+        JOIN document_signers ds ON ds.document_id = d.id
+        JOIN users req ON req.id = d.requester_id
+        WHERE d.id = :document_id
+          AND ds.signer_id = :signer_id
+        LIMIT 1";
+
+        $this->db->query($sql);
+        $this->db->bind('document_id', $documentId);
+        $this->db->bind('signer_id', $signerId);
+
+        return $this->db->single();
+    }
+
+    public function updateStampType($documentId, $signerId, $stampType)
+    {
+        $this->db->query(
+            "UPDATE " . $this->table . "
+             SET stamp_type = :stamp_type
+             WHERE document_id = :document_id
+               AND signer_id = :signer_id
+               AND status = 'CURRENT_TURN'"
+        );
+        $this->db->bind('stamp_type', $stampType);
+        $this->db->bind('document_id', $documentId);
+        $this->db->bind('signer_id', $signerId);
+
+        return $this->db->execute() && $this->db->rowCount() > 0;
+    }
+
+    public function agreeDocument($documentId, $signerId, $passphrase)
+    {
+        if (!is_string($passphrase) || $passphrase === '') {
+            return ['ok' => false, 'message' => 'Passphrase sertifikat wajib diisi.'];
+        }
+
+        if (!function_exists('openssl_pkey_get_private') || !function_exists('openssl_sign')) {
+            return ['ok' => false, 'message' => 'Fitur tanda tangan digital tidak tersedia di server.'];
+        }
+
+        $pdo = $this->db->getConnection();
+
+        try {
+            $pdo->beginTransaction();
+
+            $documentQuery = $pdo->prepare(
+                "SELECT id, status, original_file_path, initial_sha256_hash, is_sequential
+                 FROM documents
+                 WHERE id = ?
+                 FOR UPDATE"
+            );
+            $documentQuery->execute([$documentId]);
+            $document = $documentQuery->fetch(PDO::FETCH_ASSOC);
+
+            if (!$document || $document['status'] !== 'IN_PROGRESS') {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Dokumen tidak sedang menunggu tanda tangan.'];
+            }
+
+            $signerQuery = $pdo->prepare(
+                "SELECT id, signing_order, status, stamp_type, page_number, coord_x, coord_y
+                 FROM document_signers
+                 WHERE document_id = ? AND signer_id = ?
+                 FOR UPDATE"
+            );
+            $signerQuery->execute([$documentId, $signerId]);
+            $signer = $signerQuery->fetch(PDO::FETCH_ASSOC);
+
+            if (!$signer || $signer['status'] !== 'CURRENT_TURN') {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Dokumen tidak sedang menunggu giliran Anda.'];
+            }
+
+            $relativePath = $document['original_file_path'];
+            if (!is_string($relativePath) || !preg_match('/\Auploads\/documents\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath)) {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Berkas dokumen tidak valid.'];
+            }
+
+            $documentPath = dirname(__DIR__) . DIRECTORY_SEPARATOR
+                . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+            $actualHash = is_file($documentPath) ? hash_file('sha256', $documentPath) : false;
+
+            if (!is_string($actualHash) || !hash_equals($document['initial_sha256_hash'], $actualHash)) {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Berkas dokumen tidak tersedia atau telah berubah.'];
+            }
+
+            $certificateQuery = $pdo->prepare(
+                "SELECT id, certificate_serial, public_key, encrypted_private_key
+                 FROM signer_certificates
+                 WHERE user_id = ?
+                   AND status = 'ACTIVE'
+                   AND valid_from <= CURRENT_TIMESTAMP
+                   AND valid_until >= CURRENT_TIMESTAMP
+                 ORDER BY created_at DESC
+                 LIMIT 1
+                 FOR UPDATE"
+            );
+            $certificateQuery->execute([$signerId]);
+            $certificate = $certificateQuery->fetch(PDO::FETCH_ASSOC);
+
+            if (!$certificate) {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Sertifikat aktif tidak ditemukan atau sudah kedaluwarsa.'];
+            }
+
+            $privateKey = openssl_pkey_get_private($certificate['encrypted_private_key'], $passphrase);
+            if ($privateKey === false) {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Passphrase sertifikat tidak benar.'];
+            }
+
+            $privateDetails = openssl_pkey_get_details($privateKey);
+            $publicKey = openssl_pkey_get_public($certificate['public_key']);
+            $publicDetails = $publicKey === false ? false : openssl_pkey_get_details($publicKey);
+
+            if (
+                $privateDetails === false
+                || $publicDetails === false
+                || !isset($privateDetails['key'], $publicDetails['key'])
+                || !hash_equals(trim($publicDetails['key']), trim($privateDetails['key']))
+            ) {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Kunci sertifikat tidak cocok. Hubungi administrator.'];
+            }
+
+            $signedAt = $pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();
+            $payload = json_encode([
+                'version' => 1,
+                'document_id' => $documentId,
+                'document_sha256' => $document['initial_sha256_hash'],
+                'signer_id' => $signerId,
+                'certificate_serial' => $certificate['certificate_serial'],
+                'signed_at' => $signedAt,
+                'signing_order' => (int) $signer['signing_order'],
+                'stamp_type' => $signer['stamp_type'],
+                'page_number' => (int) $signer['page_number'],
+                'coord_x' => sprintf('%.12F', (float) $signer['coord_x']),
+                'coord_y' => sprintf('%.12F', (float) $signer['coord_y']),
+            ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+            if (!openssl_sign($payload, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Tanda tangan digital gagal dibuat. Silakan coba lagi.'];
+            }
+
+            if (openssl_verify($payload, $signature, $publicKey, OPENSSL_ALGO_SHA256) !== 1) {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Tanda tangan digital gagal diverifikasi. Silakan coba lagi.'];
+            }
+
+            $signatureValue = json_encode([
+                'algorithm' => 'RSA-SHA256',
+                'payload' => base64_encode($payload),
+                'signature' => base64_encode($signature),
+            ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+            $updateSigner = $pdo->prepare(
+                "UPDATE document_signers
+                 SET status = 'SIGNED',
+                     certificate_id = ?,
+                     parent_hash = ?,
+                     signed_hash = ?,
+                     signature_value = ?,
+                     signed_at = ?
+                 WHERE id = ? AND status = 'CURRENT_TURN'"
+            );
+            $updateSigner->execute([
+                $certificate['id'],
+                $document['initial_sha256_hash'],
+                hash('sha256', $payload),
+                $signatureValue,
+                $signedAt,
+                $signer['id'],
+            ]);
+
+            if ($updateSigner->rowCount() !== 1) {
+                throw new RuntimeException('Signer status changed while signing.');
+            }
+
+            $isSequential = in_array($document['is_sequential'], [true, 1, '1', 't', 'true'], true);
+            if ($isSequential) {
+                $nextSignerQuery = $pdo->prepare(
+                    "SELECT id
+                     FROM document_signers
+                     WHERE document_id = ? AND status = 'WAITING'
+                     ORDER BY signing_order ASC
+                     LIMIT 1
+                     FOR UPDATE"
+                );
+                $nextSignerQuery->execute([$documentId]);
+                $nextSignerId = $nextSignerQuery->fetchColumn();
+
+                if ($nextSignerId !== false) {
+                    $pdo->prepare(
+                        "UPDATE document_signers SET status = 'CURRENT_TURN' WHERE id = ? AND status = 'WAITING'"
+                    )->execute([$nextSignerId]);
+                }
+            }
+
+            $remainingQuery = $pdo->prepare(
+                "SELECT COUNT(*)
+                 FROM document_signers
+                 WHERE document_id = ? AND status <> 'SIGNED'"
+            );
+            $remainingQuery->execute([$documentId]);
+            $completed = (int) $remainingQuery->fetchColumn() === 0;
+
+            if ($completed) {
+                $pdo->prepare(
+                    "UPDATE documents
+                     SET status = 'COMPLETED',
+                         final_file_path = original_file_path,
+                         final_sha256_hash = initial_sha256_hash,
+                         completed_at = CURRENT_TIMESTAMP
+                     WHERE id = ? AND status = 'IN_PROGRESS'"
+                )->execute([$documentId]);
+            }
+
+            $pdo->prepare(
+                "INSERT INTO document_audit_logs (document_id, user_id, action, notes)
+                 VALUES (?, ?, 'DOCUMENT_SIGNED', ?)"
+            )->execute([
+                $documentId,
+                $signerId,
+                'Tanda tangan digital RSA-SHA256 dibubuhkan menggunakan sertifikat ' . $certificate['certificate_serial'] . '.',
+            ]);
+
+            $pdo->commit();
+
+            return ['ok' => true, 'completed' => $completed];
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $exception;
+        }
+    }
+
+    public function getDocumentsBySignerId($userId)
+    {
+        $sql = "SELECT 
+            ds.id AS signer_row_id,
+            ds.signing_order,
+            ds.status AS signer_status,
+            ds.stamp_type AS signer_stamp_type,
+            ds.page_number AS signer_page_number,
+            ds.coord_x AS signer_coord_x,
+            ds.coord_y AS signer_coord_y,
+            d.id AS document_id,
+            d.document_number,
+            d.title AS document_title,
+            d.status AS document_status,
+            d.routing_type AS document_routing_type,
+            d.created_at AS submitted_at,
+            req.id AS requester_id,
+            req.full_name AS requester_name,
+            req.identity_number AS requester_nim_nip,
+            requester_role.name AS requester_role_name,
+            req.email AS requester_email,
+            req.position AS requester_position,
+            CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert
+        FROM " . $this->table . " ds
+        JOIN documents d ON d.id = ds.document_id
+        JOIN users req ON req.id = d.requester_id
+        JOIN roles requester_role ON requester_role.id = req.role_id
+        LEFT JOIN signer_certificates sc ON sc.user_id = ds.signer_id AND sc.status = 'ACTIVE'
+        WHERE ds.signer_id = :signer_id
+          AND ds.status = 'CURRENT_TURN'
+          AND d.status = 'IN_PROGRESS'
+        ORDER BY d.created_at DESC";
+
+
+        $this->db->query($sql);
+        $this->db->bind('signer_id', $userId);
+
+        return $this->db->resultSet();
+    }
+
+
 
     public function createSigner($data)
     {

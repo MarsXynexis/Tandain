@@ -41,6 +41,12 @@ class App
 
                 unset($url[0]);
 
+            } elseif ($url[0] === 'verify') {
+                $this->controller = 'VerificationController';
+                $this->method = 'index';
+
+                unset($url[0]);
+
             } else {
                 $formattedController = str_replace(' ', '', ucwords(str_replace('-', ' ', $url[0])));
 

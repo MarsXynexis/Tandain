@@ -1,4 +1,5 @@
 .env
+vendor/
 _previews/
 uploads/
 AGENTS.md

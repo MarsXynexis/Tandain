@@ -123,6 +123,15 @@ class User
         return $this->db->execute();
     }
 
+    public function updateSignatureImagePath($id, $path)
+    {
+        $this->db->query("UPDATE " . $this->table . " SET signature_image_path = :path, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $this->db->bind('id', $id);
+        $this->db->bind('path', $path);
+
+        return $this->db->execute();
+    }
+
     public function getAssignableSignersByIds($ids)
     {
         if (empty($ids)) {

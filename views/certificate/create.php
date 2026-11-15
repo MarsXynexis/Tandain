@@ -38,15 +38,16 @@
         </div>
       </div>
 
-      <form class="flex flex-col gap-4" method="POST" action="/Tandain/certificate/create">
+      <form class="flex flex-col gap-4" method="POST" action="/Tandain/certificate/store">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($data['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
         <div class="flex flex-col gap-1.5">
-          <label class="font-label-md text-label-md font-semibold text-on-surface-variant" for="passphrase">Passphrase (minimal 8 karakter unik)</label>
-          <input class="h-10 w-full rounded-lg border border-outline-variant bg-white px-3 text-sm text-primary placeholder:text-on-surface-variant/50 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary" id="passphrase" name="passphrase" placeholder="Minimal 8 karakter" type="password" minlength="8" autocomplete="new-password" required>
+          <label class="font-label-md text-label-md font-semibold text-on-surface-variant" for="passphrase">Passphrase (minimal 4 karakter unik)</label>
+          <input class="h-10 w-full rounded-lg border border-outline-variant bg-white px-3 text-sm text-primary placeholder:text-on-surface-variant/50 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary" id="passphrase" name="passphrase" placeholder="Minimal 4 karakter" type="password" minlength="4" autocomplete="new-password" required>
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="font-label-md text-label-md font-semibold text-on-surface-variant" for="passphrase-confirmation">Konfirmasi Passphrase</label>
-          <input class="h-10 w-full rounded-lg border border-outline-variant bg-white px-3 text-sm text-primary placeholder:text-on-surface-variant/50 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary" id="passphrase-confirmation" name="passphrase_confirmation" placeholder="Ulangi passphrase" type="password" minlength="8" autocomplete="new-password" required>
+          <input class="h-10 w-full rounded-lg border border-outline-variant bg-white px-3 text-sm text-primary placeholder:text-on-surface-variant/50 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary" id="passphrase-confirmation" name="passphrase_confirmation" placeholder="Ulangi passphrase" type="password" minlength="4" autocomplete="new-password" required>
         </div>
 
         <div class="flex flex-col gap-1.5">

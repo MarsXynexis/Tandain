@@ -155,7 +155,79 @@
     </div>
   </header>
 
-  <?php if ($status === 'success' || $status === 'expired'): ?>
+  <?php if ($status === 'document' || $status === 'not_found'): ?>
+
+    <?php if ($status === 'document'): ?>
+      <?php
+      $verifiedDocument = $data['document'];
+      $documentStatusLabels = [
+          'DRAFT' => 'Draf',
+          'PENDING_TRIAGE' => 'Menunggu Disposisi',
+          'IN_PROGRESS' => 'Sedang Diproses',
+          'COMPLETED' => 'Selesai',
+          'REJECTED' => 'Ditolak',
+          'CANCELLED' => 'Dibatalkan',
+      ];
+      ?>
+      <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
+        <div class="max-w-4xl mx-auto space-y-6">
+          <section class="rounded-xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+            <h1 class="font-headline-lg text-headline-lg font-bold text-primary">Dokumen Terdaftar</h1>
+            <p class="mt-1 font-body-md text-body-md text-on-surface-variant">ID QR cocok dengan dokumen yang tercatat di Tandain. Status dokumen ditampilkan di bawah.</p>
+          </section>
+
+          <section class="space-y-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
+            <div>
+              <p class="font-label-md text-label-md text-on-surface-variant">Judul Dokumen</p>
+              <h2 class="mt-1 font-headline-sm text-headline-sm font-semibold text-primary"><?= htmlspecialchars($verifiedDocument['title'], ENT_QUOTES, 'UTF-8'); ?></h2>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p class="font-label-md text-label-md text-on-surface-variant">Nomor Dokumen</p>
+                <p class="mt-1 font-body-md text-body-md text-primary"><?= htmlspecialchars($verifiedDocument['document_number'] ?: '-', ENT_QUOTES, 'UTF-8'); ?></p>
+              </div>
+              <div>
+                <p class="font-label-md text-label-md text-on-surface-variant">Pemohon</p>
+                <p class="mt-1 font-body-md text-body-md text-primary"><?= htmlspecialchars($verifiedDocument['requester_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+              </div>
+              <div>
+                <p class="font-label-md text-label-md text-on-surface-variant">Status</p>
+                <p class="mt-1 font-body-md text-body-md font-semibold text-primary"><?= htmlspecialchars($documentStatusLabels[$verifiedDocument['status']] ?? $verifiedDocument['status'], ENT_QUOTES, 'UTF-8'); ?></p>
+              </div>
+              <div>
+                <p class="font-label-md text-label-md text-on-surface-variant">ID Dokumen</p>
+                <p class="mt-1 break-all font-body-sm text-body-sm text-on-surface"><?= htmlspecialchars($verifiedDocument['id'], ENT_QUOTES, 'UTF-8'); ?></p>
+              </div>
+            </div>
+
+            <div class="border-t border-outline-variant/70 pt-4">
+              <h2 class="font-headline-sm text-headline-sm font-semibold text-primary">Penandatangan</h2>
+              <div class="mt-3 divide-y divide-outline-variant/60">
+                <?php foreach ($verifiedDocument['signers'] as $signer): ?>
+                  <div class="flex flex-wrap items-center justify-between gap-2 py-3">
+                    <div>
+                      <p class="font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['full_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                      <p class="font-body-sm text-body-sm text-on-surface-variant"><?= htmlspecialchars($signer['position'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
+                    </div>
+                    <span class="font-label-md text-label-md text-on-surface-variant"><?= htmlspecialchars($signer['status'], ENT_QUOTES, 'UTF-8'); ?></span>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    <?php else: ?>
+      <main class="flex-1 max-w-4xl w-full mx-auto px-6 py-12">
+        <section class="rounded-xl border border-red-200 bg-red-50 p-6 text-center shadow-sm">
+          <h1 class="font-headline-lg text-headline-lg font-bold text-[#b91c1c]">Dokumen Tidak Ditemukan</h1>
+          <p class="mt-2 font-body-md text-body-md text-on-surface-variant">Tautan QR tidak cocok dengan dokumen yang terdaftar.</p>
+          <a class="mt-5 inline-flex rounded-lg bg-[#004b87] px-4 py-2 font-label-md text-label-md font-semibold text-white" href="/Tandain/verification">Kembali</a>
+        </section>
+      </main>
+    <?php endif; ?>
+
+  <?php elseif ($status === 'success' || $status === 'expired'): ?>
 
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
       <div class="max-w-5xl mx-auto space-y-7">
