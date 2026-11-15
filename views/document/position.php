@@ -19,7 +19,7 @@
 
     <div class="flex flex-col lg:flex-row gap-4 items-start">
 
-      <!-- Daftar penandatangan -->
+      
       <aside class="w-full lg:w-72 shrink-0 space-y-2 lg:sticky lg:top-4">
         <h2 class="font-headline-sm text-headline-sm text-primary font-semibold mb-1">Penandatangan</h2>
 
@@ -51,7 +51,7 @@
         <p class="text-xs text-on-surface-variant pt-1">Kotak muncul di halaman yang sedang terlihat dan bisa digeser ke halaman mana pun.</p>
       </aside>
 
-      <!-- Area PDF -->
+      
       <div class="flex-1 min-w-0 w-full">
         <div class="text-sm text-on-surface-variant py-6 text-center" id="pdf-loading">Memuat dokumen...</div>
         <div id="pdf-container" class="space-y-4 overflow-x-auto pb-4"></div>
@@ -90,7 +90,7 @@
     const container = document.getElementById('pdf-container');
     const loading = document.getElementById('pdf-loading');
     const clientError = document.getElementById('client-error');
-    const boxes = {}; // signerId -> elemen kotak
+    const boxes = {};
 
     function showError(msg) {
       clientError.textContent = msg;
@@ -103,9 +103,6 @@
       clientError.textContent = '';
     }
 
-    // ----------------------------------------------------------------
-    // 1. Render semua halaman PDF
-    // ----------------------------------------------------------------
     pdfjsLib.getDocument(PDF_URL).promise
       .then(async (pdf) => {
         loading.remove();
@@ -134,9 +131,6 @@
         loading.classList.add('text-error');
       });
 
-    // ----------------------------------------------------------------
-    // 2. Cari halaman yang paling terlihat di layar
-    // ----------------------------------------------------------------
     function mostVisiblePage() {
       const pages = Array.from(container.querySelectorAll('.pdf-page'));
       let best = null;
@@ -162,9 +156,6 @@
       card.querySelector('.remove-box').classList.toggle('flex-1', placed);
     }
 
-    // ----------------------------------------------------------------
-    // 3. Tambah / hapus kotak
-    // ----------------------------------------------------------------
     document.querySelectorAll('.add-box').forEach((btn) => {
       btn.addEventListener('click', () => {
         clearError();
@@ -183,7 +174,6 @@
         box.style.height = BOX_H + 'px';
         box.style.left = Math.max(0, (wrap.clientWidth - BOX_W) / 2) + 'px';
 
-        // Taruh di bagian atas area yang terlihat pada halaman itu
         const r = wrap.getBoundingClientRect();
         const visibleTop = Math.max(0, -r.top) + 40;
         box.style.top = Math.min(visibleTop, wrap.clientHeight - BOX_H) + 'px';
@@ -207,9 +197,6 @@
       });
     });
 
-    // ----------------------------------------------------------------
-    // 4. Drag (bisa berpindah antar halaman)
-    // ----------------------------------------------------------------
     function makeDraggable(el) {
       el.addEventListener('pointerdown', (e) => {
         e.preventDefault();
@@ -255,9 +242,6 @@
       });
     }
 
-    // ----------------------------------------------------------------
-    // 5. Simpan: kirim halaman + posisi (persen) ke server
-    // ----------------------------------------------------------------
     document.getElementById('positions-form').addEventListener('submit', (e) => {
       clearError();
 

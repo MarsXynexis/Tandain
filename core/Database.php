@@ -29,11 +29,6 @@ class Database
         }
     }
 
-    public function getConnection(): PDO
-{
-    return $this->dbh;
-}
-
     public function query($query)
     {
         $this->stmt = $this->dbh->prepare($query);
@@ -52,17 +47,34 @@ class Database
     public function resultSet()
     {
         $this->execute();
+
         return $this->stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function single()
     {
         $this->execute();
+
         return $this->stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function rowCount()
     {
         return $this->stmt->rowCount();
+    }
+
+    public function beginTransaction()
+    {
+        return $this->dbh->beginTransaction();
+    }
+
+    public function commit()
+    {
+        return $this->dbh->commit();
+    }
+
+    public function rollBack()
+    {
+        return $this->dbh->rollBack();
     }
 }

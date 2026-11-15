@@ -40,7 +40,7 @@
           </button>
         </div>
 
-        <!-- ================= TAB UNGGAH PDF ================= -->
+        
         <div class="space-y-4" id="tab-upload-content">
 
           <div class="border-2 border-dashed border-outline-variant hover:border-secondary rounded-lg p-6 text-center bg-surface hover:bg-surface-container-low transition-colors cursor-pointer group" id="drop-zone">
@@ -76,7 +76,7 @@
 
         </div>
 
-        <!-- ================= TAB TEMPLATE ================= -->
+        
         <div class="space-y-4 hidden" id="tab-template-content">
 
           <div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex items-start gap-3">
@@ -131,7 +131,7 @@
 
       </section>
 
-      <!-- ================= ALUR PENANDATANGAN ================= -->
+      
       <section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 shadow-sm" id="section-signers">
 
         <div class="flex flex-col gap-3 border-b border-surface-container mb-3 pb-3">
@@ -190,12 +190,12 @@
 
           <div class="space-y-2">
 
-            <!-- Daftar penandatangan (diisi lewat JavaScript) -->
+            
             <div class="space-y-2" id="signer-list"></div>
 
             <p class="text-sm text-on-surface-variant py-2" id="signer-empty">Belum ada penandatangan. Klik "Tambah Penandatangan" untuk mencari.</p>
 
-            <!-- Baris pencarian -->
+            
             <div class="hidden relative" id="signer-search-row">
               <div class="flex flex-col md:flex-row items-center justify-between p-3 rounded-lg border border-dashed border-outline bg-surface gap-4">
                 <div class="flex items-center gap-4 flex-1 w-full">
@@ -219,7 +219,7 @@
                 </button>
               </div>
 
-              <!-- Hasil pencarian -->
+              
               <ul class="hidden mt-1 rounded-lg border border-outline-variant bg-white shadow-md divide-y divide-surface-container max-h-64 overflow-auto" id="signer-results"></ul>
             </div>
 
@@ -229,7 +229,7 @@
 
       </section>
 
-      <!-- ================= TUJUAN PENGESAHAN (MODE TEMPLATE) ================= -->
+      
       <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm hidden" id="section-template-approval">
 
         <div class="flex items-center justify-between pb-4 mb-5 border-b border-surface-container">
@@ -276,15 +276,10 @@
   </main>
 
   <script>
-    // ------------------------------------------------------------------
-    // Data dari PHP
-    // $candidates : daftar calon penandatangan (dikirim dari controller)
-    // $user       : user yang sedang login (dari session)
-    // ------------------------------------------------------------------
     const CANDIDATES = <?= json_encode($candidates ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const ME = <?= json_encode([
-      'id'       => $user['id'] ?? '',
-      'name'     => $user['full_name'] ?? ($user['name'] ?? ''),
+      'id' => $user['id'] ?? '',
+      'name' => $user['full_name'] ?? ($user['name'] ?? ''),
       'identity' => $user['identity_number'] ?? '',
       'email'    => $user['email'] ?? '',
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
@@ -305,9 +300,6 @@
       clientError.classList.add('hidden');
     }
 
-    // ------------------------------------------------------------------
-    // Upload file + drag & drop
-    // ------------------------------------------------------------------
     const fileUpload = document.getElementById('file-upload');
     const dropZone = document.getElementById('drop-zone');
     const dropZoneText = document.getElementById('drop-zone-text');
@@ -343,7 +335,6 @@
       dropZoneText.textContent = file.name;
       dropZoneSubtext.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB • Berkas PDF Siap Diunggah';
 
-      // Isi judul otomatis dari nama file kalau masih kosong
       const titleInput = document.getElementById('doc-title');
       if (titleInput && titleInput.value.trim() === '') {
         titleInput.value = file.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ');
@@ -376,9 +367,6 @@
       }
     });
 
-    // ------------------------------------------------------------------
-    // Alur penandatangan
-    // ------------------------------------------------------------------
     const signerList = document.getElementById('signer-list');
     const signerEmpty = document.getElementById('signer-empty');
     const searchRow = document.getElementById('signer-search-row');
@@ -533,14 +521,11 @@
     searchInput.addEventListener('input', runSearch);
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        e.preventDefault(); // jangan submit form
+        e.preventDefault();
         runSearch();
       }
     });
 
-    // ------------------------------------------------------------------
-    // Mode triage (Admin TU yang menentukan penandatangan)
-    // ------------------------------------------------------------------
     const triageCheck = document.getElementById('tu-triage-check');
     const signerSection = document.getElementById('signers-flow-container');
     const sequentialCheck = document.getElementById('sequential-check');
@@ -559,9 +544,6 @@
     triageCheck.addEventListener('change', updateTriageState);
     updateTriageState();
 
-    // ------------------------------------------------------------------
-    // Tab Unggah / Template
-    // ------------------------------------------------------------------
     const tabUploadBtn = document.getElementById('tab-upload-btn');
     const tabTemplateBtn = document.getElementById('tab-template-btn');
     const tabUploadContent = document.getElementById('tab-upload-content');
@@ -578,7 +560,6 @@
     const docExpires = document.getElementById('doc-expires-at');
     const tplExpires = document.getElementById('template-expires-at');
 
-    // Tanggal lokal (bukan UTC) supaya tidak bergeser sehari di zona WIB
     const now = new Date();
     const today = [
       now.getFullYear(),
@@ -620,9 +601,6 @@
       switchTab('template');
     }
 
-    // ------------------------------------------------------------------
-    // Validasi sebelum submit
-    // ------------------------------------------------------------------
     form.addEventListener('submit', (e) => {
       clearError();
 
