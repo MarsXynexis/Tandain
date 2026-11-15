@@ -40,112 +40,289 @@ class DocumentController extends Controller
         $this->authCheck();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            return $this->store();
+            $this->store();
+        } else {
+            $userModel = $this->model('User');
+            $templateModel = $this->model('DocumentTemplate');
+            $currentUser = $userModel->findById($_SESSION['user']['id']);
+
+            $data['title'] = 'Ajukan Dokumen - Tandain';
+            $data['active_menu'] = 'apply';
+            $data['user'] = $currentUser ? $currentUser : $_SESSION['user'];
+            $data['candidates'] = $userModel->getSignerCandidates();
+            $data['templates'] = $templateModel->getActiveTemplates();
+            $data['error'] = $_SESSION['error'] ?? null;
+            unset($_SESSION['error']);
+
+            $this->view('document/create', $data);
         }
-
-        $userModel = $this->model('User');
-
-        $data['title'] = 'Ajukan Dokumen - Tandain';
-        $data['active_menu'] = 'apply';
-        $data['user'] = $_SESSION['user'];
-        $data['candidates'] = $userModel->getSignerCandidates();
-        $data['error'] = $_SESSION['error'] ?? null;
-        unset($_SESSION['error']);
-
-        $this->view('document/create', $data);
     }
 
     private function store()
     {
-        if (($_POST['submission_mode'] ?? 'upload') !== 'upload') {
-            $_SESSION['error'] = 'Mode template surat belum tersedia.';
-
-            $this->redirect('/Tandain/document/create');
-        }
-
+        $submissionMode = trim($_POST['submission_mode'] ?? 'upload');
         $title = trim($_POST['title'] ?? '');
-        $expiresAt = trim($_POST['expires_at'] ?? '') ?: null;
+        $expiresAtInput = trim($_POST['expires_at'] ?? '');
+        $expiresAt = $expiresAtInput !== '' ? $expiresAtInput : null;
         $isTriage = !empty($_POST['is_triage']);
         $sequential = !empty($_POST['is_sequential']);
-        $signerIds = array_values(array_unique($_POST['signers'] ?? []));
+        $rawSigners = is_array($_POST['signers'] ?? null) ? $_POST['signers'] : [];
+        $signerIds = array_values(array_unique(array_filter(array_map('trim', $rawSigners))));
 
-        if ($title === '') {
-            $_SESSION['error'] = 'Judul dokumen wajib diisi.';
+        $errorMessage = '';
+        $template = null;
+        $templateSchema = [];
+        $templateFields = [];
+        $finalTitle = $title;
 
-            $this->redirect('/Tandain/document/create');
+        if ($submissionMode !== 'upload' && $submissionMode !== 'template') {
+            $errorMessage = 'Mode pengajuan dokumen tidak valid.';
+        } elseif ($expiresAt !== null && !$this->isValidDate($expiresAt)) {
+            $errorMessage = 'Batas kedaluwarsa dokumen tidak valid.';
+        } elseif ($submissionMode === 'upload') {
+            if ($title === '') {
+                $errorMessage = 'Judul dokumen wajib diisi.';
+            }
+        } else {
+            $templateModel = $this->model('DocumentTemplate');
+            $templateCheck = $this->validateTemplateSubmission($templateModel);
+
+            if ($templateCheck['error'] !== '') {
+                $errorMessage = $templateCheck['error'];
+            } else {
+                $template = $templateCheck['template'];
+                $templateSchema = $templateCheck['schema'];
+                $templateFields = $templateCheck['fields'];
+
+                if ($finalTitle === '') {
+                    $userFullName = trim($_SESSION['user']['full_name'] ?? '');
+
+                    if ($userFullName === '') {
+                        $userRow = $this->model('User')->findById($_SESSION['user']['id']);
+                        $userFullName = trim($userRow['full_name'] ?? '');
+                    }
+
+                    $autoTitle = $userFullName !== '' ? $template['title'] . ' - ' . $userFullName : $template['title'];
+                    $finalTitle = mb_substr($autoTitle, 0, 255);
+                }
+            }
         }
 
-        if (!$isTriage && count($signerIds) === 0) {
-            $_SESSION['error'] = 'Pilih minimal satu penandatangan.';
-
-            $this->redirect('/Tandain/document/create');
+        if ($errorMessage === '' && !$isTriage && count($signerIds) === 0) {
+            $errorMessage = 'Pilih minimal satu penandatangan.';
         }
 
         $file = $_FILES['document_file'] ?? null;
 
-        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
-            $_SESSION['error'] = 'Berkas PDF wajib diunggah.';
-
-            $this->redirect('/Tandain/document/create');
+        if ($errorMessage === '') {
+            $errorMessage = $this->validateUploadedPdf($file);
         }
 
-        if ($file['size'] > self::MAX_SIZE) {
-            $_SESSION['error'] = 'Ukuran berkas maksimal 2 MB.';
+        $redirectUrl = '/Tandain/document/create';
 
-            $this->redirect('/Tandain/document/create');
+        if ($errorMessage === '') {
+            $dir = dirname(__DIR__) . '/uploads/documents/';
+
+            if (!is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
+
+            $filename = bin2hex(random_bytes(16)) . '.pdf';
+
+            if (!move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+                $errorMessage = 'Gagal menyimpan berkas.';
+            } else {
+                $hash = hash_file('sha256', $dir . $filename);
+                $documentModel = $this->model('Document');
+                $userId = $_SESSION['user']['id'];
+
+                $docData = [
+                    'title' => $finalTitle,
+                    'requester_id' => $userId,
+                    'original_file_path' => 'uploads/documents/' . $filename,
+                    'initial_sha256_hash' => $hash,
+                    'status' => $isTriage ? 'PENDING_TRIAGE' : 'DRAFT',
+                    'routing_type' => $isTriage ? 'TRIAGE_ASSISTED' : 'DIRECT',
+                    'is_sequential' => $sequential,
+                    'expires_at' => $expiresAt
+                ];
+
+                $docId = $documentModel->createDocument($docData, $isTriage ? [] : $signerIds);
+
+                if (!$docId) {
+                    @unlink($dir . $filename);
+
+                    $errorMessage = 'Gagal menyimpan dokumen ke sistem.';
+                } else {
+                    if ($submissionMode === 'template' && $template) {
+                        $auditModel = $this->model('DocumentAuditLog');
+                        $auditNotes = $this->buildTemplateAuditNotes($template, $templateSchema, $templateFields);
+
+                        $auditModel->createLog($docId, $userId, 'DOCUMENT_CREATED_FROM_TEMPLATE', $auditNotes);
+                    }
+
+                    if ($isTriage) {
+                        $redirectUrl = '/Tandain/document';
+                    } else {
+                        $redirectUrl = '/Tandain/document/position/' . $docId;
+                    }
+                }
+            }
         }
 
-        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+        if ($errorMessage !== '') {
+            if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest') {
+                http_response_code(422);
 
-        if ($mime !== 'application/pdf') {
-            $_SESSION['error'] = 'Berkas harus berformat PDF.';
+                header('Content-Type: application/json; charset=utf-8');
 
-            $this->redirect('/Tandain/document/create');
+                echo json_encode(['ok' => false, 'error' => $errorMessage]);
+            } else {
+                $_SESSION['error'] = $errorMessage;
+
+                $this->redirect('/Tandain/document/create');
+            }
+        } else {
+            $this->redirect($redirectUrl);
         }
+    }
 
-        $dir = dirname(__DIR__) . '/uploads/documents/';
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
-        $filename = bin2hex(random_bytes(16)) . '.pdf';
-
-        if (!move_uploaded_file($file['tmp_name'], $dir . $filename)) {
-            $_SESSION['error'] = 'Gagal menyimpan berkas.';
-
-            $this->redirect('/Tandain/document/create');
-        }
-
-        $hash = hash_file('sha256', $dir . $filename);
-        $documentModel = $this->model('Document');
-        $userId = $_SESSION['user']['id'];
-
-        $docData = [
-            'title' => $title,
-            'requester_id' => $userId,
-            'original_file_path' => 'uploads/documents/' . $filename,
-            'initial_sha256_hash' => $hash,
-            'status' => $isTriage ? 'PENDING_TRIAGE' : 'DRAFT',
-            'routing_type' => $isTriage ? 'TRIAGE_ASSISTED' : 'DIRECT',
-            'is_sequential' => $sequential,
-            'expires_at' => $expiresAt
+    private function validateTemplateSubmission($templateModel)
+    {
+        $result = [
+            'error' => '',
+            'template' => null,
+            'schema' => [],
+            'fields' => []
         ];
 
-        $docId = $documentModel->createDocument($docData, $isTriage ? [] : $signerIds);
+        $templateId = trim($_POST['template_id'] ?? '');
+        $template = $templateModel->getTemplateById($templateId);
 
-        if (!$docId) {
-            @unlink($dir . $filename);
-            $_SESSION['error'] = 'Gagal menyimpan dokumen ke sistem.';
-
-            $this->redirect('/Tandain/document/create');
-        }
-
-        if ($isTriage) {
-            $this->redirect('/Tandain/document');
+        if (!$template) {
+            $result['error'] = 'Template surat tidak ditemukan.';
         } else {
-            $this->redirect('/Tandain/document/position/' . $docId);
+            $isActive = ($template['is_active'] === true || $template['is_active'] === 't' || $template['is_active'] === '1' || $template['is_active'] === 1);
+
+            if (!$isActive) {
+                $result['error'] = 'Template surat sedang dinonaktifkan.';
+            } else {
+                $rawFieldsJson = (string) ($_POST['template_fields_json'] ?? '');
+                $submittedFields = trim($rawFieldsJson) !== '' ? json_decode($rawFieldsJson, true) : null;
+
+                if (!is_array($submittedFields)) {
+                    $result['error'] = 'Data isian template tidak valid.';
+                } else {
+                    $schema = json_decode($template['placeholders_schema'] ?? '[]', true);
+
+                    if (!is_array($schema)) {
+                        $schema = [];
+                    }
+
+                    $cleanFields = [];
+                    $fieldError = '';
+
+                    foreach ($schema as $field) {
+                        $fieldName = trim((string) ($field['name'] ?? ''));
+
+                        if ($fieldName !== '' && $fieldError === '') {
+                            $fieldLabel = trim((string) ($field['label'] ?? $fieldName));
+                            $fieldType = trim((string) ($field['type'] ?? 'text'));
+                            $isRequired = !empty($field['required']);
+                            $fieldValue = trim((string) ($submittedFields[$fieldName] ?? ''));
+
+                            if ($isRequired && $fieldValue === '') {
+                                $fieldError = 'Isian "' . $fieldLabel . '" wajib diisi.';
+                            } elseif ($fieldType === 'number' && $fieldValue !== '' && !is_numeric($fieldValue)) {
+                                $fieldError = 'Isian "' . $fieldLabel . '" harus berupa angka.';
+                            } elseif ($fieldType === 'date' && $fieldValue !== '' && !$this->isValidDate($fieldValue)) {
+                                $fieldError = 'Isian "' . $fieldLabel . '" harus berupa tanggal yang valid.';
+                            } elseif ($fieldType === 'select' && $fieldValue !== '' && is_array($field['options'] ?? null) && count($field['options']) > 0) {
+                                $allowedOptions = array_map('trim', $field['options']);
+
+                                if (!in_array($fieldValue, $allowedOptions, true)) {
+                                    $fieldError = 'Pilihan pada "' . $fieldLabel . '" tidak valid.';
+                                }
+                            }
+
+                            $cleanFields[$fieldName] = $fieldValue;
+                        }
+                    }
+
+                    if ($fieldError !== '') {
+                        $result['error'] = $fieldError;
+                    } else {
+                        $result['template'] = $template;
+                        $result['schema'] = $schema;
+                        $result['fields'] = $cleanFields;
+                    }
+                }
+            }
         }
+
+        return $result;
+    }
+
+    private function validateUploadedPdf($file)
+    {
+        $errorMessage = '';
+
+        if (!$file || !isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
+            $errorMessage = 'Berkas PDF wajib diunggah.';
+        } elseif ($file['size'] <= 0 || $file['size'] > self::MAX_SIZE) {
+            $errorMessage = 'Ukuran berkas maksimal 2 MB.';
+        } else {
+            $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+
+            if ($mime !== 'application/pdf') {
+                $errorMessage = 'Berkas harus berformat PDF.';
+            } else {
+                $handle = fopen($file['tmp_name'], 'rb');
+                $magicBytes = $handle ? fread($handle, 5) : '';
+
+                if ($handle) {
+                    fclose($handle);
+                }
+
+                if ($magicBytes !== '%PDF-') {
+                    $errorMessage = 'Berkas harus berformat PDF yang valid.';
+                }
+            }
+        }
+
+        return $errorMessage;
+    }
+
+    private function buildTemplateAuditNotes($template, $schema, $fields)
+    {
+        $summaryParts = [];
+
+        foreach ($schema as $field) {
+            $fieldName = trim((string) ($field['name'] ?? ''));
+            $fieldLabel = trim((string) ($field['label'] ?? $fieldName));
+            $fieldValue = trim((string) ($fields[$fieldName] ?? ''));
+
+            if ($fieldName !== '' && $fieldValue !== '') {
+                $compactValue = preg_replace('/\s+/', ' ', $fieldValue);
+
+                if (mb_strlen($compactValue) > 80) {
+                    $compactValue = mb_substr($compactValue, 0, 77) . '...';
+                }
+
+                $summaryParts[] = $fieldLabel . ': ' . $compactValue;
+            }
+        }
+
+        $summaryText = count($summaryParts) > 0 ? implode('; ', $summaryParts) : 'Tanpa isian tambahan';
+
+        return 'Dokumen dibuat dari template ' . $template['template_code'] . ' (' . $template['title'] . '). Data: ' . $summaryText;
+    }
+
+    private function isValidDate($dateString)
+    {
+        $date = DateTime::createFromFormat('Y-m-d', $dateString);
+
+        return $date && $date->format('Y-m-d') === $dateString;
     }
 
     public function position($id = null)
