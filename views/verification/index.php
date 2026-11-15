@@ -206,7 +206,9 @@
   <header class="bg-surface-container-lowest border-b border-outline-variant/40 sticky top-0 z-30">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
       <a href="/Tandain/verification" class="flex items-center gap-3">
-        <img src="/Tandain/assets/img/logo.png" alt="Logo Tandain" class="w-10 h-10 rounded-xl object-cover shadow-sm">
+        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#c7c5cf] bg-[#151b3d] p-px shadow-[0_1px_1px_rgba(0,0,0,0.05)]" role="img" aria-label="Logo Tandain">
+          <span class="material-symbols-outlined text-[18px] text-[#E3DFFF]" aria-hidden="true">draw</span>
+        </span>
         <span class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">Tandain</span>
       </a>
 

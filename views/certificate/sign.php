@@ -5,11 +5,16 @@
 <?php
 $signatureUserName = $data['user']['full_name'] ?? 'Pengguna';
 $storedSignaturePath = $data['user']['signature_image_path'] ?? '';
-$signaturePreviewUrl = '/Tandain/assets/img/signature-sample.png';
+$signaturePreviewUrl = '';
+$hasActiveSignature = false;
 if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za-z0-9._-]+\.png\z/D', $storedSignaturePath)) {
     $storedSignatureFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $storedSignaturePath);
     if (is_file($storedSignatureFile)) {
-        $signaturePreviewUrl = '/Tandain/' . $storedSignaturePath . '?v=' . filemtime($storedSignatureFile);
+        $signatureImageInfo = @getimagesize($storedSignatureFile);
+        if ($signatureImageInfo && $signatureImageInfo[2] === IMAGETYPE_PNG) {
+            $hasActiveSignature = true;
+            $signaturePreviewUrl = '/Tandain/' . $storedSignaturePath . '?v=' . filemtime($storedSignatureFile);
+        }
     }
 }
 ?>
@@ -43,15 +48,16 @@ if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za
 
       <div class="flex flex-col gap-2">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <span class="inline-flex items-center gap-1.5 rounded-sm border border-[#bbf7d0] bg-[#dcfce7] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#15803d]">
-            <span class="material-symbols-outlined text-[14px]" aria-hidden="true">verified</span>
-            Tanda Tangan Aktif Digunakan
+          <span id="signature-status" class="inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold uppercase tracking-wide <?= $hasActiveSignature ? 'border-[#bbf7d0] bg-[#dcfce7] text-[#15803d]' : 'border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]'; ?>">
+            <span id="signature-status-icon" class="material-symbols-outlined text-[14px]" aria-hidden="true"><?= $hasActiveSignature ? 'verified' : 'error'; ?></span>
+            <span id="signature-status-text"><?= $hasActiveSignature ? 'Tanda Tangan Aktif Digunakan' : 'Belum Ada Tanda Tangan Aktif'; ?></span>
           </span>
         </div>
 
         <div class="relative flex min-h-[280px] flex-wrap items-center justify-center gap-6 overflow-hidden rounded border border-outline-variant bg-[#f1f5f9] p-6 shadow-inner">
           <div class="flex h-40 w-full max-w-[448px] items-center justify-center bg-white shadow-sm">
-            <img id="signature-preview" class="max-h-24 max-w-[240px] object-contain" src="<?= htmlspecialchars($signaturePreviewUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Pratinjau tanda tangan">
+            <img id="signature-preview" class="max-h-24 max-w-[240px] object-contain <?= $hasActiveSignature ? '' : 'hidden'; ?>" <?= $hasActiveSignature ? 'src="' . htmlspecialchars($signaturePreviewUrl, ENT_QUOTES, 'UTF-8') . '"' : ''; ?> alt="Pratinjau tanda tangan">
+            <span id="signature-preview-empty" class="px-4 text-center font-body-sm text-body-sm text-on-surface-variant <?= $hasActiveSignature ? 'hidden' : ''; ?>">Belum ada tanda tangan aktif</span>
           </div>
 
           <div class="flex w-full max-w-[448px] items-center justify-center bg-white p-4 shadow-sm">
@@ -60,7 +66,8 @@ if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za
               <span class="mt-1 font-label-md text-label-md font-semibold text-primary">QR per dokumen</span>
             </div>
             <div class="ml-1 flex min-h-[128px] min-w-0 flex-col items-center justify-center border-y border-r border-black px-2">
-              <img id="signed-signature-preview" class="h-[85px] w-[212px] max-w-full object-contain" src="<?= htmlspecialchars($signaturePreviewUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Contoh tanda tangan digital">
+              <img id="signed-signature-preview" class="h-[85px] w-[212px] max-w-full object-contain <?= $hasActiveSignature ? '' : 'hidden'; ?>" <?= $hasActiveSignature ? 'src="' . htmlspecialchars($signaturePreviewUrl, ENT_QUOTES, 'UTF-8') . '"' : ''; ?> alt="Contoh tanda tangan digital">
+              <span id="signed-signature-preview-empty" class="flex h-[85px] w-[212px] max-w-full items-center justify-center px-2 text-center text-xs text-on-surface-variant <?= $hasActiveSignature ? 'hidden' : ''; ?>">Tanda tangan belum tersedia</span>
               <span class="self-start text-[10px] text-black">Digitally Signed | Tandain.pnj.ac.id</span>
             </div>
           </div>
@@ -145,6 +152,11 @@ if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za
       const canvas = document.getElementById('signature-canvas');
       const preview = document.getElementById('signature-preview');
       const signedPreview = document.getElementById('signed-signature-preview');
+      const signatureStatus = document.getElementById('signature-status');
+      const signatureStatusIcon = document.getElementById('signature-status-icon');
+      const signatureStatusText = document.getElementById('signature-status-text');
+      const previewEmpty = document.getElementById('signature-preview-empty');
+      const signedPreviewEmpty = document.getElementById('signed-signature-preview-empty');
       const feedback = document.getElementById('signature-feedback');
       const updateButton = document.getElementById('update-signature');
       const context = canvas.getContext('2d');
@@ -166,6 +178,19 @@ if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za
       const clearUploadPreview = () => {
         uploadPreviewImage.removeAttribute('src');
         uploadPreviewContainer.classList.add('hidden');
+      };
+
+      const setActiveSignature = (imageUrl) => {
+        preview.src = imageUrl;
+        signedPreview.src = imageUrl;
+        preview.classList.remove('hidden');
+        signedPreview.classList.remove('hidden');
+        previewEmpty.classList.add('hidden');
+        signedPreviewEmpty.classList.add('hidden');
+        signatureStatus.classList.remove('border-[#fecaca]', 'bg-[#fef2f2]', 'text-[#b91c1c]');
+        signatureStatus.classList.add('border-[#bbf7d0]', 'bg-[#dcfce7]', 'text-[#15803d]');
+        signatureStatusIcon.textContent = 'verified';
+        signatureStatusText.textContent = 'Tanda Tangan Aktif Digunakan';
       };
 
       const setMode = (mode) => {
@@ -337,8 +362,7 @@ if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za
             throw new Error(result.message || 'Gagal menyimpan tanda tangan.');
           }
 
-          preview.src = result.image_url;
-          signedPreview.src = result.image_url;
+          setActiveSignature(result.image_url);
           selectedImage = null;
           selectedFile = null;
           fileInput.value = '';

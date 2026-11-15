@@ -19,8 +19,12 @@
 
     <div class="flex flex-col lg:flex-row gap-4 items-start">
 
+      <div class="flex-1 min-w-0 w-full max-w-none lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
+        <div class="text-sm text-on-surface-variant py-6 text-center" id="pdf-loading">Memuat dokumen...</div>
+        <div id="pdf-container" class="space-y-4 overflow-x-auto pb-4"></div>
+      </div>
       
-      <aside class="w-full lg:w-72 shrink-0 space-y-2 lg:sticky lg:top-4">
+      <div class="w-full lg:w-72 shrink-0 space-y-2 lg:sticky lg:top-4">
         <h2 class="font-headline-sm text-headline-sm text-primary font-semibold mb-1">Penandatangan</h2>
 
         <?php foreach ($signers as $i => $s): ?>
@@ -49,13 +53,9 @@
         <?php endforeach; ?>
 
         <p class="text-xs text-on-surface-variant pt-1">Kotak muncul di halaman yang sedang terlihat dan bisa digeser ke halaman mana pun.</p>
-      </aside>
+      </div>
 
       
-      <div class="flex-1 min-w-0 w-full">
-        <div class="text-sm text-on-surface-variant py-6 text-center" id="pdf-loading">Memuat dokumen...</div>
-        <div id="pdf-container" class="space-y-4 overflow-x-auto pb-4"></div>
-      </div>
 
     </div>
 
@@ -108,7 +108,10 @@
         loading.remove();
         for (let n = 1; n <= pdf.numPages; n++) {
           const page = await pdf.getPage(n);
-          const viewport = page.getViewport({ scale: 1.3 });
+          const baseViewport = page.getViewport({ scale: 1 });
+          const availableWidth = container.clientWidth;
+          const scale = Math.min(1.3, availableWidth / baseViewport.width);
+          const viewport = page.getViewport({ scale });
 
           const wrap = document.createElement('div');
           wrap.className = 'pdf-page relative mx-auto shadow border bg-white';

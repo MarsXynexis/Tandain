@@ -5,6 +5,11 @@ class CertificateController extends Controller
     public function index()
     {
         $this->authCheck();
+
+        if (!isset($_SESSION['certificate_csrf_token']) || !is_string($_SESSION['certificate_csrf_token'])) {
+            $_SESSION['certificate_csrf_token'] = bin2hex(random_bytes(32));
+        }
+
         $certificateModel = $this->model('Certificate');
         $userId = $_SESSION['user']['id'];
 
@@ -13,6 +18,7 @@ class CertificateController extends Controller
         $data['title'] = 'Sertifikat Digital - Tandain';
         $data['active_menu'] = 'certificate';
         $data['user'] = $_SESSION['user'];
+        $data['csrf_token'] = $_SESSION['certificate_csrf_token'];
 
         $this->view('certificate/index', $data);
     }
@@ -48,6 +54,139 @@ class CertificateController extends Controller
         $data['csrf_token'] = $_SESSION['signature_csrf_token'];
 
         $this->view('certificate/sign', $data);
+    }
+
+    public function store()
+    {
+        $this->authCheck();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/Tandain/certificate/create');
+        }
+
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        $sessionToken = $_SESSION['certificate_csrf_token'] ?? '';
+
+        if (
+            !is_string($csrfToken)
+            || !is_string($sessionToken)
+            || $sessionToken === ''
+            || !hash_equals($sessionToken, $csrfToken)
+        ) {
+            $this->setFlash('error', 'Permintaan tidak valid atau sesi telah kedaluwarsa. Silakan coba lagi.');
+            $this->redirect('/Tandain/certificate/create');
+        }
+
+        unset($_SESSION['certificate_csrf_token']);
+
+        $passphrase = $_POST['passphrase'] ?? '';
+        $passphraseConfirmation = $_POST['passphrase_confirmation'] ?? '';
+        $accountPassword = $_POST['account_password'] ?? '';
+
+        if (
+            !is_string($passphrase)
+            || !is_string($passphraseConfirmation)
+            || !is_string($accountPassword)
+            || strlen($passphrase) < 4
+            || !preg_match('/[a-z]/', $passphrase)
+            || !preg_match('/[0-9]/', $passphrase)
+        ) {
+            $this->setFlash('error', 'Passphrase harus minimal 4 karakter dan mengandung huruf kecil serta angka.');
+            $this->redirect('/Tandain/certificate/create');
+        }
+
+        if ($passphrase !== $passphraseConfirmation) {
+            $this->setFlash('error', 'Passphrase dan konfirmasi tidak cocok.');
+            $this->redirect('/Tandain/certificate/create');
+        }
+
+        $userModel = $this->model('User');
+        $userId = $_SESSION['user']['id'];
+        $user = $userModel->findById($userId);
+
+        if (!$user || !password_verify($accountPassword, $user['password_hash'] ?? '')) {
+            $this->setFlash('error', 'Password akun tidak valid.');
+            $this->redirect('/Tandain/certificate/create');
+        }
+
+        if (password_verify($passphrase, $user['password_hash'])) {
+            $this->setFlash('error', 'Passphrase harus berbeda dari password akun.');
+            $this->redirect('/Tandain/certificate/create');
+        }
+
+        $certificateModel = $this->model('Certificate');
+
+        try {
+            $keypair = $certificateModel->generateRSA($passphrase);
+        } catch (RuntimeException $exception) {
+            error_log('Certificate RSA generation failed: ' . $exception->getMessage());
+            $this->setFlash('error', 'Gagal membuat kunci sertifikat. Silakan coba lagi.');
+            $this->redirect('/Tandain/certificate/create');
+        }
+
+        $serialNumber = 'CERT-PNJ-TIK-' . date('Y') . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+        $validFrom = date('Y-m-d H:i:s');
+        $validUntil = date('Y-m-d H:i:s', strtotime('+1 year'));
+
+        $result = $certificateModel->createCertificate(
+            $userId,
+            $keypair['private_key'],
+            $keypair['public_key'],
+            $serialNumber,
+            $validFrom,
+            $validUntil
+        );
+
+        if ($result) {
+            $this->setFlash('success', 'Sertifikat digital berhasil dibuat.');
+            $this->redirect('/Tandain/certificate');
+        }
+
+        $this->setFlash('error', 'Terjadi kesalahan saat membuat sertifikat.');
+        $this->redirect('/Tandain/certificate/create');
+    }
+
+    public function revoke()
+    {
+        $this->authCheck();
+
+        $certificateIdInput = $_POST['certificate_id'] ?? '';
+        $certificateId = is_string($certificateIdInput) ? trim($certificateIdInput) : '';
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        $sessionToken = $_SESSION['certificate_csrf_token'] ?? '';
+
+        if (
+            $_SERVER['REQUEST_METHOD'] !== 'POST'
+            || !preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $certificateId)
+            || !is_string($csrfToken)
+            || !is_string($sessionToken)
+            || $sessionToken === ''
+            || !hash_equals($sessionToken, $csrfToken)
+        ) {
+            $this->setFlash('error', 'Permintaan pencabutan sertifikat tidak valid. Silakan coba lagi.');
+            $this->redirect('/Tandain/certificate');
+        }
+
+        $certificateModel = $this->model('Certificate');
+        $userId = $_SESSION['user']['id'];
+        try {
+            $revoked = $certificateModel->revokeCertificate($userId, $certificateId);
+        } catch (Throwable $exception) {
+            error_log('Certificate revocation failed for certificate ' . $certificateId . ': ' . $exception->getMessage());
+            $this->setFlash('error', 'Terjadi kesalahan saat mencabut sertifikat. Silakan coba lagi.');
+            $this->redirect('/Tandain/certificate');
+        }
+
+        if ($revoked === true) {
+            $this->setFlash('success', 'Sertifikat digital berhasil dicabut.');
+        } elseif ($revoked === false) {
+            $this->setFlash('error', 'Sertifikat tidak ditemukan, bukan milik Anda, atau sudah tidak aktif.');
+        } else {
+            $this->setFlash('error', 'Terjadi kesalahan saat mencabut sertifikat.');
+        }
+
+        $this->redirect('/Tandain/certificate');
+
     }
 
     public function updateSignature()
@@ -98,6 +237,7 @@ class CertificateController extends Controller
         $uploadDirectory = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'signatures';
         if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0775, true) && !is_dir($uploadDirectory)) {
             error_log('Unable to create signature upload directory: ' . $uploadDirectory);
+            $_SESSION['flash'] = 'Gagal menyiapkan penyimpanan tanda tangan.';
             http_response_code(500);
             echo json_encode(['message' => 'Gagal menyiapkan penyimpanan tanda tangan.']);
             return;
@@ -107,11 +247,13 @@ class CertificateController extends Controller
         $destination = $uploadDirectory . DIRECTORY_SEPARATOR . $fileName;
         if (!move_uploaded_file($file['tmp_name'], $destination)) {
             http_response_code(500);
+            $_SESSION['flash'] = 'Gagal menyimpan berkas tanda tangan.';
             echo json_encode(['message' => 'Gagal menyimpan berkas tanda tangan.']);
             return;
         }
 
         $relativePath = 'uploads/signatures/' . $fileName;
+
         $userModel = $this->model('User');
 
         try {
@@ -125,6 +267,7 @@ class CertificateController extends Controller
             @unlink($destination);
             error_log('Failed to update signature image path: ' . $exception->getMessage());
             http_response_code(500);
+            $_SESSION['flash'] = 'Gagal menyimpan tanda tangan ke akun.';
             echo json_encode(['message' => 'Gagal menyimpan tanda tangan ke akun.']);
             return;
         }
@@ -132,6 +275,7 @@ class CertificateController extends Controller
         if (!$updated) {
             @unlink($destination);
             http_response_code(500);
+            $_SESSION['flash'] = 'Gagal menyimpan tanda tangan ke akun.';
             echo json_encode(['message' => 'Gagal menyimpan tanda tangan ke akun.']);
             return;
         }
@@ -213,93 +357,4 @@ class CertificateController extends Controller
         exit;
     }
 
-    public function store()
-    {
-        $this->authCheck();
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/Tandain/certificate/create');
-        }
-
-        $csrfToken = $_POST['csrf_token'] ?? '';
-        $sessionToken = $_SESSION['certificate_csrf_token'] ?? '';
-
-        if (
-            !is_string($csrfToken)
-            || !is_string($sessionToken)
-            || $sessionToken === ''
-            || !hash_equals($sessionToken, $csrfToken)
-        ) {
-            $_SESSION['error'] = 'Permintaan tidak valid atau sesi telah kedaluwarsa. Silakan coba lagi.';
-            $this->redirect('/Tandain/certificate/create');
-        }
-
-        unset($_SESSION['certificate_csrf_token']);
-
-        $passphrase = $_POST['passphrase'] ?? '';
-        $passphraseConfirmation = $_POST['passphrase_confirmation'] ?? '';
-        $accountPassword = $_POST['account_password'] ?? '';
-
-        if (
-            !is_string($passphrase)
-            || !is_string($passphraseConfirmation)
-            || !is_string($accountPassword)
-            || strlen($passphrase) < 4
-            || !preg_match('/[a-z]/', $passphrase)
-            || !preg_match('/[0-9]/', $passphrase)
-        ) {
-            $_SESSION['error'] = 'Passphrase harus minimal 4 karakter dan mengandung huruf kecil serta angka.';
-            $this->redirect('/Tandain/certificate/create');
-        }
-
-        if ($passphrase !== $passphraseConfirmation) {
-            $_SESSION['error'] = 'Passphrase dan konfirmasi tidak cocok.';
-            $this->redirect('/Tandain/certificate/create');
-        }
-
-        $userModel = $this->model('User');
-        $userId = $_SESSION['user']['id'];
-        $user = $userModel->findById($userId);
-
-        if (!$user || !password_verify($accountPassword, $user['password_hash'] ?? '')) {
-            $_SESSION['error'] = 'Password akun tidak valid.';
-            $this->redirect('/Tandain/certificate/create');
-        }
-
-        if (password_verify($passphrase, $user['password_hash'])) {
-            $_SESSION['error'] = 'Passphrase harus berbeda dari password akun.';
-            $this->redirect('/Tandain/certificate/create');
-        }
-
-        $certificateModel = $this->model('Certificate');
-
-        try {
-            $keypair = $certificateModel->generateRSA($passphrase);
-        } catch (RuntimeException $exception) {
-            error_log('Certificate RSA generation failed: ' . $exception->getMessage());
-            $_SESSION['error'] = 'Gagal membuat kunci sertifikat. Silakan coba lagi.';
-            $this->redirect('/Tandain/certificate/create');
-        }
-
-        $serialNumber = 'CERT-PNJ-TIK-' . date('Y') . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
-        $validFrom = date('Y-m-d H:i:s');
-        $validUntil = date('Y-m-d H:i:s', strtotime('+1 year'));
-
-        $result = $certificateModel->createCertificate(
-            $userId,
-            $keypair['private_key'],
-            $keypair['public_key'],
-            $serialNumber,
-            $validFrom,
-            $validUntil
-        );
-
-        if ($result) {
-            $_SESSION['success'] = 'Sertifikat digital berhasil dibuat.';
-            $this->redirect('/Tandain/certificate');
-        }
-
-        $_SESSION['error'] = 'Terjadi kesalahan saat membuat sertifikat.';
-        $this->redirect('/Tandain/certificate/create');
-    }
 }

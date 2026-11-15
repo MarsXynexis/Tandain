@@ -1,6 +1,7 @@
 <?php require_once 'views/layouts/header.php'; ?>
 <?php require_once 'views/layouts/sidebar.php'; ?>
 <?php require_once 'views/layouts/navbar.php'; ?>
+<?php require_once 'views/layouts/flash.php'; ?>
 
   <main class="flex-1 w-full max-w-[1400px] p-8 flex flex-col gap-8">
     <section class="flex flex-col gap-1">

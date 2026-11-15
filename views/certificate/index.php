@@ -1,6 +1,7 @@
 <?php require_once 'views/layouts/header.php'; ?>
 <?php require_once 'views/layouts/sidebar.php'; ?>
 <?php require_once 'views/layouts/navbar.php'; ?>
+<?php require_once 'views/layouts/flash.php'; ?>
 
   <main class="flex-1 w-full p-8 flex flex-col gap-8">
     <section class="flex flex-col gap-1">
@@ -88,12 +89,19 @@
                 <td class="px-5 py-4">
                   <div class="flex items-center justify-end">
                     <?php if ($status === 'ACTIVE'): ?>
-                      <button type="button" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded bg-[#ba1a1a] px-3 py-1.5 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#93000a]">
-                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">disabled_by_default</span>
-                        Cabut Sertifikat
-                      </button>
+                      <form method="POST" action="/Tandain/certificate/revoke" onsubmit="return confirm('Yakin ingin mencabut sertifikat ini? Sertifikat yang dicabut tidak dapat digunakan untuk menandatangani dokumen.');">
+                        <input type="hidden" name="certificate_id" value="<?= htmlspecialchars($certificate['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($data['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <button type="submit" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded bg-[#ba1a1a] px-3 py-1.5 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#93000a]">
+                          <span class="material-symbols-outlined text-[16px]" aria-hidden="true">disabled_by_default</span>
+                          Cabut Sertifikat
+                        </button>
+                      </form>
                     <?php elseif ($status === 'REVOKED'): ?>
-                      <span class="text-xs text-on-surface-variant">Sertifikat sudah dicabut</span>
+                      <div class="inline-flex items-center gap-1.5 whitespace-nowrap rounded bg-[#af6f6f] px-3 py-1.5 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors cursor-not-allowed" aria-disabled="true">
+                          <span class="material-symbols-outlined text-[16px]" aria-hidden="true">disabled_by_default</span>
+                          Cabut Sertifikat
+                    </div>
                     <?php else: ?>
                       <span class="text-xs text-on-surface-variant">-</span>
                     <?php endif; ?>

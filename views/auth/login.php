@@ -6,6 +6,7 @@
   <title><?= $data['title'] ?? 'Login - TandaIN eSign | Politeknik Negeri Jakarta'; ?></title>
 
   <link href="/Tandain/assets/css/fonts.css" rel="stylesheet">
+  <link href="/Tandain/assets/css/material-symbols.css" rel="stylesheet">
 
   <script src="/Tandain/assets/js/tailwind.js"></script>
   <script>
@@ -41,104 +42,98 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: #eaf0f6;
     }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
   </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4 md:p-8 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+<body class="relative min-h-screen flex items-center justify-center overflow-x-hidden p-4 md:p-8 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+  <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+    <div class="absolute inset-0 opacity-[0.28]">
+      <img src="/Tandain/assets/img/login-background.png" alt="" class="absolute left-[-32.98%] top-[-18.91%] h-[141.86%] w-[132.98%] max-w-none">
+    </div>
+  </div>
 
-  <main class="w-full max-w-[960px] bg-white rounded-4xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[580px]">
+  <main class="relative z-10 flex min-h-[580px] w-full max-w-[900px] flex-col overflow-hidden rounded-[32px] bg-white shadow-2xl md:flex-row">
 
-    <section class="w-full md:w-[46%] bg-[#242953] text-white p-8 md:p-10 flex flex-col justify-between relative">
+    <section class="relative flex w-full flex-col items-center justify-between bg-[#242953] p-6 text-white sm:p-9 md:min-h-[580px] md:w-[46.67%] md:max-w-[420px]">
 
-      <div class="flex items-center gap-3">
-        <img src="/Tandain/assets/img/logo.png" alt="Logo Tandain" class="w-11 h-11 rounded-xl object-cover shrink-0 shadow-md">
+      <div class="flex w-full items-center gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 p-px backdrop-blur-sm">
+          <span class="material-symbols-outlined text-[24px] text-[#E3DFFF]" aria-hidden="true">draw</span>
+        </div>
 
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white leading-tight">eSign</h1>
-          <p class="text-xs text-slate-300 font-normal">
+        <div class="min-w-0">
+          <h1 class="text-2xl font-bold leading-tight tracking-tight text-white">Tandain eSign</h1>
+          <p class="text-xs font-normal text-slate-300">
             Digital Signature Platform <span class="text-slate-400 mx-0.5">•</span> Powered By <span class="font-semibold text-white">Tandain</span>
           </p>
         </div>
       </div>
 
-      <div class="my-6 flex justify-center items-center">
-        <div class="rounded-2xl shadow-2xl overflow-hidden max-w-[320px] w-full border border-white/10 bg-white">
-          <img src="/Tandain/assets/img/login-chat.png" alt="Pratinjau Informasi" class="w-full h-auto object-contain block">
-        </div>
+      <div class="relative my-8 aspect-[240/236.4] w-full max-w-[240px]  md:my-6">
+        <img src="/Tandain/assets/img/logo-pnj.png" alt="Logo Politeknik Negeri Jakarta" class="absolute left-[-21.04%] top-[-5.3%] h-[109.59%] w-[142.08%] max-w-none opacity-[0.84]">
       </div>
 
-      <div class="text-center md:text-left">
-        <p class="text-xs text-slate-400 tracking-wide font-normal">
+      <div class="w-full text-center md:text-left">
+        <p class="text-xs font-normal tracking-wide text-slate-400">
           &copy; 2026 <span class="text-slate-200 font-semibold">Tandain</span>
         </p>
       </div>
 
     </section>
 
-    <section class="w-full md:w-[54%] bg-white p-8 sm:p-10 md:p-12 flex flex-col justify-center">
+    <section class="flex w-full min-w-0 flex-col justify-center bg-white p-6 sm:p-8 md:w-[53.33%] md:p-10 lg:p-12">
       <div class="mb-7">
-        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk ke akun</h2>
-        <p class="text-sm text-slate-500 mt-1 leading-relaxed">Gunakan NIM, NIP, atau email kampus beserta kata sandi Anda.</p>
+        <h2 class="text-2xl font-extrabold tracking-tight text-slate-900">Selamat datang</h2>
+        <p class="mt-1 text-sm leading-relaxed text-slate-500">Silahkan masuk menggunakan akun resmi PNJ Anda.</p>
       </div>
 
       <?php if (!empty($data['error'])) : ?>
         <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-          <svg class="w-4 h-4 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-          </svg>
+          <span class="material-symbols-outlined shrink-0 text-[16px] text-red-500" aria-hidden="true">warning</span>
           <span><?= htmlspecialchars($data['error']); ?></span>
         </div>
       <?php endif; ?>
 
       <?php require_once 'views/layouts/flash.php'; ?>
 
-      <form action="/Tandain/login" class="space-y-4" method="POST">
+      <form action="/Tandain/login" class="space-y-2" method="POST">
 
         <div class="space-y-1.5">
-          <label class="block text-xs font-bold text-slate-700" for="username">Username (NIM / NIP / Email)</label>
+          <label class="block text-xs font-bold text-slate-700" for="username">Username</label>
           <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
-              </svg>
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <span class="material-symbols-outlined text-[20px]" aria-hidden="true">person_outline</span>
             </div>
-            <input class="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" id="username" name="username" placeholder="Masukkan NIM, NIP, atau email" required="" type="text" value="<?= htmlspecialchars($data['username'] ?? ''); ?>">
+            <input class="w-full rounded-xl border border-slate-300 bg-white py-3 pl-[45px] pr-4 text-sm text-slate-900 placeholder:text-slate-400 transition duration-150 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" id="username" name="username" placeholder="Masukkan username" required="" type="text" value="<?= htmlspecialchars($data['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
           </div>
         </div>
 
         <div class="space-y-1.5">
           <label class="block text-xs font-bold text-slate-700" for="password">Password</label>
           <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <svg class="w-5 h-5 stroke-[1.75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect height="11" rx="2" ry="2" width="18" x="3" y="11"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <span class="material-symbols-outlined text-[20px]" aria-hidden="true">lock</span>
             </div>
-            <input class="w-full pl-11 pr-11 py-2.5 bg-white border border-slate-300 rounded-xl text-sm placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" id="password" name="password" placeholder="Masukkan password" required="" type="password">
-            <button aria-label="Toggle password visibility" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none" id="togglePassword" type="button">
-              <svg class="w-5 h-5" fill="none" id="eyeIcon" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-              </svg>
+            <input class="w-full rounded-xl border border-slate-300 bg-white py-3 pl-[45px] pr-12 text-sm text-slate-900 placeholder:text-slate-400 transition duration-150 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" id="password" name="password" placeholder="Masukkan password" required="" type="password">
+            <button aria-label="Tampilkan password" aria-pressed="false" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" id="togglePassword" type="button">
+              <span class="material-symbols-outlined text-[20px]" id="eyeIcon" aria-hidden="true">visibility</span>
             </button>
           </div>
         </div>
 
-        <div class="space-y-1.5">
-          <label class="block text-xs font-bold text-slate-700" for="captcha">Kode Keamanan (Captcha)</label>
-          <div class="flex items-center gap-3">
-            <img src="/Tandain/captcha" id="captcha-img" alt="Captcha" class="h-10 rounded-xl border border-slate-300 cursor-pointer shrink-0" title="Klik untuk memperbarui captcha">
-            <input class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" id="captcha" name="captcha" placeholder="Ketik kode captcha" required="" type="text" autocomplete="off">
-          </div>
+        <div class="flex justify-center py-1">
+          <span class="text-center text-[11px] font-bold leading-[16.5px] text-slate-800 underline">Lupa Password?</span>
         </div>
 
         <div class="pt-2">
           <button class="w-full h-12 bg-[#483fd4] hover:bg-[#3d34bf] active:bg-[#342ca8] text-white font-medium text-sm rounded-xl transition duration-150 flex items-center justify-center gap-2.5 shadow-md shadow-indigo-600/20" type="submit">
-            <svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"></path>
-              <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
+            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">verified_user</span>
             <span>Masuk</span>
           </button>
         </div>
@@ -164,14 +159,10 @@
         </button>
       </div>
 
-      <div class="mt-4 text-center">
-        <p class="text-[11px] text-slate-500 leading-normal">
+      <div class="pt-[15px] text-center">
+        <p class="mx-auto max-w-[395px] text-[11px] leading-[16.5px] text-slate-500">
           <a class="font-bold underline text-slate-800 hover:text-indigo-600 transition duration-150" href="#">Klik Disini</a>
           untuk melihat panduan penggunaan akun SSO Google Workspace
-        </p>
-
-        <p class="text-xs text-slate-500 mt-3">
-          Belum memiliki akun? Hubungi Administrator Tata Usaha untuk pendaftaran akun kampus.
         </p>
       </div>
     </section>
@@ -181,18 +172,15 @@
   <script>
     const toggleBtn = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
-    const captchaImg = document.getElementById('captcha-img');
+    const eyeIcon = document.getElementById('eyeIcon');
 
     if (toggleBtn && passwordInput) {
       toggleBtn.addEventListener('click', function () {
         const isPassword = passwordInput.getAttribute('type') === 'password';
         passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-      });
-    }
-
-    if (captchaImg) {
-      captchaImg.addEventListener('click', function () {
-        this.src = '/Tandain/captcha?' + Date.now();
+        toggleBtn.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
+        toggleBtn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+        eyeIcon.textContent = isPassword ? 'visibility_off' : 'visibility';
       });
     }
   </script>

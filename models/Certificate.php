@@ -98,4 +98,26 @@ class Certificate
         return $this->db->execute();
         return 1;
     }
+
+    public function revokeCertificate($userId, $certificateId)
+    {
+        if (
+            !is_string($certificateId)
+            || !preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $certificateId)
+        ) {
+            return false;
+        }
+
+        $this->db->query(
+            "UPDATE " . $this->table . "
+             SET status = 'REVOKED', revoked_at = CURRENT_TIMESTAMP
+             WHERE id = :certificate_id
+               AND user_id = :user_id
+               AND status = 'ACTIVE'"
+        );
+        $this->db->bind('user_id', $userId);
+        $this->db->bind('certificate_id', $certificateId);
+
+        return $this->db->execute() && $this->db->rowCount() === 1;
+    }
 }

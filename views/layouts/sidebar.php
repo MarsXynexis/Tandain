@@ -6,9 +6,9 @@ $inactiveItemClass = 'text-on-surface-variant font-medium hover:bg-surface-conta
 $userRole = $_SESSION['user']['role_name'] ?? '';
 
 if (empty($userRole) && isset($_SESSION['user']['role_display_name'])) {
-    if ($_SESSION['user']['role_display_name'] === 'Administrator Tata Usaha') {
-        $userRole = 'admin_tu';
-    }
+  if ($_SESSION['user']['role_display_name'] === 'Administrator Tata Usaha') {
+    $userRole = 'admin_tu';
+  }
 }
 
 $isAdmin = ($userRole === 'admin_tu');
@@ -23,7 +23,9 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
   <div class="flex flex-col gap-4">
 
     <a class="flex items-center gap-3 px-2 py-1" href="/Tandain/dashboard">
-      <img src="/Tandain/assets/img/logo.png" alt="Logo Tandain" class="w-10 h-10 rounded-xl object-cover shadow-sm">
+      <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#c7c5cf] bg-[#151b3d] p-px shadow-[0_1px_1px_rgba(0,0,0,0.05)]" role="img" aria-label="Logo Tandain">
+        <span class="material-symbols-outlined text-[18px] text-[#E3DFFF]" aria-hidden="true">draw</span>
+      </span>
       <span class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">Tandain</span>
     </a>
 
@@ -32,11 +34,6 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
       <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $activeMenu === 'dashboard' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/dashboard" <?= $activeMenu === 'dashboard' ? 'aria-current="page"' : ''; ?>>
         <span class="material-symbols-outlined text-[20px]" style="<?= $activeMenu === 'dashboard' ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">home</span>
         <span class="font-label-md text-label-md">Beranda</span>
-      </a>
-
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $activeMenu === 'verification' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/verification" <?= $activeMenu === 'verification' ? 'aria-current="page"' : ''; ?>>
-        <span class="material-symbols-outlined text-[20px]">verified_user</span>
-        <span class="font-label-md text-label-md">Verifikasi Dokumen</span>
       </a>
 
       <?php if ($isAdmin): ?>
@@ -96,7 +93,10 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
         </div>
 
       <?php endif; ?>
-
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $activeMenu === 'verification' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/verification" <?= $activeMenu === 'verification' ? 'aria-current="page"' : ''; ?>>
+        <span class="material-symbols-outlined text-[20px]">verified_user</span>
+        <span class="font-label-md text-label-md">Verifikasi Dokumen</span>
+      </a>
     </nav>
 
   </div>
@@ -117,7 +117,7 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
     const chevron = document.getElementById(chevronId);
 
     if (button && submenu && chevron) {
-      button.addEventListener('click', function () {
+      button.addEventListener('click', function() {
         const isCollapsed = submenu.classList.contains('max-h-0');
 
         if (isCollapsed) {

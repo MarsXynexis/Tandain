@@ -63,6 +63,11 @@ class Database
         return $this->stmt->rowCount();
     }
 
+    public function getConnection(): PDO
+    {
+        return $this->dbh;
+    }
+
     public function beginTransaction()
     {
         return $this->dbh->beginTransaction();
