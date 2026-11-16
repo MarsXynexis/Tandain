@@ -20,54 +20,6 @@
 
     <?php require_once 'views/layouts/flash.php'; ?>
 
-    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-
-      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts">
-        <div class="min-w-0">
-          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Total Akun</p>
-          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_users'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Civitas terdaftar</p>
-        </div>
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8e7ff] text-[#5145d8]">
-          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">groups</span>
-        </div>
-      </a>
-
-      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts?role=pegawai">
-        <div class="min-w-0">
-          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Dosen &amp; Tendik</p>
-          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_pegawai'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Pendidik dan tendik</p>
-        </div>
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dceafe] text-[#1d4ed8]">
-          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">badge</span>
-        </div>
-      </a>
-
-      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts?role=mahasiswa">
-        <div class="min-w-0">
-          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Mahasiswa</p>
-          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_mahasiswa'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Akun mahasiswa</p>
-        </div>
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ede9fe] text-[#6d28d9]">
-          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">school</span>
-        </div>
-      </a>
-
-      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/accounts?status=ACTIVE">
-        <div class="min-w-0">
-          <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Akun Aktif</p>
-          <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['stats']['total_active'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Akses aktif</p>
-        </div>
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d]">
-          <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">verified_user</span>
-        </div>
-      </a>
-
-    </section>
-
     <section class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-none overflow-hidden flex flex-col">
 
       <div class="p-5 border-b border-outline-variant bg-surface-container-lowest">
@@ -117,7 +69,6 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-surface-container-low border-b border-outline-variant h-11 text-[13px] font-semibold uppercase tracking-wide text-on-surface-variant">
-              <th scope="col" class="py-3 px-5 text-center w-14">No</th>
               <th scope="col" class="py-3 px-6">Nama Civitas</th>
               <th scope="col" class="py-3 px-6">Nomor Induk</th>
               <th scope="col" class="py-3 px-6">Email Resmi</th>
@@ -132,16 +83,19 @@
           <tbody class="divide-y divide-outline-variant/60 font-body-sm text-body-sm">
             <?php if (empty($data['users'])): ?>
               <tr>
-                <td colspan="9" class="py-8 text-center text-on-surface-variant">
-                  Tidak ada akun civitas yang cocok dengan kriteria pencarian.
+                <td colspan="8" class="py-12 text-center text-on-surface-variant">
+                  <div class="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                    <div class="w-12 h-12 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center mb-1">
+                      <span class="material-symbols-outlined text-[26px]">manage_accounts</span>
+                    </div>
+                    <p class="font-headline-sm text-sm font-semibold text-primary">Akun Tidak Ditemukan</p>
+                    <p class="font-body-sm text-xs text-on-surface-variant">Tidak ada akun civitas yang cocok dengan kriteria pencarian atau filter.</p>
+                  </div>
                 </td>
               </tr>
             <?php else: ?>
-              <?php $no = 1; ?>
               <?php foreach ($data['users'] as $u): ?>
                 <tr class="hover:bg-surface-container-low/50 transition-colors group">
-                  <td class="py-4 px-5 text-center font-code-tabular text-on-surface-variant"><?= $no++; ?></td>
-
                   <td class="py-4 px-6">
                     <div class="flex items-center gap-3">
                       <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-primary text-xs uppercase shrink-0">

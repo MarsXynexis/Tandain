@@ -79,8 +79,14 @@ if (!empty($data['search'])) {
           <tbody class="divide-y divide-surface-container font-body-md text-body-md">
             <?php if (empty($data['documents'])): ?>
               <tr>
-                <td colspan="6" class="py-8 text-center text-on-surface-variant">
-                  <?= htmlspecialchars($emptyMessage, ENT_QUOTES, 'UTF-8'); ?>
+                <td colspan="6" class="py-12 text-center text-on-surface-variant">
+                  <div class="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                    <div class="w-12 h-12 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center mb-1">
+                      <span class="material-symbols-outlined text-[26px]">folder_open</span>
+                    </div>
+                    <p class="font-headline-sm text-sm font-semibold text-primary">Arsip Belum Tersedia</p>
+                    <p class="font-body-sm text-xs text-on-surface-variant"><?= htmlspecialchars($emptyMessage, ENT_QUOTES, 'UTF-8'); ?></p>
+                  </div>
                 </td>
               </tr>
             <?php else: ?>
