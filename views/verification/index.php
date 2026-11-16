@@ -686,7 +686,7 @@
 
       // Perbarui teks di dalam dropzone jika file valid 
       dropZoneText.textContent = file.name;
-      dropZoneSubtext.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB Berkas siap diperiksa';
+      dropZoneSubtext.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB - Berkas siap diperiksa';
       
       dropZone.classList.add('border-emerald-500', 'bg-emerald-50/40');
     }
@@ -713,26 +713,24 @@
     fileUpload.addEventListener('change', handleFile);
 
     // 4. Mencegah browser membuka file langsung saat file ditarik ke layar
-    ['dragenter', 'dragover'].forEach((eventName) => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    ['dragenter', 'dragover'].forEach(ev => {
+      dropZone.addEventListener(ev, e => {
+        e.preventDefault(); e.stopPropagation();
         dropZone.classList.add('border-secondary', 'bg-surface-container');
       });
     });
 
-    ['dragleave', 'drop'].forEach((eventName) => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    ['dragleave', 'drop'].forEach(ev => {
+      dropZone.addEventListener(ev, e => {
+        e.preventDefault(); e.stopPropagation();
         dropZone.classList.remove('border-secondary', 'bg-surface-container');
       });
     });
 
     // 5. Menangkap file saat di-drop
-    dropZone.addEventListener('drop', (e) => {
+    dropZone.addEventListener('drop', e => {
       if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-        fileUpload.files = e.dataTransfer.files // Masukkan file hasil drop ke input file
+        fileUpload.files = e.dataTransfer.files;
         handleFile();
       }
     });

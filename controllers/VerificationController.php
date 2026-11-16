@@ -39,17 +39,19 @@ class VerificationController extends Controller
         }
 
         $tmpPath = $_FILES['document_file']['tmp_name'];
-
         $uploadedHash = hash_file('sha256', $tmpPath);
 
         $documentModel = $this->model('Document');
-        $doc = $documentModel-> findByHash($uploadedHash);
+        $doc           = $documentModel->findByHash($uploadedHash);
 
-        if ($doc && hash_equals($doc['hash'], $uploadedHash)) {
+        if ($doc && (
+            hash_equals($doc['final_sha256_hash'] ?? '', $uploadedHash) ||
+            hash_equals($doc['initial_sha256_hash'] ?? '', $uploadedHash)
+        )) {
             $data = [
-                'title'     =>  'Verifikasi Dokumen - Tandain',
-                'status'    =>  'success',
-                'document'  =>  $doc,
+                'title'     => 'Verifikasi Dokumen - Tandain',
+                'status'    => 'success',
+                'document'  => $doc,
             ];
         } else {
             $data = [
@@ -61,3 +63,4 @@ class VerificationController extends Controller
         $this->view('verification/index', $data);
     }
 }
+?>
