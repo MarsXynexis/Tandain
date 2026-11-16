@@ -32,8 +32,13 @@ class VerificationController extends Controller
 
     public function check()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || 
-            empty($_FILES['document_file']['tmp_name'])) {
+        if (
+            $_SERVER['REQUEST_METHOD'] !== 'POST' ||
+            empty($_FILES['document_file']['tmp_name']) ||
+            $_FILES['document_file']['error'] !== UPLOAD_ERR_OK ||
+            !is_uploaded_file($_FILES['document_file']
+            ['tmp_name'])
+        ) {
             $this->redirect('/Tandain/verification?status=error');
             return;
         }
@@ -41,22 +46,24 @@ class VerificationController extends Controller
         $tmpPath = $_FILES['document_file']['tmp_name'];
         $uploadedHash = hash_file('sha256', $tmpPath);
 
-        $documentModel = $this->model('Document');
-        $doc           = $documentModel->findByHash($uploadedHash);
+        if (!$uploadedHash) {
+            $this->redirect('/Tandain/verification?status=error');
+            return;
+        }
 
-        if ($doc && (
-            hash_equals($doc['final_sha256_hash'] ?? '', $uploadedHash) ||
-            hash_equals($doc['initial_sha256_hash'] ?? '', $uploadedHash)
-        )) {
+        $documentModel      = $this->model('Document');
+        $document           = $documentModel->verifyDocument($uploadedHash);
+
+        if ($document) {
             $data = [
                 'title'     => 'Verifikasi Dokumen - Tandain',
-                'status'    => 'success',
-                'document'  => $doc,
+                'status'    => 'document',
+                'document'  => $document,
             ];
         } else {
             $data = [
                 'title'     => 'Verifikasi Dokumen - Tandain',
-                'status'    => 'error',
+                'status'    => 'not found',
             ];
         }
 

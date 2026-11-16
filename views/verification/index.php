@@ -237,7 +237,7 @@
         <div class="max-w-4xl mx-auto space-y-6">
           <section class="rounded-xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
             <h1 class="font-headline-lg text-headline-lg font-bold text-primary">Dokumen Terdaftar</h1>
-            <p class="mt-1 font-body-md text-body-md text-on-surface-variant">ID QR cocok dengan dokumen yang tercatat di Tandain. Status dokumen ditampilkan di bawah.</p>
+            <p class="mt-1 font-body-md text-body-md text-on-surface-variant">ID atau QR cocok dengan dokumen yang tercatat di Tandain. Status dokumen ditampilkan di bawah.</p>
           </section>
 
           <section class="space-y-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
