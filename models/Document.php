@@ -5,6 +5,15 @@ class Document
     private $table = 'documents';
     private $db;
 
+    public function findByHash(string $hash)
+    {
+        $sql = "SELECT * FROM documents WHERE :hash LIMIT 1";
+
+        $stmt = Database::getInstance()->prepare($sql);
+        $stmt->execute([':hash' => $hash]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function __construct()
     {
         $this->db = new Database;

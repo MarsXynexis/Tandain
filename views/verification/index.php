@@ -634,11 +634,6 @@
                 <span class="material-symbols-outlined text-[20px]">verified</span>
                 <span>Periksa Dokumen</span>
               </button>
-
-              <a href="/Tandain/verification?status=error" class="w-full bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low active:scale-[0.99] text-primary font-label-lg text-label-lg py-3 px-5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all duration-150">
-                <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
-                <span>Pindai Kode QR</span>
-              </a>
             </div>
           </form>
         </div>
