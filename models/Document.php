@@ -10,15 +10,6 @@ class Document
         $this->db = new Database;
     }
 
-    public function findByHash(string $hash)
-    {
-            $sql = "SELECT d.* u.full_name AS requester_name, u.identity_number AS requester_nim, u.position AS requester_position FROM {$this->table} d JOIN users u ON u.id = d.requester_id WHERE d.final_sha256_hash = :hash OR d.initial_sha256_hash = :hash LIMIT 1";
-
-        $this->db->query($sql);
-        $this->db->bind('hash', $hash);
-        return $this->db->single();
-    }
-
     public function findById($id)
     {
         $this->db->query("SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1");
