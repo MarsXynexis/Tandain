@@ -15,16 +15,10 @@ class AuthController extends Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? $_POST['email'] ?? '');
             $password = trim($_POST['password'] ?? '');
-            $captcha = trim($_POST['captcha'] ?? '');
-
             $data['username'] = $username;
 
             if (empty($username) || empty($password)) {
                 $data['error'] = 'Data tidak boleh kosong.';
-
-            // } elseif ($captcha !== ($_SESSION['captcha_code'] ?? '')) {
-            //     $data['error'] = 'Kode captcha salah.';
-
             } else {
                 $userModel = $this->model('User');
 

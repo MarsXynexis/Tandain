@@ -132,63 +132,51 @@ $requesterEmail = $user['email'] ?? '-';
                     <span class="material-symbols-outlined absolute right-3 top-2.5 text-[20px] text-on-surface-variant pointer-events-none">expand_more</span>
                   </div>
 
-                  <div class="mt-2.5 p-3 rounded-lg bg-surface-container-low border border-outline-variant" id="template-description-box">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="material-symbols-outlined text-secondary text-[16px]">description</span>
-                      <span class="font-code-tabular text-[11px] font-semibold text-secondary uppercase tracking-wide" id="template-code-label"></span>
-                    </div>
-                    <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed" id="template-description-text"></p>
+                  <div class="mt-1.5 flex items-start gap-1.5" id="template-description-box">
+                    <span class="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0 mt-0.5">info</span>
+                    <p class="font-body-sm text-xs text-on-surface-variant leading-relaxed" id="template-description-text"></p>
+                    <span class="hidden" id="template-code-label"></span>
                   </div>
                 </div>
 
-                <div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant space-y-3">
-                  <div class="flex items-center justify-between gap-2 pb-2 border-b border-outline-variant/60">
-                    <div class="flex items-center gap-2">
-                      <span class="material-symbols-outlined text-secondary text-[18px]">verified_user</span>
-                      <span class="font-label-md text-label-md font-semibold text-primary">Identitas Pemohon Terverifikasi</span>
-                    </div>
-                    <span class="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-outline-variant text-[11px] font-medium text-on-surface-variant">Otomatis</span>
+                <div class="p-3 rounded-lg bg-surface-container-low border border-outline-variant">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-label-md text-sm font-semibold text-primary"><?= htmlspecialchars($requesterName) ?></span>
+                    <?php if ($requesterIdentity !== ''): ?>
+                      <span class="font-code-tabular text-[11px] text-on-surface-variant bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant font-medium"><?= htmlspecialchars($requesterIdentity) ?></span>
+                    <?php endif; ?>
                   </div>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <span class="block text-[11px] font-medium text-on-surface-variant uppercase tracking-wider">Nama Lengkap</span>
-                      <span class="block font-body-sm text-body-sm font-semibold text-primary mt-0.5 break-words"><?= htmlspecialchars($requesterName) ?></span>
-                    </div>
-
-                    <div>
-                      <span class="block text-[11px] font-medium text-on-surface-variant uppercase tracking-wider">NIM / NIP</span>
-                      <span class="block font-code-tabular text-[12px] font-semibold text-primary mt-0.5 break-words"><?= htmlspecialchars($requesterIdentity !== '' ? $requesterIdentity : '-') ?></span>
-                    </div>
-
-                    <div>
-                      <span class="block text-[11px] font-medium text-on-surface-variant uppercase tracking-wider">Program Studi / Jabatan</span>
-                      <span class="block font-body-sm text-body-sm font-medium text-on-surface mt-0.5 break-words"><?= htmlspecialchars($requesterPosition !== '' ? $requesterPosition : '-') ?></span>
-                    </div>
-
-                    <div>
-                      <span class="block text-[11px] font-medium text-on-surface-variant uppercase tracking-wider">Email Institusi</span>
-                      <span class="block font-body-sm text-body-sm font-medium text-on-surface mt-0.5 break-all"><?= htmlspecialchars($requesterEmail) ?></span>
-                    </div>
-                  </div>
+                  <p class="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                    <?= htmlspecialchars($requesterPosition !== '' ? $requesterPosition : '-') ?> &bull; <span class="text-outline"><?= htmlspecialchars($requesterEmail) ?></span>
+                  </p>
                 </div>
 
-                <div class="space-y-4 pt-1" id="dynamic-template-fields"></div>
-
-                <div>
-                  <label class="block font-label-md text-label-md text-primary font-semibold mb-2" for="template-doc-title">
-                    Judul Dokumen <span class="font-normal text-on-surface-variant">(Opsional)</span>
-                  </label>
-                  <input class="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition" id="template-doc-title" name="title" maxlength="255" placeholder="Otomatis sesuai template dan nama pemohon" type="text" disabled>
-                  <p class="font-body-sm text-body-sm text-on-surface-variant mt-1.5">Kosongkan untuk memakai judul otomatis dari nama template dan pemohon.</p>
+                <div class="pt-2 border-t border-outline-variant/60">
+                  <div class="flex items-center gap-1.5 mb-1">
+                    <span class="material-symbols-outlined text-[#004B87] text-[18px]">edit_note</span>
+                    <h3 class="font-label-md text-xs font-bold text-primary uppercase tracking-wider">Isian Naskah Surat</h3>
+                  </div>
+                  <p class="font-body-sm text-xs text-on-surface-variant">Lengkapi data berikut untuk dicetak pada lembar naskah dinas resmi.</p>
                 </div>
 
-                <div>
-                  <label class="block font-label-md text-label-md text-primary font-semibold mb-2" for="template-expires-at">
-                    Batas Kedaluwarsa Dokumen <span class="font-normal text-on-surface-variant">(Opsional)</span>
-                  </label>
-                  <input class="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition cursor-pointer" id="template-expires-at" name="expires_at" type="date" disabled>
-                  <p class="font-body-sm text-body-sm text-on-surface-variant mt-1.5">Batas waktu legalitas administratif surat resmi. Kosongkan jika dokumen berlaku selamanya.</p>
+                <div class="space-y-4" id="dynamic-template-fields"></div>
+
+                <div class="pt-3 border-t border-outline-variant/60 space-y-4">
+                  <div>
+                    <label class="block font-label-md text-label-md text-primary font-semibold mb-1.5" for="template-doc-title">
+                      Judul Dokumen <span class="font-normal text-xs text-on-surface-variant">(Opsional)</span>
+                    </label>
+                    <input class="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition" id="template-doc-title" name="title" maxlength="255" placeholder="Otomatis sesuai template dan nama pemohon" type="text" disabled>
+                    <p class="font-body-sm text-xs text-on-surface-variant mt-1">Kosongkan untuk memakai judul otomatis dari nama template dan pemohon.</p>
+                  </div>
+
+                  <div>
+                    <label class="block font-label-md text-label-md text-primary font-semibold mb-1.5" for="template-expires-at">
+                      Batas Kedaluwarsa Dokumen <span class="font-normal text-xs text-on-surface-variant">(Opsional)</span>
+                    </label>
+                    <input class="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition cursor-pointer" id="template-expires-at" name="expires_at" type="date" disabled>
+                    <p class="font-body-sm text-xs text-on-surface-variant mt-1">Batas waktu legalitas administratif surat resmi. Kosongkan jika dokumen berlaku selamanya.</p>
+                  </div>
                 </div>
 
               </div>
@@ -198,12 +186,9 @@ $requesterEmail = $user['email'] ?? '-';
                 <div class="border border-outline-variant rounded-xl bg-surface-container p-4">
 
                   <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <div class="flex items-center gap-2">
-                      <span class="material-symbols-outlined text-secondary text-[20px]">preview</span>
-                      <div>
-                        <h3 class="font-label-lg text-label-lg font-semibold text-primary">Live Pratinjau Surat Resmi</h3>
-                        <p class="font-body-sm text-body-sm text-on-surface-variant">Kop dan kaki surat Politeknik Negeri Jakarta diterapkan otomatis</p>
-                      </div>
+                    <div>
+                      <h3 class="font-label-lg text-label-lg font-semibold text-primary">Live Pratinjau Surat Resmi</h3>
+                      <p class="font-body-sm text-body-sm text-on-surface-variant">Kop dan kaki surat Politeknik Negeri Jakarta diterapkan otomatis</p>
                     </div>
 
                     <span class="px-2.5 py-1 rounded-full bg-surface-container-lowest border border-outline-variant font-code-tabular text-[11px] font-semibold text-on-surface-variant">A4 • 210 x 297 mm</span>
@@ -279,7 +264,7 @@ $requesterEmail = $user['email'] ?? '-';
         <div class="space-y-4 transition-opacity duration-200" id="signers-flow-container">
 
           <div class="flex flex-wrap items-center gap-2">
-            <button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-green-700 hover:bg-green-800 text-white font-label-md text-label-md font-semibold shadow-sm transition" id="add-signer-btn" type="button">
+            <button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[#004B87] hover:bg-[#003d6d] text-white font-label-md text-label-md font-semibold shadow-sm transition" id="add-signer-btn" type="button">
               <span class="material-symbols-outlined text-[18px] mr-1">add</span>
               <span>Tambah Penandatangan</span>
             </button>
@@ -464,13 +449,24 @@ $requesterEmail = $user['email'] ?? '-';
 
     function renumberSigners() {
       const rows = signerList.querySelectorAll('[data-signer-row]');
+      const isSequential = sequentialCheck && sequentialCheck.checked;
+      const isSearchOpen = searchRow && !searchRow.classList.contains('hidden');
 
       rows.forEach((row, i) => {
-        row.querySelector('[data-number]').textContent = i + 1;
+        const numBadge = row.querySelector('[data-number]');
+        if (numBadge) {
+          numBadge.textContent = i + 1;
+        }
+
+        const connector = row.querySelector('[data-connector]');
+        if (connector) {
+          const showConnector = isSequential && (i < rows.length - 1 || isSearchOpen);
+          connector.classList.toggle('hidden', !showConnector);
+        }
       });
 
       searchRowNumber.textContent = rows.length + 1;
-      signerEmpty.classList.toggle('hidden', rows.length > 0 || !searchRow.classList.contains('hidden'));
+      signerEmpty.classList.toggle('hidden', rows.length > 0 || isSearchOpen);
     }
 
     function addSigner(person) {
@@ -484,7 +480,10 @@ $requesterEmail = $user['email'] ?? '-';
 
         const row = document.createElement('div');
         row.dataset.signerRow = '1';
-        row.className = 'flex items-center justify-between p-3 rounded-lg border border-outline-variant bg-surface-container-lowest hover:border-blue-500 transition gap-4';
+        row.className = 'group/signer';
+
+        const card = document.createElement('div');
+        card.className = 'flex items-center justify-between p-3 rounded-lg border border-outline-variant bg-surface-container-lowest hover:border-blue-500 transition gap-4';
 
         const left = document.createElement('div');
         left.className = 'flex items-center gap-4 flex-1 min-w-0';
@@ -524,7 +523,14 @@ $requesterEmail = $user['email'] ?? '-';
           renumberSigners();
         });
 
-        row.append(left, hidden, del);
+        card.append(left, hidden, del);
+
+        const connector = document.createElement('div');
+        connector.dataset.connector = '1';
+        connector.className = 'pl-3 py-1 flex items-center hidden';
+        connector.innerHTML = '<div class="w-8 flex flex-col items-center justify-center text-[#004B87]"><div class="w-0.5 h-3.5 bg-[#004B87]/80 rounded-full"></div><span class="material-symbols-outlined text-[16px] leading-none -mt-1">arrow_drop_down</span></div>';
+
+        row.append(card, connector);
         signerList.appendChild(row);
         renumberSigners();
       }
@@ -1111,6 +1117,13 @@ $requesterEmail = $user['email'] ?? '-';
       userTouchedRouting = true;
       updateTriageState();
     });
+
+    if (sequentialCheck) {
+      sequentialCheck.addEventListener('change', () => {
+        userTouchedRouting = true;
+        renumberSigners();
+      });
+    }
 
     tabUploadBtn.addEventListener('click', () => switchTab('upload'));
     tabTemplateBtn.addEventListener('click', () => switchTab('template'));

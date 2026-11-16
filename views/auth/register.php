@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title><?= $data['title'] ?? 'Daftar Akun - Tandain'; ?></title>
+  <link rel="icon" type="image/png" href="/Tandain/assets/img/app-icon.png">
 
   <link href="/Tandain/assets/css/fonts.css" rel="stylesheet">
 

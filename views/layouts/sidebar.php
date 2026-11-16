@@ -23,9 +23,7 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
   <div class="flex flex-col gap-4">
 
     <a class="flex items-center gap-3 px-2 py-1" href="/Tandain/dashboard">
-      <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#c7c5cf] bg-[#151b3d] p-px shadow-[0_1px_1px_rgba(0,0,0,0.05)]" role="img" aria-label="Logo Tandain">
-        <span class="material-symbols-outlined text-[18px] text-[#E3DFFF]" aria-hidden="true">draw</span>
-      </span>
+      <img src="/Tandain/assets/img/app-icon.png" alt="Logo Tandain" class="h-10 w-10 shrink-0 object-contain drop-shadow-xs">
       <span class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">Tandain</span>
     </a>
 
@@ -38,27 +36,38 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
 
       <?php if ($isAdmin): ?>
 
-        <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg <?= $isTriageActive ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/triage" <?= $isTriageActive ? 'aria-current="page"' : ''; ?>>
+        <div class="pt-2 pb-1 px-3">
+          <p class="font-label-sm text-[11px] font-bold tracking-wider uppercase text-outline">Persuratan</p>
+        </div>
+
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg <?= $isTriageActive ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/triage" <?= $isTriageActive ? 'aria-current="page"' : ''; ?>>
           <span class="material-symbols-outlined text-[20px]" style="<?= $isTriageActive ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">move_to_inbox</span>
           <span class="font-label-md text-label-md">Disposisi Dokumen</span>
         </a>
 
-        <div class="flex flex-col">
-          <button class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $administrationActive ? 'text-primary font-semibold bg-surface-container-low' : $inactiveItemClass; ?> transition-colors w-full text-left" id="admin-menu-btn" type="button" aria-expanded="<?= $administrationActive ? 'true' : 'false'; ?>">
-            <span class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] <?= $administrationActive ? 'text-secondary' : ''; ?>">admin_panel_settings</span>
-              <span class="font-label-md text-label-md">Administrasi</span>
-            </span>
-            <span class="material-symbols-outlined text-[16px] text-outline transition-transform duration-200 <?= $administrationActive ? 'rotate-180' : ''; ?>" id="admin-chevron">expand_more</span>
-          </button>
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg <?= $activeMenu === 'archive' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/archive" <?= $activeMenu === 'archive' ? 'aria-current="page"' : ''; ?>>
+          <span class="material-symbols-outlined text-[20px]" style="<?= $activeMenu === 'archive' ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">folder_open</span>
+          <span class="font-label-md text-label-md">Arsip Dokumen</span>
+        </a>
 
-          <div class="ml-8 pl-3 pr-2 flex flex-col gap-1 border-l border-dashed border-secondary/60 transition-all duration-200 overflow-hidden <?= $administrationActive ? 'max-h-48 opacity-100 py-1' : 'max-h-0 opacity-0 py-0'; ?>" id="admin-submenu">
-            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $isAccountsActive ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/accounts" <?= $isAccountsActive ? 'aria-current="page"' : ''; ?>>Manajemen Akun</a>
-            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'templates' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/template" <?= $activeMenu === 'templates' ? 'aria-current="page"' : ''; ?>>Template Surat</a>
-            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'audit' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/audit" <?= $activeMenu === 'audit' ? 'aria-current="page"' : ''; ?>>Log Audit Dokumen</a>
-            <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'archive' ? 'bg-surface-container text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/archive" <?= $activeMenu === 'archive' ? 'aria-current="page"' : ''; ?>>Arsip Dokumen</a>
-          </div>
+        <div class="pt-3 pb-1 px-3">
+          <p class="font-label-sm text-[11px] font-bold tracking-wider uppercase text-outline">Pengaturan Sistem</p>
         </div>
+
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg <?= $activeMenu === 'templates' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/template" <?= $activeMenu === 'templates' ? 'aria-current="page"' : ''; ?>>
+          <span class="material-symbols-outlined text-[20px]" style="<?= $activeMenu === 'templates' ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">description</span>
+          <span class="font-label-md text-label-md">Template Surat</span>
+        </a>
+
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg <?= $isAccountsActive ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/accounts" <?= $isAccountsActive ? 'aria-current="page"' : ''; ?>>
+          <span class="material-symbols-outlined text-[20px]" style="<?= $isAccountsActive ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">manage_accounts</span>
+          <span class="font-label-md text-label-md">Manajemen Akun</span>
+        </a>
+
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg <?= $activeMenu === 'audit' ? $activeItemClass : $inactiveItemClass; ?> transition-colors" href="/Tandain/audit" <?= $activeMenu === 'audit' ? 'aria-current="page"' : ''; ?>>
+          <span class="material-symbols-outlined text-[20px]" style="<?= $activeMenu === 'audit' ? 'font-variation-settings: &quot;FILL&quot; 1;' : ''; ?>">history</span>
+          <span class="font-label-md text-label-md">Log Audit Dokumen</span>
+        </a>
 
       <?php else: ?>
 

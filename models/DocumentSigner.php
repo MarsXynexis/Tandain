@@ -78,6 +78,11 @@ class DocumentSigner
         return $this->db->resultSet();
     }
 
+    public function getByDocumentId($documentId)
+    {
+        return $this->getSignerByDocumentId($documentId);
+    }
+
     public function getDetailDocumentById($documentId, $signerId)
     {
         $sql = "SELECT

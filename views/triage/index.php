@@ -83,7 +83,6 @@ if (!empty($data['search'])) {
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-surface-container-low border-b border-outline-variant h-11">
-              <th class="py-3 px-5 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider w-14 text-center">No</th>
               <th class="py-3 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Judul Dokumen</th>
               <th class="py-3 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Pemohon</th>
               <th class="py-3 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tanggal Masuk</th>
@@ -95,16 +94,19 @@ if (!empty($data['search'])) {
           <tbody class="divide-y divide-surface-container font-body-md text-body-md">
             <?php if (empty($data['documents'])): ?>
               <tr>
-                <td colspan="6" class="py-8 text-center text-on-surface-variant">
-                  <?= htmlspecialchars($emptyMessage, ENT_QUOTES, 'UTF-8'); ?>
+                <td colspan="5" class="py-12 text-center text-on-surface-variant">
+                  <div class="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                    <div class="w-12 h-12 rounded-full <?= ($data['current_status'] === 'pending' && empty($data['search'])) ? 'bg-[#f0fdf4] text-[#15803d]' : 'bg-surface-container text-on-surface-variant'; ?> flex items-center justify-center mb-1">
+                      <span class="material-symbols-outlined text-[26px]"><?= ($data['current_status'] === 'pending' && empty($data['search'])) ? 'task_alt' : 'folder_open'; ?></span>
+                    </div>
+                    <p class="font-headline-sm text-sm font-semibold text-primary"><?= ($data['current_status'] === 'pending' && empty($data['search'])) ? 'Antrean Disposisi Bersih' : 'Tidak Ada Dokumen'; ?></p>
+                    <p class="font-body-sm text-xs text-on-surface-variant"><?= htmlspecialchars($emptyMessage, ENT_QUOTES, 'UTF-8'); ?></p>
+                  </div>
                 </td>
               </tr>
             <?php else: ?>
-              <?php $no = 1; ?>
               <?php foreach ($data['documents'] as $doc): ?>
                 <tr class="hover:bg-surface-container-low/50 transition-colors group">
-                  <td class="py-4 px-5 text-center font-code-tabular text-code-tabular text-on-surface-variant"><?= $no++; ?></td>
-
                   <td class="py-4 px-6">
                     <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="font-headline-sm text-[15px] font-semibold text-primary hover:text-secondary transition-colors leading-tight inline-block">
                       <?= htmlspecialchars($doc['title'], ENT_QUOTES, 'UTF-8'); ?>
@@ -121,7 +123,7 @@ if (!empty($data['search'])) {
                       <?= htmlspecialchars($doc['requester_name'], ENT_QUOTES, 'UTF-8'); ?>
                     </div>
                     <div class="font-code-tabular text-[11px] text-outline mt-0.5">
-                      NIM/NIP: <?= htmlspecialchars($doc['requester_nim'], ENT_QUOTES, 'UTF-8'); ?>
+                      <?= htmlspecialchars($doc['requester_nim'], ENT_QUOTES, 'UTF-8'); ?>
                     </div>
                   </td>
 
@@ -133,7 +135,7 @@ if (!empty($data['search'])) {
                   <td class="py-4 px-6 text-center whitespace-nowrap">
                     <?php if ($doc['status'] === 'PENDING_TRIAGE'): ?>
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
-                        <span class="material-symbols-outlined text-[14px]">hourglass_top</span>
+                        <span class="material-symbols-outlined text-[14px]">pending_actions</span>
                         <span>Menunggu Disposisi</span>
                       </span>
                     <?php elseif ($doc['status'] === 'IN_PROGRESS'): ?>
@@ -166,7 +168,7 @@ if (!empty($data['search'])) {
                   <td class="py-4 px-6 text-right whitespace-nowrap">
                     <?php if ($doc['status'] === 'PENDING_TRIAGE'): ?>
                       <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#004B87] text-white font-label-md text-label-md font-semibold hover:bg-[#003865] transition-all shadow-sm active:scale-[0.98]">
-                        <span class="material-symbols-outlined text-[18px]">rate_review</span>
+                        <span class="material-symbols-outlined text-[18px]">fact_check</span>
                         <span>Telaah &amp; Disposisi</span>
                       </a>
                     <?php else: ?>

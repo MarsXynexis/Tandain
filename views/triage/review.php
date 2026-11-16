@@ -10,7 +10,7 @@ $currentStatus = $document['status'];
 if ($currentStatus === 'PENDING_TRIAGE') {
     $statusLabel = 'Menunggu Disposisi';
     $statusClass = 'bg-[#fef3c7] text-[#b45309] border-[#fde68a]';
-    $statusIcon = 'hourglass_top';
+    $statusIcon = 'pending_actions';
     $pageTitle = 'Pemeriksaan & Disposisi Dokumen';
     $pageSubtitle = 'Verifikasi berkas permohonan dan tentukan alur pihak penandatangan';
     $backUrl = '/Tandain/triage';
@@ -113,7 +113,7 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
           <div>
             <p class="block font-label-md text-label-md text-primary font-semibold mb-1">Pemohon</p>
             <p class="font-body-md text-body-md text-on-surface font-medium"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">NIM/NIP: <?= htmlspecialchars($document['requester_nim'], ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="font-code-tabular text-body-sm text-on-surface-variant"><?= htmlspecialchars($document['requester_nim'], ENT_QUOTES, 'UTF-8'); ?></p>
           </div>
 
           <div>
@@ -193,7 +193,7 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
 
       <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm" id="section-signers">
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-container mb-4 pb-4">
+        <div class="flex flex-col gap-3 w-full pb-4 mb-4 border-b border-surface-container">
           <div>
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-secondary text-[22px]">route</span>
@@ -203,24 +203,24 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
           </div>
 
           <?php if ($canDispose): ?>
-            <div class="flex items-start md:items-center gap-3 shrink-0 pt-2 sm:pt-0 sm:border-l sm:border-surface-container sm:pl-6">
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input <?= (!isset($document['is_sequential']) || $document['is_sequential']) ? 'checked' : ''; ?> class="sr-only peer" id="sequential-check" name="is_sequential" type="checkbox" value="1">
+            <div class="flex items-start gap-3 pt-1" id="sequential-toggle-container">
+              <label class="relative inline-flex items-center cursor-pointer select-none">
+                <input <?= (!isset($document['is_sequential']) || $document['is_sequential'] || $document['is_sequential'] === null || $document['is_sequential'] === '1' || $document['is_sequential'] === 't') ? 'checked' : ''; ?> class="sr-only peer" id="sequential-check" name="is_sequential" type="checkbox" value="1">
                 <div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#004B87]"></div>
               </label>
 
               <div>
-                <span class="font-label-md text-label-md text-primary block leading-tight font-semibold">Penandatanganan mengikuti urutan</span>
-                <span class="text-xs text-on-surface-variant font-normal block leading-relaxed">Berkas diteruskan bertahap dari penandatangan pertama ke berikutnya</span>
+                <span class="font-label-md text-label-md text-primary block leading-tight font-semibold">Penandatanganan dokumen harus mengikuti urutan</span>
+                <span class="text-xs text-on-surface-variant font-normal block leading-relaxed">Jika aktif, berkas akan diteruskan bertahap dari penandatangan pertama ke berikutnya</span>
               </div>
             </div>
           <?php endif; ?>
         </div>
 
-        <div class="flex flex-col gap-4">
+        <div class="space-y-4 transition-opacity duration-200" id="signers-flow-container">
 
           <?php if ($canDispose): ?>
-            <div>
+            <div class="flex flex-wrap items-center gap-2">
               <button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[#004B87] hover:bg-[#003d6d] text-white font-label-md text-label-md font-semibold shadow-sm transition" id="btn-show-add-signer" type="button">
                 <span class="material-symbols-outlined text-[18px] mr-1">add</span>
                 <span>Tambah Penandatangan</span>
@@ -228,124 +228,126 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
             </div>
           <?php endif; ?>
 
-          <div class="flex flex-col gap-3" id="signers-list">
+          <div class="space-y-2">
 
-            <div class="rounded-xl border border-dashed border-outline bg-surface px-4 py-6 text-center text-on-surface-variant font-body-sm text-body-sm <?= !empty($data['current_signers']) ? 'hidden' : ''; ?>" id="signers-empty" style="<?= !empty($data['current_signers']) ? 'display: none;' : ''; ?>">
-              Belum ada penandatangan yang ditetapkan.
+            <div class="space-y-2" id="signers-list">
+              <?php $order = 1; ?>
+              <?php foreach ($data['current_signers'] as $signer): ?>
+                <div class="signer-row flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-outline-variant bg-surface-container-lowest gap-4">
+                  <div class="flex items-center gap-4 flex-1 min-w-0">
+                    <div class="signer-badge w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0"><?= $order++; ?></div>
+
+                    <div class="flex-1 min-w-0">
+                      <p class="font-label-lg text-label-lg font-bold text-primary truncate" data-field="name"><?= htmlspecialchars($signer['signer_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                      <p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
+                        <?= htmlspecialchars($signer['signer_email'], ENT_QUOTES, 'UTF-8'); ?> &bull; <span class="font-code-tabular"><?= htmlspecialchars($signer['signer_nim_nip'], ENT_QUOTES, 'UTF-8'); ?></span>
+                      </p>
+                      <p class="text-[11px] text-on-surface-variant mt-0.5" data-field="role"><?= htmlspecialchars($signer['signer_position'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
+                    </div>
+                  </div>
+
+                  <?php if ($canDispose): ?>
+                    <input type="hidden" name="signer_ids[]" value="<?= htmlspecialchars($signer['signer_id'], ENT_QUOTES, 'UTF-8'); ?>">
+
+                    <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap shrink-0">
+                      <div class="flex items-center gap-1.5">
+                        <label class="font-label-sm text-xs text-on-surface-variant font-medium">Bentuk TTE:</label>
+                        <select name="stamp_types[]" class="px-2.5 py-1.5 text-xs rounded-lg border border-outline-variant bg-surface-container-lowest text-primary font-medium focus:outline-none focus:border-secondary">
+                          <option value="DUAL_DISPLAY" <?= (($signer['stamp_type'] ?? 'DUAL_DISPLAY') === 'DUAL_DISPLAY') ? 'selected' : ''; ?>>Tanda Tangan &amp; QR</option>
+                          <option value="SIGNATURE_ONLY" <?= (($signer['stamp_type'] ?? '') === 'SIGNATURE_ONLY') ? 'selected' : ''; ?>>Tanda Tangan Saja</option>
+                          <option value="QR_ONLY" <?= (($signer['stamp_type'] ?? '') === 'QR_ONLY') ? 'selected' : ''; ?>>QR Code Saja</option>
+                        </select>
+                      </div>
+
+                      <div class="flex items-center gap-1.5">
+                        <label class="font-label-sm text-xs text-on-surface-variant font-medium">Hal:</label>
+                        <input type="number" min="1" max="999" name="page_numbers[]" value="<?= htmlspecialchars((string)($signer['page_number'] ?? 1), ENT_QUOTES, 'UTF-8'); ?>" class="w-16 px-2 py-1.5 text-xs text-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary font-medium focus:outline-none focus:border-secondary">
+                      </div>
+
+                      <button class="p-1.5 rounded-lg text-error hover:bg-error-container/40 transition shrink-0" onclick="removeSignerRow(this)" title="Hapus Baris" type="button">
+                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                      </button>
+                    </div>
+                  <?php else: ?>
+                    <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap shrink-0">
+                      <span class="inline-flex items-center rounded-full bg-surface-container px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant border border-outline-variant">
+                        <?= ($signer['stamp_type'] ?? 'DUAL_DISPLAY') === 'SIGNATURE_ONLY' ? 'Tanda Tangan Saja' : ((($signer['stamp_type'] ?? '') === 'QR_ONLY') ? 'QR Code Saja' : 'Tanda Tangan & QR'); ?>
+                      </span>
+
+                      <span class="text-[11px] text-on-surface-variant">Hal. <?= htmlspecialchars((string)($signer['page_number'] ?? 1), ENT_QUOTES, 'UTF-8'); ?></span>
+
+                      <?php if ($document['status'] === 'COMPLETED' || $signer['status'] === 'SIGNED'): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]">
+                          <span class="material-symbols-outlined text-[14px]">check</span>
+                          <span>Sudah Ditandatangani</span>
+                        </span>
+                      <?php elseif ($document['status'] === 'REJECTED' || $document['status'] === 'CANCELLED'): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
+                          <span class="material-symbols-outlined text-[14px]">block</span>
+                          <span>Tidak Dilanjutkan</span>
+                        </span>
+                      <?php elseif ($signer['status'] === 'CURRENT_TURN'): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
+                          <span class="material-symbols-outlined text-[14px]">pending_actions</span>
+                          <span>Menunggu Tanda Tangan</span>
+                        </span>
+                      <?php elseif ($signer['status'] === 'REJECTED'): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca]">
+                          <span class="material-symbols-outlined text-[14px]">close</span>
+                          <span>Ditolak</span>
+                        </span>
+                      <?php elseif ($signer['status'] === 'CANCELLED'): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
+                          <span class="material-symbols-outlined text-[14px]">block</span>
+                          <span>Dibatalkan</span>
+                        </span>
+                      <?php else: ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
+                          <span>Menunggu Giliran</span>
+                        </span>
+                      <?php endif; ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
             </div>
 
-            <?php $order = 1; ?>
-            <?php foreach ($data['current_signers'] as $signer): ?>
-              <div class="signer-row flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-outline-variant bg-surface-container-lowest gap-4">
-                <div class="flex items-center gap-4 flex-1 min-w-0">
-                  <div class="signer-badge w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0"><?= $order++; ?></div>
+            <p class="text-sm text-on-surface-variant py-2 <?= !empty($data['current_signers']) ? 'hidden' : ''; ?>" id="signers-empty" style="<?= !empty($data['current_signers']) ? 'display: none;' : ''; ?>">Belum ada penandatangan. Klik "Tambah Penandatangan" untuk mencari.</p>
 
-                  <div class="flex-1 min-w-0">
-                    <p class="font-label-lg text-label-lg font-bold text-primary truncate" data-field="name"><?= htmlspecialchars($signer['signer_name'], ENT_QUOTES, 'UTF-8'); ?></p>
-                    <p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
-                      <?= htmlspecialchars($signer['signer_email'], ENT_QUOTES, 'UTF-8'); ?> &bull; NIP/NIM <?= htmlspecialchars($signer['signer_nim_nip'], ENT_QUOTES, 'UTF-8'); ?>
-                    </p>
-                    <p class="text-[11px] text-on-surface-variant mt-0.5" data-field="role"><?= htmlspecialchars($signer['signer_position'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
-                  </div>
-                </div>
+            <?php if ($canDispose): ?>
+              <div class="hidden relative" id="signer-search-row">
+                <div class="flex flex-col md:flex-row items-center justify-between p-3 rounded-lg border border-dashed border-outline bg-surface gap-4">
+                  <div class="flex items-center gap-4 flex-1 w-full">
+                    <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0" id="next-signer-order">1</div>
 
-                <?php if ($canDispose): ?>
-                  <input type="hidden" name="signer_ids[]" value="<?= htmlspecialchars($signer['signer_id'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <div class="flex-1 flex gap-2">
+                      <div class="relative flex-1">
+                        <input class="w-full pl-9 pr-3 py-2 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-primary focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none" id="signer-search-input" autocomplete="off" placeholder="Cari nama, NIP/NIM, atau email resmi kampus" type="text">
+                        <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-on-surface-variant">person_search</span>
+                      </div>
 
-                  <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap shrink-0">
-                    <div class="flex items-center gap-1.5">
-                      <label class="font-label-sm text-xs text-on-surface-variant font-medium">Bentuk TTE:</label>
-                      <select name="stamp_types[]" class="px-2.5 py-1.5 text-xs rounded-lg border border-outline-variant bg-surface-container-lowest text-primary font-medium focus:outline-none focus:border-secondary">
-                        <option value="DUAL_DISPLAY" <?= (($signer['stamp_type'] ?? 'DUAL_DISPLAY') === 'DUAL_DISPLAY') ? 'selected' : ''; ?>>Tanda Tangan &amp; QR</option>
-                        <option value="SIGNATURE_ONLY" <?= (($signer['stamp_type'] ?? '') === 'SIGNATURE_ONLY') ? 'selected' : ''; ?>>Tanda Tangan Saja</option>
-                        <option value="QR_ONLY" <?= (($signer['stamp_type'] ?? '') === 'QR_ONLY') ? 'selected' : ''; ?>>QR Code Saja</option>
-                      </select>
+                      <button class="px-3.5 py-2 bg-[#004B87] hover:bg-[#003d6d] text-white rounded-lg font-label-md text-label-md flex items-center gap-1 transition shadow-sm shrink-0" id="signer-search-btn" type="button">
+                        <span class="material-symbols-outlined text-[16px]">search</span>
+                        <span>Cari</span>
+                      </button>
                     </div>
-
-                    <div class="flex items-center gap-1.5">
-                      <label class="font-label-sm text-xs text-on-surface-variant font-medium">Hal:</label>
-                      <input type="number" min="1" max="999" name="page_numbers[]" value="<?= htmlspecialchars((string)($signer['page_number'] ?? 1), ENT_QUOTES, 'UTF-8'); ?>" class="w-16 px-2 py-1.5 text-xs text-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary font-medium focus:outline-none focus:border-secondary">
-                    </div>
-
-                    <button class="p-1.5 rounded-lg text-error hover:bg-error-container/40 transition shrink-0" onclick="removeSignerRow(this)" title="Hapus Baris" type="button">
-                      <span class="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
-                  </div>
-                <?php else: ?>
-                  <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap shrink-0">
-                    <span class="inline-flex items-center rounded-full bg-surface-container px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant border border-outline-variant">
-                      <?= ($signer['stamp_type'] ?? 'DUAL_DISPLAY') === 'SIGNATURE_ONLY' ? 'Tanda Tangan Saja' : ((($signer['stamp_type'] ?? '') === 'QR_ONLY') ? 'QR Code Saja' : 'Tanda Tangan & QR'); ?>
-                    </span>
-
-                    <span class="text-[11px] text-on-surface-variant">Hal. <?= htmlspecialchars((string)($signer['page_number'] ?? 1), ENT_QUOTES, 'UTF-8'); ?></span>
-
-                    <?php if ($document['status'] === 'COMPLETED' || $signer['status'] === 'SIGNED'): ?>
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]">
-                        <span class="material-symbols-outlined text-[14px]">check</span>
-                        <span>Sudah Ditandatangani</span>
-                      </span>
-                    <?php elseif ($document['status'] === 'REJECTED' || $document['status'] === 'CANCELLED'): ?>
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
-                        <span class="material-symbols-outlined text-[14px]">block</span>
-                        <span>Tidak Dilanjutkan</span>
-                      </span>
-                    <?php elseif ($signer['status'] === 'CURRENT_TURN'): ?>
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
-                        <span class="material-symbols-outlined text-[14px]">hourglass_top</span>
-                        <span>Menunggu Tanda Tangan</span>
-                      </span>
-                    <?php elseif ($signer['status'] === 'REJECTED'): ?>
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca]">
-                        <span class="material-symbols-outlined text-[14px]">close</span>
-                        <span>Ditolak</span>
-                      </span>
-                    <?php elseif ($signer['status'] === 'CANCELLED'): ?>
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
-                        <span class="material-symbols-outlined text-[14px]">block</span>
-                        <span>Dibatalkan</span>
-                      </span>
-                    <?php else: ?>
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
-                        <span>Menunggu Giliran</span>
-                      </span>
-                    <?php endif; ?>
-                  </div>
-                <?php endif; ?>
-              </div>
-            <?php endforeach; ?>
-
-          </div>
-
-          <?php if ($canDispose): ?>
-            <div class="flex flex-col md:flex-row items-center justify-between p-4 rounded-xl border border-dashed border-outline bg-surface gap-4 hidden" id="signer-search-row">
-              <div class="flex items-center gap-4 flex-1 w-full">
-                <div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0" id="next-signer-order">1</div>
-
-                <div class="flex-1 flex gap-2">
-                  <div class="relative flex-1">
-                    <input class="w-full pl-9 pr-3 py-2 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-primary focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none" id="signer-search-input" placeholder="Cari nama, NIP/NIM, atau email resmi kampus" type="text" autocomplete="off">
-                    <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-on-surface-variant">person_search</span>
                   </div>
 
-                  <button class="px-3.5 py-2 bg-[#004B87] hover:bg-[#003d6d] text-white rounded-lg font-label-md text-label-md flex items-center gap-1 transition shadow-sm shrink-0" id="signer-search-btn" type="button">
-                    <span class="material-symbols-outlined text-[16px]">search</span>
-                    <span>Cari</span>
+                  <button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition shrink-0 self-end md:self-center" id="signer-search-cancel" title="Batalkan" type="button">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
                   </button>
                 </div>
+
+                <div class="hidden flex-col gap-2 p-3 mt-1 rounded-xl border border-outline-variant bg-surface-container-low max-h-72 overflow-y-auto" id="search-results-box"></div>
               </div>
 
-              <button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition shrink-0 self-end md:self-center" id="signer-search-cancel" title="Batalkan" type="button">
-                <span class="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
+              <div class="hidden items-start gap-3 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-[#b91c1c] font-body-sm text-body-sm" id="disposition-error" role="alert">
+                <span class="material-symbols-outlined text-[20px]">error</span>
+                <span id="disposition-error-text"></span>
+              </div>
+            <?php endif; ?>
 
-            <div class="hidden flex-col gap-2 p-3 rounded-xl border border-outline-variant bg-surface-container-low max-h-72 overflow-y-auto" id="search-results-box"></div>
-
-            <div class="hidden items-start gap-3 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-[#b91c1c] font-body-sm text-body-sm" id="disposition-error" role="alert">
-              <span class="material-symbols-outlined text-[20px]">error</span>
-              <span id="disposition-error-text"></span>
-            </div>
-          <?php endif; ?>
+          </div>
 
         </div>
 
@@ -376,12 +378,12 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
       <template id="signer-row-template">
         <div class="signer-row flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-outline-variant bg-surface-container-lowest gap-4">
           <div class="flex items-center gap-4 flex-1 min-w-0">
-            <div class="signer-badge w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0"></div>
+            <div class="signer-badge w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0"></div>
 
             <div class="flex-1 min-w-0">
               <p class="font-label-lg text-label-lg font-bold text-primary truncate" data-field="name"></p>
               <p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
-                <span data-field="email"></span> &bull; NIP/NIM <span data-field="nip"></span>
+                <span data-field="email"></span> &bull; <span class="font-code-tabular" data-field="nip"></span>
               </p>
               <p class="text-[11px] text-on-surface-variant mt-0.5" data-field="role"></p>
             </div>
@@ -483,7 +485,7 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
       });
 
       if (emptyState) {
-        if (rows.length > 0) {
+        if (rows.length > 0 || (signerSearchRow && !signerSearchRow.classList.contains('hidden'))) {
           emptyState.classList.add('hidden');
           emptyState.style.display = 'none';
         } else {
@@ -506,12 +508,28 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
       }
     }
 
+    function openSearch() {
+      signerSearchRow.classList.remove('hidden');
+      const emptyState = document.getElementById('signers-empty');
+      if (emptyState) {
+        emptyState.classList.add('hidden');
+        emptyState.style.display = 'none';
+      }
+      updateSignerBadges();
+      signerSearchInput.value = '';
+      searchResultsBox.innerHTML = '';
+      searchResultsBox.classList.add('hidden');
+      searchResultsBox.classList.remove('flex');
+      signerSearchInput.focus();
+    }
+
     function resetSearch() {
       signerSearchInput.value = '';
       searchResultsBox.innerHTML = '';
       searchResultsBox.classList.add('hidden');
       searchResultsBox.classList.remove('flex');
       signerSearchRow.classList.add('hidden');
+      updateSignerBadges();
     }
 
     function showDispositionError(message) {
@@ -564,7 +582,7 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
 
       const detail = document.createElement('p');
       detail.className = 'font-body-sm text-body-sm text-on-surface-variant truncate';
-      detail.textContent = user.email + ' • NIP/NIM ' + user.identity_number;
+      detail.textContent = user.email + ' • ' + user.identity_number;
 
       const role = document.createElement('p');
       role.className = 'text-[11px] text-on-surface-variant mt-0.5';
@@ -652,22 +670,33 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
     }
 
     if (btnShowAddSigner) {
-      btnShowAddSigner.addEventListener('click', function () {
-        signerSearchRow.classList.remove('hidden');
-        signerSearchInput.focus();
-        signerSearchRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
+      btnShowAddSigner.addEventListener('click', openSearch);
     }
 
+    let searchDebounceTimer = null;
     if (signerSearchInput) {
+      signerSearchInput.addEventListener('input', function () {
+        clearTimeout(searchDebounceTimer);
+        const query = signerSearchInput.value.trim();
+        if (query.length < 2) {
+          searchResultsBox.innerHTML = '';
+          searchResultsBox.classList.add('hidden');
+          searchResultsBox.classList.remove('flex');
+          return;
+        }
+        searchDebounceTimer = setTimeout(() => {
+          runSignerSearch(query);
+        }, 300);
+      });
+
       signerSearchInput.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
           event.preventDefault();
-
+          clearTimeout(searchDebounceTimer);
           const query = signerSearchInput.value.trim();
 
           if (query.length < 2) {
-            searchResultsBox.innerHTML = '<div class="p-3 text-center text-on-surface-variant font-body-sm text-body-sm">Ketik minimal 2 karakter nama, NIP, atau email.</div>';
+            searchResultsBox.innerHTML = '<div class="p-3 text-center text-on-surface-variant font-body-sm text-body-sm">Ketik minimal 2 karakter nama, nomor induk, atau email.</div>';
             searchResultsBox.classList.remove('hidden');
             searchResultsBox.classList.add('flex');
             return;
@@ -680,10 +709,11 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
 
     if (signerSearchBtn) {
       signerSearchBtn.addEventListener('click', function () {
+        clearTimeout(searchDebounceTimer);
         const query = signerSearchInput.value.trim();
 
         if (query.length < 2) {
-          searchResultsBox.innerHTML = '<div class="p-3 text-center text-on-surface-variant font-body-sm text-body-sm">Ketik minimal 2 karakter nama, NIP, atau email.</div>';
+          searchResultsBox.innerHTML = '<div class="p-3 text-center text-on-surface-variant font-body-sm text-body-sm">Ketik minimal 2 karakter nama, nomor induk, atau email.</div>';
           searchResultsBox.classList.remove('hidden');
           searchResultsBox.classList.add('flex');
           return;
