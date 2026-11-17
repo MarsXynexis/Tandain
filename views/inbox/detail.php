@@ -55,7 +55,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                     </div>
 
                     <?php if ($documentFile !== ''): ?>
-                        <div class="h-[1080px] overflow-auto bg-surface-container-low p-4">
+                        <div class="h-[720px] overflow-auto bg-surface-container-low p-4">
                             <p id="pdf-loading" class="py-8 text-center font-body-md text-body-md text-on-surface-variant" role="status">Memuat dokumen...</p>
                             <div id="pdf-error" class="hidden py-8 text-center font-body-md text-body-md text-error" role="alert"></div>
                             <div id="pdf-container" class="space-y-4 overflow-x-auto pb-2" aria-label="Pratinjau dokumen dengan posisi tanda tangan"></div>
@@ -162,19 +162,18 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                 <?php endif; ?>
             </div>
 
+            <?php $identityLabel = ($document['requester_role_name'] ?? '') === 'pegawai' ? 'NIP' : (($document['requester_role_name'] ?? '') === 'mahasiswa' ? 'NIM' : 'NIM/NIP'); ?>
             <aside class="space-y-6">
                 <section class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
-                    <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start row justify-between">
                         <div>
-                            <p class="text-[11px] font-bold uppercase tracking-[0.08em] text-on-surface-variant">Pemohon</p>
-                            <h3 class="mt-2 font-headline-sm text-headline-sm font-semibold text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></h3>
+                            <h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Pemohon</h3>
+                            <h2 class="mt-2 font-body-md text-headline-sm font-semibold text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            <h3 class="font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($document['requester_nim_nip'] ?? 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
-                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-container text-on-primary">
-                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">account_circle</span>
-                        </span>
                     </div>
 
-                    <div class="mt-5 space-y-3 border-t border-outline-variant/70 pt-4 text-sm">
+                    <div class="mt-3 space-y-3 border-t border-outline-variant/70 pt-4 text-sm">
                         <div>
                             <p class="font-label-md text-label-md text-on-surface-variant">Judul Dokumen</p>
                             <p class="mt-1 font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($document['title'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -187,10 +186,36 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
 
                         <div>
                             <p class="font-label-md text-label-md text-on-surface-variant">Status</p>
-                            <span class="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label-sm font-label-sm <?= $documentStatusClass; ?>">
-                                <span class="material-symbols-outlined text-[14px]" aria-hidden="true"><?= $document['status'] === 'COMPLETED' ? 'check_circle' : 'sync'; ?></span>
-                                <span><?= htmlspecialchars($documentStatus, ENT_QUOTES, 'UTF-8'); ?></span>
-                            </span>
+                            <div>
+                                <?php $signedCount = 0;
+                                foreach ($data['signers'] as $signer) {
+                                    if (!empty($signer['signed_at'])) {
+                                        $signedCount++;
+                                    }
+                                }
+                                ?>
+                                <?php $totalSigners = count($data['signers']); ?>
+                                <?php if ($document['status'] == 'REJECTED') {
+                                    $percent = 'Ditolak';
+                                } else {
+                                    $percent = $totalSigners > 0 ? round(($signedCount / $totalSigners) * 100) : 0;
+                                } ?>
+                                <?php if ($percent == 100) {
+                                    $percentClass = 'bg-[#15803d]';
+                                } elseif ($percent >= 50) {
+                                    $percentClass = 'bg-secondary-container';
+                                } else {
+                                    $percentClass = 'bg-[#b91c1c]';
+                                }
+                                ?>
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <span class="font-label-sm text-[11px] font-semibold text-on-surface-variant"><?= $signedCount; ?>/<?= $totalSigners; ?> tanda tangan</span>
+                                    <span class="font-code-tabular text-[11px] font-bold text-on-surface-variant"><?= $percent; ?>%</span>
+                                </div>
+                                <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                                    <div class="<?= $percentClass; ?> h-2 rounded-full" style="width: <?= $percent; ?>%"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="flex justify-between mt-6 gap-2">
@@ -224,7 +249,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                 </section>
 
                 <section class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
-                    <h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Tanda Tangan</h3>
+                    <h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Penandatangan</h3>
                     <div class="mt-4 space-y-3">
                         <?php foreach ($data['signers'] as $index => $signer): ?>
                             <?php $signedTimestamp = !empty($signer['signed_at']) ? strtotime($signer['signed_at']) : false; ?>
