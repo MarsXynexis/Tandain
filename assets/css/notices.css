@@ -1,0 +1,38 @@
+[data-notice]:not([hidden]) {
+    display: flex;
+}
+
+[data-notice] [data-notice-icon] {
+    display: none;
+}
+
+[data-type="success"] [data-notice-icon="success"],
+[data-type="error"] [data-notice-icon="error"],
+[data-type="warning"] [data-notice-icon="warning"],
+[data-type="info"] [data-notice-icon="info"] {
+    display: inline-block;
+}
+
+[data-notice][data-type="success"] {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #15803d;
+}
+
+[data-notice][data-type="error"] {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+[data-notice][data-type="warning"] {
+    background-color: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+[data-notice][data-type="info"] {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #004b87;
+}

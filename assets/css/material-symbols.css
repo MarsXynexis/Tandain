@@ -3,7 +3,8 @@
   font-style: normal;
   font-weight: 100 700;
   font-display: swap;
-  src: url('/Tandain/assets/fonts/material-symbols-outlined.ttf') format('truetype');
+  src: url('/Tandain/assets/fonts/material-symbols-outlined.woff2') format('woff2'),
+       url('/Tandain/assets/fonts/material-symbols-outlined.ttf') format('truetype');
 }
 
 .material-symbols-outlined {
@@ -19,6 +20,7 @@
   word-wrap: normal;
   direction: ltr;
   font-feature-settings: 'liga';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
-

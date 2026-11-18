@@ -1,0 +1,132 @@
+.btn-lg,
+.btn-md,
+.btn-sm {
+    align-items: center;
+    justify-content: center;
+    border-radius: .5rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.btn-lg {
+    min-height: 2.75rem;
+    padding-inline: 1.25rem;
+    font-size: .875rem;
+}
+
+.btn-md {
+    min-height: 2.5rem;
+    padding-inline: 1rem;
+    font-size: .875rem;
+}
+
+.btn-sm {
+    min-height: 2rem;
+    padding-inline: .75rem;
+    font-size: .75rem;
+}
+
+.btn-sm.btn-icon {
+    width: 2rem;
+    padding-inline: 0;
+}
+
+.btn-lg:focus-visible,
+.btn-md:focus-visible,
+.btn-sm:focus-visible {
+    outline: 2px solid #004b87;
+    outline-offset: 2px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: .875rem;
+}
+
+.data-table > thead > tr > th {
+    padding: .75rem 1.5rem;
+    background: #f8fafc;
+    color: #475569;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.data-table > tbody > tr > td {
+    padding: 1rem 1.5rem;
+    vertical-align: middle;
+}
+
+.data-table > tbody > tr > .table-empty {
+    padding-block: 3rem;
+}
+
+.table-title {
+    font-size: .9375rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.table-meta {
+    color: #64748b;
+    font-size: .75rem;
+}
+
+.table-date {
+    font-size: .8125rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.table-footer {
+    padding: 1rem 1.5rem;
+    font-size: .75rem;
+    line-height: 1.5;
+}
+
+.status-badge {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: .375rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    padding: .25rem .625rem;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: .6875rem;
+    font-weight: 600;
+    line-height: 1rem;
+    white-space: nowrap;
+}
+
+.status-badge .material-symbols-outlined {
+    font-size: .875rem;
+}
+
+.status-badge[data-tone="success"] {
+    border-color: #bbf7d0;
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-badge[data-tone="info"] {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #004b87;
+}
+
+.status-badge[data-tone="warning"] {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.status-badge[data-tone="error"] {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
