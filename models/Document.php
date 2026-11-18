@@ -409,50 +409,50 @@ class Document
 
     public function verifyDocument($search)
     {
-        $search = trim($search);
+        $search = trim((string) $search);
+        $result = false;
 
-        if (empty($search)) {
-            return false;
+        if (!empty($search)) {
+            $isUuid = (bool) preg_match('/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i', $search);
+
+            $sql = "SELECT d.*, u.full_name AS requester_name, u.identity_number AS requester_nim, u.position AS requester_position 
+                    FROM " . $this->table . " d 
+                    JOIN users u ON u.id = d.requester_id 
+                    WHERE d.status = 'COMPLETED' 
+                      AND (d.final_sha256_hash = :search OR (d.final_sha256_hash IS NULL AND d.initial_sha256_hash = :search) OR d.document_number = :search";
+
+            if ($isUuid) {
+                $sql .= " OR d.id = :search_uuid";
+            }
+
+            $sql .= ") LIMIT 1";
+
+            $this->db->query($sql);
+            $this->db->bind('search', $search);
+
+            if ($isUuid) {
+                $this->db->bind('search_uuid', $search);
+            }
+
+            $document = $this->db->single();
+
+            if ($document) {
+                $signersSql = "SELECT s.*, u.full_name, u.identity_number, u.position, c.certificate_serial, c.status AS cert_status, c.valid_from, c.valid_until 
+                               FROM document_signers s 
+                               JOIN users u ON u.id = s.signer_id 
+                               LEFT JOIN signer_certificates c ON c.id = s.certificate_id 
+                               WHERE s.document_id = :doc_id 
+                               ORDER BY s.signing_order ASC";
+
+                $this->db->query($signersSql);
+                $this->db->bind('doc_id', $document['id']);
+
+                $document['signers'] = $this->db->resultSet();
+                $result = $document;
+            }
         }
 
-        $sql = "SELECT d.*, u.full_name AS requester_name, u.identity_number AS requester_nim, u.position AS requester_position 
-                FROM " . $this->table . " d 
-                JOIN users u ON u.id = d.requester_id 
-                WHERE d.document_number = :search 
-                   OR d.final_sha256_hash = :search 
-                   OR d.initial_sha256_hash = :search";
-
-        if (preg_match('/^[0-9a-f-]{36}$/i', $search)) {
-            $sql .= " OR d.id = :search_uuid";
-        }
-
-        $sql .= " LIMIT 1";
-
-        $this->db->query($sql);
-        $this->db->bind('search', $search);
-
-        if (preg_match('/^[0-9a-f-]{36}$/i', $search)) {
-            $this->db->bind('search_uuid', $search);
-        }
-
-        $document = $this->db->single();
-
-        if (!$document) {
-            return false;
-        }
-
-        $signersSql = "SELECT s.*, u.full_name, u.identity_number, u.position, c.certificate_serial, c.status AS cert_status, c.valid_from, c.valid_until 
-                       FROM document_signers s 
-                       JOIN users u ON u.id = s.signer_id 
-                       LEFT JOIN signer_certificates c ON c.id = s.certificate_id 
-                       WHERE s.document_id = :doc_id 
-                       ORDER BY s.signing_order ASC";
-
-        $this->db->query($signersSql);
-        $this->db->bind('doc_id', $document['id']);
-        $document['signers'] = $this->db->resultSet();
-
-        return $document;
+        return $result;
     }
 
     public function createDocument($data, $signerIds = [])

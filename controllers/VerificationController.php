@@ -2,11 +2,15 @@
 
 class VerificationController extends Controller
 {
+    private const MAX_SIZE = 2097152;
+
     public function index($documentId = null)
     {
         $status = $_GET['status'] ?? 'upload';
 
         $data['title'] = 'Verifikasi Dokumen - Tandain';
+        $data['active_menu'] = 'verification';
+        $data['user'] = $_SESSION['user'] ?? null;
         $data['status'] = $status;
         $data['document'] = null;
         $data['file_name'] = '';
@@ -20,12 +24,11 @@ class VerificationController extends Controller
             if ($documentId === '' || !preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $documentId)) {
                 $data['status'] = 'error';
                 $data['file_name'] = 'ID QR Dokumen Tidak Valid';
-                $data['file_hash'] = $documentId;
             } else {
                 $documentModel = $this->model('Document');
                 $document = $documentModel->verifyDocument($documentId);
 
-                if ($document) {
+                if ($document && $this->isCompletedWithAllSignatures($document)) {
                     $isExpired = false;
 
                     if (!empty($document['expires_at'])) {
@@ -35,8 +38,8 @@ class VerificationController extends Controller
                     $data['status'] = $isExpired ? 'expired' : 'success';
                     $data['document'] = $document;
                     $data['is_expired'] = $isExpired;
-                    $data['file_hash'] = $document['final_sha256_hash'] ?: $document['initial_sha256_hash'];
-                    $data['file_name'] = basename($document['final_file_path'] ?: $document['original_file_path']);
+                    $data['file_hash'] = !empty($document['final_sha256_hash']) ? $document['final_sha256_hash'] : ($document['initial_sha256_hash'] ?? '');
+                    $data['file_name'] = basename($document['final_file_path'] ?: ($document['original_file_path'] ?? ''));
                 } else {
                     $data['status'] = 'error';
                     $data['file_name'] = 'Dokumen ID: ' . $documentId;
@@ -51,6 +54,8 @@ class VerificationController extends Controller
     public function check()
     {
         $data['title'] = 'Verifikasi Dokumen - Tandain';
+        $data['active_menu'] = 'verification';
+        $data['user'] = $_SESSION['user'] ?? null;
         $data['status'] = 'upload';
         $data['document'] = null;
         $data['file_name'] = '';
@@ -58,18 +63,21 @@ class VerificationController extends Controller
         $data['file_hash'] = '';
         $data['is_expired'] = false;
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_FILES['document_file']['tmp_name'])) {
-            $data['status'] = 'error';
-            $data['file_name'] = 'Tidak ada berkas yang diunggah';
-            $data['file_hash'] = '-';
-        } elseif (($_FILES['document_file']['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['document_file']['tmp_name'])) {
-            $data['status'] = 'error';
-            $data['file_name'] = $_FILES['document_file']['name'] ?? 'Berkas tidak valid';
-            $data['file_hash'] = '-';
+        $file = $_FILES['document_file'] ?? [];
+        $uploadStatus = $file['error'] ?? UPLOAD_ERR_NO_FILE;
+        $fileSize = (int) ($file['size'] ?? 0);
+        $tmpPath = $file['tmp_name'] ?? '';
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $uploadStatus === UPLOAD_ERR_NO_FILE) {
+            $data['upload_error'] = 'Pilih berkas PDF terlebih dahulu.';
+        } elseif (in_array($uploadStatus, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || $fileSize > self::MAX_SIZE) {
+            $data['upload_error'] = 'Ukuran berkas maksimal 2 MB.';
+        } elseif ($uploadStatus !== UPLOAD_ERR_OK || !is_string($tmpPath) || !is_uploaded_file($tmpPath)) {
+            $data['upload_error'] = 'Berkas gagal diunggah. Coba lagi.';
+        } elseif ((new finfo(FILEINFO_MIME_TYPE))->file($tmpPath) !== 'application/pdf') {
+            $data['upload_error'] = 'Berkas harus berformat PDF.';
         } else {
-            $originalName = trim((string) ($_FILES['document_file']['name'] ?? 'dokumen.pdf'));
-            $fileSize = (int) ($_FILES['document_file']['size'] ?? 0);
-            $tmpPath = $_FILES['document_file']['tmp_name'];
+            $originalName = trim($file['name'] ?? 'dokumen.pdf');
             $uploadedHash = hash_file('sha256', $tmpPath);
 
             $data['file_name'] = $originalName;
@@ -82,7 +90,13 @@ class VerificationController extends Controller
                 $documentModel = $this->model('Document');
                 $document = $documentModel->verifyDocument($uploadedHash);
 
+                $expectedHash = '';
+
                 if ($document) {
+                    $expectedHash = !empty($document['final_sha256_hash']) ? (string) $document['final_sha256_hash'] : (string) ($document['initial_sha256_hash'] ?? '');
+                }
+
+                if ($document && $this->isCompletedWithAllSignatures($document) && $expectedHash !== '' && hash_equals($expectedHash, $uploadedHash)) {
                     $isExpired = false;
 
                     if (!empty($document['expires_at'])) {
@@ -99,5 +113,26 @@ class VerificationController extends Controller
         }
 
         $this->view('verification/index', $data);
+    }
+
+    private function isCompletedWithAllSignatures($document)
+    {
+        $valid = false;
+
+        if (is_array($document) && ($document['status'] ?? '') === 'COMPLETED') {
+            $signers = is_array($document['signers'] ?? null) ? $document['signers'] : [];
+
+            if (count($signers) > 0) {
+                $valid = true;
+
+                foreach ($signers as $signer) {
+                    if (($signer['status'] ?? '') !== 'SIGNED') {
+                        $valid = false;
+                    }
+                }
+            }
+        }
+
+        return $valid;
     }
 }
