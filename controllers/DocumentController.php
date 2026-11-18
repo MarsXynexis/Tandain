@@ -45,15 +45,15 @@ class DocumentController extends Controller
         } else {
             $userModel = $this->model('User');
             $templateModel = $this->model('DocumentTemplate');
+            $documentModel = $this->model('Document');
             $currentUser = $userModel->findById($_SESSION['user']['id']);
 
             $data['title'] = 'Ajukan Dokumen - Tandain';
             $data['active_menu'] = 'apply';
             $data['user'] = $currentUser ? $currentUser : $_SESSION['user'];
-            $data['candidates'] = $userModel->getSignerCandidates();
+            $data['can_sign'] = !empty($userModel->getAssignableSignersByIds([$_SESSION['user']['id']]));
             $data['templates'] = $templateModel->getActiveTemplates();
-            $data['error'] = $_SESSION['error'] ?? null;
-            unset($_SESSION['error']);
+            $data['next_doc_seq'] = $documentModel->getNextDocumentSequence();
 
             $this->view('document/create', $data);
         }
@@ -68,7 +68,7 @@ class DocumentController extends Controller
         $isTriage = !empty($_POST['is_triage']);
         $sequential = !empty($_POST['is_sequential']);
         $rawSigners = is_array($_POST['signers'] ?? null) ? $_POST['signers'] : [];
-        $signerIds = array_values(array_unique(array_filter(array_map('trim', $rawSigners))));
+        $signerIds = array_values(array_unique(array_filter(array_map('trim', array_filter($rawSigners, 'is_string')))));
 
         $errorMessage = '';
         $template = null;
@@ -109,8 +109,12 @@ class DocumentController extends Controller
             }
         }
 
-        if ($errorMessage === '' && !$isTriage && count($signerIds) === 0) {
-            $errorMessage = 'Pilih minimal satu penandatangan.';
+        if ($errorMessage === '' && !$isTriage) {
+            if (!$signerIds) {
+                $errorMessage = 'Pilih minimal satu penandatangan.';
+            } elseif (count($this->model('User')->getAssignableSignersByIds($signerIds)) !== count($signerIds)) {
+                $errorMessage = 'Pilih akun civitas aktif yang memiliki sertifikat TTE dan bukan Admin TU.';
+            }
         }
 
         $file = $_FILES['document_file'] ?? null;
@@ -136,8 +140,22 @@ class DocumentController extends Controller
                 $hash = hash_file('sha256', $dir . $filename);
                 $documentModel = $this->model('Document');
                 $userId = $_SESSION['user']['id'];
+                $documentNumber = null;
+
+                if ($submissionMode === 'template' && $template) {
+                    $submittedNumber = trim($_POST['document_number'] ?? '');
+
+                    if ($submittedNumber !== '' && empty($documentModel->isDocumentNumberTaken($submittedNumber))) {
+                        $documentNumber = $submittedNumber;
+                    } else {
+                        $seq = $documentModel->getNextDocumentSequence();
+                        $code = strtoupper(trim($template['template_code'] ?? 'SURAT'));
+                        $documentNumber = $seq . '/PL3/' . $code . '/PNJ/' . date('Y');
+                    }
+                }
 
                 $docData = [
+                    'document_number' => $documentNumber,
                     'title' => $finalTitle,
                     'requester_id' => $userId,
                     'original_file_path' => 'uploads/documents/' . $filename,
@@ -163,6 +181,8 @@ class DocumentController extends Controller
                     }
 
                     if ($isTriage) {
+                        $this->setFlash('success', 'Dokumen berhasil diajukan dan masuk antrean disposisi.');
+
                         $redirectUrl = '/Tandain/document';
                     } else {
                         $redirectUrl = '/Tandain/document/position/' . $docId;
@@ -179,7 +199,7 @@ class DocumentController extends Controller
 
                 echo json_encode(['ok' => false, 'error' => $errorMessage]);
             } else {
-                $_SESSION['error'] = $errorMessage;
+                $this->setFlash('error', $errorMessage);
 
                 $this->redirect('/Tandain/document/create');
             }
@@ -334,7 +354,7 @@ class DocumentController extends Controller
         $documentModel = $this->model('Document');
         $doc = $documentModel->getDocumentByIdAndUser($id, $userId);
 
-        if (!$doc) {
+        if (!$doc || $doc['status'] !== 'DRAFT') {
             $this->redirect('/Tandain/document');
         }
 
@@ -344,8 +364,6 @@ class DocumentController extends Controller
         $data['documentId'] = $doc['id'];
         $data['signers'] = $documentModel->getSignersForPositioning($doc['id']);
         $data['pdfUrl'] = '/Tandain/document/file/' . $doc['id'];
-        $data['error'] = $_SESSION['error'] ?? null;
-        unset($_SESSION['error']);
 
         $this->view('document/position', $data);
     }
@@ -384,27 +402,25 @@ class DocumentController extends Controller
         $documentModel = $this->model('Document');
         $doc = $documentModel->getDocumentByIdAndUser($id, $userId);
 
-        if (!$doc) {
-            $this->redirect('/Tandain/document');
+        $redirectUrl = '/Tandain/document';
+
+        if ($doc && $doc['status'] === 'DRAFT') {
+            $redirectUrl = '/Tandain/document/position/' . $doc['id'];
+            $positions = json_decode($_POST['positions'] ?? '[]', true);
+            $isSequential = in_array($doc['is_sequential'], [true, 1, '1', 't', 'true'], true);
+
+            if (!is_array($positions) || !$positions) {
+                $this->setFlash('error', 'Tempatkan kotak TTE dulu.');
+            } elseif (!$documentModel->updateSignerPositions($doc['id'], $positions, $isSequential, $userId, 'DRAFT')) {
+                $this->setFlash('error', 'Gagal menyimpan posisi tanda tangan.');
+            } else {
+                $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');
+
+                $redirectUrl = '/Tandain/document';
+            }
         }
 
-        $positions = json_decode($_POST['positions'] ?? '[]', true);
-
-        if (!is_array($positions) || count($positions) === 0) {
-            $_SESSION['error'] = 'Tempatkan kotak TTE dulu.';
-
-            $this->redirect('/Tandain/document/position/' . $doc['id']);
-        }
-
-        $success = $documentModel->updateSignerPositions($doc['id'], $positions, $doc['is_sequential'], $userId);
-
-        if (!$success) {
-            $_SESSION['error'] = 'Gagal menyimpan posisi tanda tangan.';
-
-            $this->redirect('/Tandain/document/position/' . $doc['id']);
-        }
-
-        $this->redirect('/Tandain/document');
+        $this->redirect($redirectUrl);
     }
 
     public function detail()

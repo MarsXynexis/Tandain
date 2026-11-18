@@ -2,29 +2,28 @@
 <?php require_once 'views/layouts/sidebar.php'; ?>
 <?php require_once 'views/layouts/navbar.php'; ?>
 
-  <main class="flex-1 min-w-0 w-full max-w-none p-5 lg:p-6">
+  <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
 
-    <div class="mb-5">
+    <div>
       <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight font-bold">Atur Posisi TTE</h1>
-      <p class="font-body-md text-body-md text-on-surface-variant mt-1">Klik nama penandatangan untuk memunculkan kotak TTE, lalu geser ke posisi yang diinginkan pada dokumen.</p>
+      <p class="font-body-md text-body-md text-on-surface-variant mt-1">Klik nama penandatangan untuk memunculkan kotak TTE, lalu geser ke posisi yang diinginkan pada dokumen</p>
     </div>
 
-    <?php if (!empty($error)): ?>
-      <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-300 text-red-700 text-sm">
-        <?= htmlspecialchars($error) ?>
-      </div>
-    <?php endif; ?>
+    <div class="hidden space-y-3 [&:has([data-notice]:not([hidden]))]:block">
+      <?php require 'views/layouts/flash.php'; ?>
 
-    <div class="hidden mb-4 p-3 rounded-lg bg-red-50 border border-red-300 text-red-700 text-sm" id="client-error" role="alert"></div>
+      <?php $notice = ['type' => 'error', 'id' => 'client-error']; ?>
+      <?php require 'views/layouts/notice.php'; ?>
+    </div>
 
     <div class="flex flex-col lg:flex-row gap-4 items-start">
 
-      <div class="flex-1 min-w-0 w-full max-w-none lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div class="flex-1 min-w-0 w-full max-w-none lg:sticky lg:top-20 lg:h-[calc(100dvh-6rem)] lg:overflow-y-auto">
         <div class="text-sm text-on-surface-variant py-6 text-center" id="pdf-loading">Memuat dokumen...</div>
         <div id="pdf-container" class="space-y-4 overflow-x-auto pb-4"></div>
       </div>
       
-      <div class="w-full lg:w-72 shrink-0 space-y-2 lg:sticky lg:top-4">
+      <div class="w-full lg:w-72 shrink-0 space-y-2 lg:sticky lg:top-20">
         <h2 class="font-headline-sm text-headline-sm text-primary font-semibold mb-1">Penandatangan</h2>
 
         <?php foreach ($signers as $i => $s): ?>
@@ -38,13 +37,13 @@
             </div>
             <div class="flex gap-2 mt-3">
               <button type="button"
-                class="add-box flex-1 px-3 py-1.5 rounded-lg bg-[#004B87] hover:bg-[#003d6d] text-white text-xs font-semibold transition"
+                class="btn-md inline-flex add-box flex-1 bg-brand hover:bg-brand-hover text-white font-semibold transition"
                 data-signer="<?= htmlspecialchars($s['id']) ?>"
                 data-label="<?= $i + 1 ?>. <?= htmlspecialchars($s['name']) ?>">
                 Tempatkan kotak
               </button>
               <button type="button"
-                class="remove-box hidden px-3 py-1.5 rounded-lg border border-outline-variant text-error text-xs font-semibold hover:bg-error-container/40 transition"
+                class="btn-md remove-box hidden border border-outline-variant text-error font-semibold hover:bg-error-container/40 transition"
                 data-signer="<?= htmlspecialchars($s['id']) ?>">
                 Hapus
               </button>
@@ -62,12 +61,12 @@
     <form id="positions-form" method="POST" action="/Tandain/document/savePositions/<?= htmlspecialchars($documentId) ?>">
       <input type="hidden" name="positions" id="positions">
 
-      <div class="flex justify-between items-center pt-4 mt-4 border-t border-outline-variant">
-        <a class="border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface px-6 py-2.5 rounded-lg font-label-lg text-label-lg font-medium transition inline-block" href="/Tandain/document">
+      <div class="flex flex-wrap items-center justify-end gap-3 pt-4 mt-4 border-t border-outline-variant">
+        <a class="btn-md inline-flex border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium transition" href="/Tandain/document">
           Batal
         </a>
 
-        <button class="bg-[#004B87] hover:bg-[#003d6d] text-white px-8 py-2.5 rounded-lg font-label-lg text-label-lg font-semibold shadow-sm flex items-center gap-2 transition active:scale-[0.99]" type="submit">
+        <button class="btn-lg bg-brand hover:bg-brand-hover text-white font-semibold shadow-sm flex items-center gap-2 transition active:scale-[0.99]" type="submit">
           <span>Simpan &amp; Ajukan</span>
           <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
@@ -93,14 +92,12 @@
     const boxes = {};
 
     function showError(msg) {
-      clientError.textContent = msg;
-      clientError.classList.remove('hidden');
+      showNotice(clientError, msg);
       clientError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function clearError() {
-      clientError.classList.add('hidden');
-      clientError.textContent = '';
+      hideNotice(clientError);
     }
 
     pdfjsLib.getDocument(PDF_URL).promise

@@ -135,6 +135,8 @@
       value = pickFirstValue(map, ['jabatan', 'position']);
     } else if (key === 'email') {
       value = pickFirstValue(map, ['email']);
+    } else if (key === 'nomor_surat') {
+      value = pickFirstValue(map, ['nomor_surat', 'document_number']);
     } else if (key === 'tanggal_surat') {
       const rawDate = pickFirstValue(map, ['tanggal_surat']);
 
@@ -172,7 +174,7 @@
           if (isPreview) {
             replacement = '<span class="pnj-tag-placeholder">[Nomor Surat]</span>';
           } else {
-            replacement = '____/PL3/____/____';
+            replacement = '';
           }
         } else if (isPreview) {
           replacement = '<span class="pnj-tag-placeholder">[' + escapeHtml(rawKey) + ']</span>';

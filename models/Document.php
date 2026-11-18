@@ -74,12 +74,12 @@ class Document
             $this->db->query("BEGIN");
             $this->db->execute();
 
-            $sqlUpdate = "UPDATE " . $this->table . " SET status = 'IN_PROGRESS', triage_handled_by = :admin_id, document_number = :document_number, is_sequential = :is_sequential, issued_at = CURRENT_TIMESTAMP, expires_at = :expires_at, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND status = 'PENDING_TRIAGE'";
+            $sqlUpdate = "UPDATE " . $this->table . " SET triage_handled_by = :admin_id, document_number = :document_number, is_sequential = :is_sequential, issued_at = CURRENT_TIMESTAMP, expires_at = :expires_at, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND status = 'PENDING_TRIAGE'";
 
             $this->db->query($sqlUpdate);
             $this->db->bind('id', $id);
             $this->db->bind('admin_id', $adminId);
-            $this->db->bind('document_number', $documentNumber);
+            $this->db->bind('document_number', !empty($documentNumber) ? $documentNumber : null);
             $this->db->bind('is_sequential', $isSequential ? 'true' : 'false');
             $this->db->bind('expires_at', !empty($expiresAt) ? $expiresAt : null);
             $this->db->execute();
@@ -95,34 +95,25 @@ class Document
             $order = 1;
 
             foreach ($signersList as $signer) {
-                if ($isSequential) {
-                    $status = ($order === 1) ? 'CURRENT_TURN' : 'WAITING';
-                } else {
-                    $status = 'CURRENT_TURN';
-                }
-
                 $stampType = $signer['stamp_type'] ?? 'DUAL_DISPLAY';
-                $pageNumber = !empty($signer['page_number']) ? (int)$signer['page_number'] : 1;
-                $coordX = !empty($signer['coord_x']) ? (float)$signer['coord_x'] : 120;
-                $coordY = !empty($signer['coord_y']) ? (float)$signer['coord_y'] : 650;
 
-                $sqlInsertSigner = "INSERT INTO document_signers (document_id, signer_id, signing_order, status, stamp_type, page_number, coord_x, coord_y) VALUES (:doc_id, :signer_id, :signing_order, :status, :stamp_type, :page_number, :coord_x, :coord_y)";
+                $sqlInsertSigner = "INSERT INTO document_signers (document_id, signer_id, signing_order, status, stamp_type) VALUES (:doc_id, :signer_id, :signing_order, 'WAITING', :stamp_type)";
 
                 $this->db->query($sqlInsertSigner);
                 $this->db->bind('doc_id', $id);
                 $this->db->bind('signer_id', $signer['signer_id']);
                 $this->db->bind('signing_order', $order);
-                $this->db->bind('status', $status);
                 $this->db->bind('stamp_type', $stampType);
-                $this->db->bind('page_number', $pageNumber);
-                $this->db->bind('coord_x', $coordX);
-                $this->db->bind('coord_y', $coordY);
                 $this->db->execute();
 
                 $order++;
             }
 
-            $auditNotes = 'Dokumen didisposisikan oleh Tata Usaha dengan nomor agenda ' . $documentNumber;
+            if (!empty($documentNumber)) {
+                $auditNotes = 'Dokumen didisposisikan oleh Tata Usaha dengan nomor agenda ' . $documentNumber;
+            } else {
+                $auditNotes = 'Dokumen didisposisikan oleh Tata Usaha';
+            }
 
             $sqlLog = "INSERT INTO document_audit_logs (document_id, user_id, action, notes) VALUES (:doc_id, :user_id, 'TRIAGE_ASSIGNED', :notes)";
 
@@ -286,6 +277,29 @@ class Document
         return $this->db->single();
     }
 
+    public function getNextDocumentSequence()
+    {
+        $sql = "SELECT document_number FROM " . $this->table . " WHERE document_number IS NOT NULL";
+
+        $this->db->query($sql);
+        $rows = $this->db->resultSet();
+        $maxSeq = 0;
+
+        foreach ($rows as $row) {
+            $num = (string) ($row['document_number'] ?? '');
+
+            if (preg_match('/\A(\d+)/', $num, $matches)) {
+                $val = (int) $matches[1];
+
+                if ($val > $maxSeq) {
+                    $maxSeq = $val;
+                }
+            }
+        }
+
+        return str_pad((string) ($maxSeq + 1), 3, '0', STR_PAD_LEFT);
+    }
+
     public function getDashboardStatistics()
     {
         $sql = "SELECT COUNT(*) AS total_documents, COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS total_completed, COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END) AS total_in_progress, COUNT(CASE WHEN status = 'PENDING_TRIAGE' THEN 1 END) AS total_pending_triage FROM " . $this->table;
@@ -446,9 +460,10 @@ class Document
         try {
             $this->db->beginTransaction();
 
-            $sql = "INSERT INTO " . $this->table . " (title, requester_id, original_file_path, initial_sha256_hash, status, routing_type, is_sequential, expires_at) VALUES (:title, :requester_id, :original_file_path, :initial_sha256_hash, :status, :routing_type, :is_sequential, :expires_at) RETURNING id";
+            $sql = "INSERT INTO " . $this->table . " (document_number, title, requester_id, original_file_path, initial_sha256_hash, status, routing_type, is_sequential, expires_at) VALUES (:document_number, :title, :requester_id, :original_file_path, :initial_sha256_hash, :status, :routing_type, :is_sequential, :expires_at) RETURNING id";
 
             $this->db->query($sql);
+            $this->db->bind('document_number', !empty($data['document_number']) ? $data['document_number'] : null);
             $this->db->bind('title', $data['title']);
             $this->db->bind('requester_id', $data['requester_id']);
             $this->db->bind('original_file_path', $data['original_file_path']);
@@ -509,10 +524,23 @@ class Document
         return $this->db->resultSet();
     }
 
-    public function updateSignerPositions($documentId, $positions, $isSequential, $userId)
+    public function updateSignerPositions($documentId, $positions, $isSequential, $userId, $expectedStatus)
     {
+        $saved = false;
+
         try {
             $this->db->beginTransaction();
+
+            $docStatusSql = "UPDATE " . $this->table . " SET status = 'IN_PROGRESS', updated_at = CURRENT_TIMESTAMP WHERE id = :doc_id AND status = :expected_status";
+
+            $this->db->query($docStatusSql);
+            $this->db->bind('doc_id', $documentId);
+            $this->db->bind('expected_status', $expectedStatus);
+            $this->db->execute();
+
+            if ($this->db->rowCount() !== 1) {
+                throw new RuntimeException('Status dokumen sudah berubah.');
+            }
 
             $updatePosSql = "UPDATE document_signers SET page_number = :page, coord_x = :coord_x, coord_y = :coord_y WHERE document_id = :doc_id AND signer_id = :signer_id";
 
@@ -540,12 +568,6 @@ class Document
             $this->db->bind('doc_id', $documentId);
             $this->db->execute();
 
-            $docStatusSql = "UPDATE " . $this->table . " SET status = 'IN_PROGRESS', updated_at = CURRENT_TIMESTAMP WHERE id = :doc_id";
-
-            $this->db->query($docStatusSql);
-            $this->db->bind('doc_id', $documentId);
-            $this->db->execute();
-
             $auditSql = "INSERT INTO document_audit_logs (document_id, user_id, action, notes) VALUES (:doc_id, :user_id, 'POSITIONS_SET', 'Posisi TTE ditetapkan, dokumen dikirim')";
 
             $this->db->query($auditSql);
@@ -555,11 +577,11 @@ class Document
 
             $this->db->commit();
 
-            return true;
+            $saved = true;
         } catch (Exception $e) {
             $this->db->rollBack();
-
-            return false;
         }
+
+        return $saved;
     }
 }

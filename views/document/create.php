@@ -30,22 +30,19 @@ $requesterPosition = $user['position'] ?? ($user['role_display_name'] ?? '-');
 $requesterEmail = $user['email'] ?? '-';
 ?>
 
-  <main class="flex-1 min-w-0 w-full max-w-none p-5 lg:p-6">
+  <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
 
-    <div class="mb-5">
+    <div>
       <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight font-bold">Ajukan Dokumen Baru</h1>
       <p class="font-body-md text-body-md text-on-surface-variant mt-1" id="page-subtitle">Unggah berkas PDF dan tentukan alur pihak penandatangan</p>
     </div>
 
     <form class="space-y-4" id="document-form" method="POST" action="/Tandain/document/create" enctype="multipart/form-data" novalidate>
 
-      <?php if (!empty($error)): ?>
-        <div class="p-3 rounded-lg bg-red-50 border border-red-300 text-red-700 text-sm">
-          <?= htmlspecialchars($error) ?>
-        </div>
-      <?php endif; ?>
+      <?php require 'views/layouts/flash.php'; ?>
 
-      <div class="hidden p-3 rounded-lg bg-red-50 border border-red-300 text-red-700 text-sm" id="client-error" role="alert"></div>
+      <?php $notice = ['type' => 'error', 'id' => 'client-error']; ?>
+      <?php require 'views/layouts/notice.php'; ?>
 
       <input id="submission-mode" name="submission_mode" type="hidden" value="upload">
 
@@ -57,12 +54,12 @@ $requesterEmail = $user['email'] ?? '-';
         </div>
 
         <div class="flex items-center gap-2 mb-6 p-1 bg-surface-container rounded-lg max-w-md">
-          <button class="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-[#004B87] hover:bg-[#003d6d] text-white font-label-md text-label-md font-semibold shadow-sm transition" id="tab-upload-btn" type="button">
+          <button class="btn-md flex-1 flex items-center justify-center gap-2 bg-white text-primary font-semibold shadow-sm transition" id="tab-upload-btn" type="button">
             <span class="material-symbols-outlined text-[18px]">upload_file</span>
             <span>Unggah Berkas PDF</span>
           </button>
 
-          <button class="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest font-label-md text-label-md font-medium transition" id="tab-template-btn" type="button">
+          <button class="btn-md flex-1 flex items-center justify-center gap-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest font-medium transition" id="tab-template-btn" type="button">
             <span class="material-symbols-outlined text-[18px]">description</span>
             <span>Gunakan Template Surat</span>
           </button>
@@ -80,7 +77,7 @@ $requesterEmail = $user['email'] ?? '-';
 
             <input class="hidden" id="file-upload" name="document_file" type="file" accept="application/pdf">
 
-            <button class="inline-flex items-center gap-2 px-4 py-2 border border-outline rounded-lg text-primary-container font-label-md text-label-md bg-white hover:bg-surface-container transition-all" id="browse-btn" type="button">
+            <button class="btn-md inline-flex items-center gap-2 border border-outline text-primary-container bg-white hover:bg-surface-container transition-all" id="browse-btn" type="button">
               <span class="material-symbols-outlined text-[18px]">folder_open</span>
               <span>Telusuri File</span>
             </button>
@@ -264,47 +261,28 @@ $requesterEmail = $user['email'] ?? '-';
         <div class="space-y-4 transition-opacity duration-200" id="signers-flow-container">
 
           <div class="flex flex-wrap items-center gap-2">
-            <button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[#004B87] hover:bg-[#003d6d] text-white font-label-md text-label-md font-semibold shadow-sm transition" id="add-signer-btn" type="button">
+            <button class="btn-md inline-flex items-center justify-center bg-brand hover:bg-brand-hover text-white font-semibold shadow-sm transition" id="add-signer-btn" type="button">
               <span class="material-symbols-outlined text-[18px] mr-1">add</span>
               <span>Tambah Penandatangan</span>
             </button>
 
-            <button class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-outline-variant bg-white hover:bg-surface-container-low text-primary-container font-label-md text-label-md font-semibold transition" id="add-self-btn" type="button">
-              <span>Tambahkan Saya Sendiri</span>
-            </button>
+            <?php if (($user['role_name'] ?? '') !== 'admin_tu'): ?>
+              <button class="btn-md inline-flex items-center justify-center border border-outline-variant bg-white hover:bg-surface-container-low text-primary-container font-semibold transition" id="add-self-btn" type="button">
+                <span>Tambahkan Saya Sendiri</span>
+              </button>
+            <?php endif; ?>
           </div>
 
           <div class="space-y-2">
+
+            <p class="text-xs text-on-surface-variant" id="signer-order-hint" hidden>Tarik pegangan di kiri untuk mengubah urutan.</p>
+            <p class="sr-only" role="status" id="signer-announcement"></p>
 
             <div class="space-y-2" id="signer-list"></div>
 
             <p class="text-sm text-on-surface-variant py-2" id="signer-empty">Belum ada penandatangan. Klik "Tambah Penandatangan" untuk mencari.</p>
 
-            <div class="hidden relative" id="signer-search-row">
-              <div class="flex flex-col md:flex-row items-center justify-between p-3 rounded-lg border border-dashed border-outline bg-surface gap-4">
-                <div class="flex items-center gap-4 flex-1 w-full">
-                  <div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0" id="search-row-number">1</div>
-
-                  <div class="flex-1 flex gap-2">
-                    <div class="relative flex-1">
-                      <input class="w-full pl-9 pr-3 py-2 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-primary focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none" id="signer-search-input" autocomplete="off" placeholder="Cari nama, NIP/NIM, atau email resmi PNJ (@pnj.ac.id)" type="text">
-                      <span class="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-on-surface-variant">person_search</span>
-                    </div>
-
-                    <button class="px-3.5 py-2 bg-[#004B87] hover:bg-[#003d6d] text-white rounded-lg font-label-md text-label-md flex items-center gap-1 transition shadow-sm shrink-0" id="signer-search-btn" type="button">
-                      <span class="material-symbols-outlined text-[16px]">search</span>
-                      <span>Cari</span>
-                    </button>
-                  </div>
-                </div>
-
-                <button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition shrink-0 self-end md:self-center" id="signer-search-close" title="Batalkan" type="button">
-                  <span class="material-symbols-outlined text-[20px]">close</span>
-                </button>
-              </div>
-
-              <ul class="hidden mt-1 rounded-lg border border-outline-variant bg-white shadow-md divide-y divide-surface-container max-h-64 overflow-auto" id="signer-results"></ul>
-            </div>
+            <?php require 'views/layouts/signer_picker.php'; ?>
 
           </div>
 
@@ -312,12 +290,12 @@ $requesterEmail = $user['email'] ?? '-';
 
       </section>
 
-      <div class="flex justify-between items-center pt-4 border-t border-outline-variant">
-        <a class="border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface px-6 py-2.5 rounded-lg font-label-lg text-label-lg font-medium transition inline-block" href="/Tandain/dashboard">
+      <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+        <a class="btn-md inline-flex border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium transition" href="/Tandain/dashboard">
           Batal
         </a>
 
-        <button class="bg-[#004B87] hover:bg-[#003d6d] text-white px-8 py-2.5 rounded-lg font-label-lg text-label-lg font-semibold shadow-sm flex items-center gap-2 transition active:scale-[0.99]" id="submit-doc-btn" type="submit">
+        <button class="btn-lg bg-brand hover:bg-brand-hover text-white font-semibold shadow-sm flex items-center gap-2 transition active:scale-[0.99]" id="submit-doc-btn" type="submit">
           <span id="submit-btn-text">Lanjut ke Atur Posisi TTE</span>
           <span class="material-symbols-outlined text-[18px]" id="submit-btn-icon">arrow_forward</span>
         </button>
@@ -327,19 +305,26 @@ $requesterEmail = $user['email'] ?? '-';
 
   </main>
 
+  <?php require 'views/layouts/signer_badges.php'; ?>
+
+  <?php require 'views/layouts/signer_order_control.php'; ?>
+  <?php require 'views/layouts/signer_row.php'; ?>
+
   <script src="/Tandain/assets/js/html2canvas.min.js"></script>
   <script src="/Tandain/assets/js/jspdf.umd.min.js"></script>
   <script src="/Tandain/assets/js/pnj-letter-renderer.js"></script>
+  <script src="/Tandain/assets/js/signer-picker.js"></script>
+  <script src="/Tandain/assets/js/signer-order.js"></script>
 
   <script>
-    const CANDIDATES = <?= json_encode($candidates ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const TEMPLATES = <?= json_encode($templateList, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    const NEXT_DOC_SEQ = <?= json_encode($next_doc_seq ?? '001', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const ME = <?= json_encode([
       'id' => $user['id'] ?? '',
       'name' => $requesterName,
       'identity' => $user['identity_number'] ?? '',
-      'position' => $user['position'] ?? ($user['role_display_name'] ?? ''),
-      'email' => $user['email'] ?? ''
+      'email' => $user['email'] ?? '',
+      'canSign' => $can_sign
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
     const MAX_SIZE = 2 * 1024 * 1024;
@@ -359,15 +344,10 @@ $requesterEmail = $user['email'] ?? '-';
     const defaultDropSubtext = dropZoneSubtext.textContent;
 
     const signerList = document.getElementById('signer-list');
-    const signerEmpty = document.getElementById('signer-empty');
-    const searchRow = document.getElementById('signer-search-row');
-    const searchInput = document.getElementById('signer-search-input');
-    const searchBtn = document.getElementById('signer-search-btn');
-    const searchClose = document.getElementById('signer-search-close');
-    const searchResults = document.getElementById('signer-results');
-    const searchRowNumber = document.getElementById('search-row-number');
+    const signerAnnouncement = document.getElementById('signer-announcement');
     const addSignerBtn = document.getElementById('add-signer-btn');
     const addSelfBtn = document.getElementById('add-self-btn');
+
 
     const triageCheck = document.getElementById('tu-triage-check');
     const signerSection = document.getElementById('signers-flow-container');
@@ -395,21 +375,19 @@ $requesterEmail = $user['email'] ?? '-';
     const previewScaleBox = document.getElementById('template-preview-scale-box');
     const previewSheet = document.getElementById('template-preview-sheet');
 
-    const activeBtnClass = ['bg-[#004B87]', 'hover:bg-[#003d6d]', 'text-white', 'font-semibold', 'shadow-sm'];
+    const activeBtnClass = ['bg-white', 'text-primary', 'font-semibold', 'shadow-sm'];
     const inactiveBtnClass = ['text-on-surface-variant', 'hover:text-on-surface', 'hover:bg-surface-container-lowest', 'font-medium'];
 
     let userTouchedRouting = false;
     let isSubmitting = false;
 
     function showError(msg) {
-      clientError.textContent = msg;
-      clientError.classList.remove('hidden');
+      showNotice(clientError, msg);
       clientError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function clearError() {
-      clientError.textContent = '';
-      clientError.classList.add('hidden');
+      hideNotice(clientError);
     }
 
     function resetFile() {
@@ -448,25 +426,7 @@ $requesterEmail = $user['email'] ?? '-';
     }
 
     function renumberSigners() {
-      const rows = signerList.querySelectorAll('[data-signer-row]');
-      const isSequential = sequentialCheck && sequentialCheck.checked;
-      const isSearchOpen = searchRow && !searchRow.classList.contains('hidden');
-
-      rows.forEach((row, i) => {
-        const numBadge = row.querySelector('[data-number]');
-        if (numBadge) {
-          numBadge.textContent = i + 1;
-        }
-
-        const connector = row.querySelector('[data-connector]');
-        if (connector) {
-          const showConnector = isSequential && (i < rows.length - 1 || isSearchOpen);
-          connector.classList.toggle('hidden', !showConnector);
-        }
-      });
-
-      searchRowNumber.textContent = rows.length + 1;
-      signerEmpty.classList.toggle('hidden', rows.length > 0 || isSearchOpen);
+      updateSignerList(signerList, sequentialCheck.checked && !triageCheck.checked);
     }
 
     function addSigner(person) {
@@ -478,135 +438,8 @@ $requesterEmail = $user['email'] ?? '-';
         clearError();
         userTouchedRouting = true;
 
-        const row = document.createElement('div');
-        row.dataset.signerRow = '1';
-        row.className = 'group/signer';
-
-        const card = document.createElement('div');
-        card.className = 'flex items-center justify-between p-3 rounded-lg border border-outline-variant bg-surface-container-lowest hover:border-blue-500 transition gap-4';
-
-        const left = document.createElement('div');
-        left.className = 'flex items-center gap-4 flex-1 min-w-0';
-
-        const badge = document.createElement('div');
-        badge.dataset.number = '1';
-        badge.className = 'w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-bold text-xs shrink-0';
-
-        const info = document.createElement('div');
-        info.className = 'flex-1 min-w-0';
-
-        const name = document.createElement('p');
-        name.className = 'font-label-lg text-label-lg font-bold text-primary truncate';
-        name.textContent = person.name;
-
-        const detail = document.createElement('p');
-        detail.className = 'font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5';
-        detail.textContent = [person.email, person.identity ? 'NIP/NIM ' + person.identity : ''].filter(Boolean).join(' • ');
-
-        info.append(name, detail);
-        left.append(badge, info);
-
-        const hidden = document.createElement('input');
-        hidden.type = 'hidden';
-        hidden.name = 'signers[]';
-        hidden.value = person.id;
-
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.title = 'Hapus Baris';
-        del.className = 'p-1.5 rounded-lg text-error hover:bg-error-container/40 transition shrink-0';
-        del.innerHTML = '<span class="material-symbols-outlined text-[20px]">delete</span>';
-
-        del.addEventListener('click', () => {
-          userTouchedRouting = true;
-          row.remove();
-          renumberSigners();
-        });
-
-        card.append(left, hidden, del);
-
-        const connector = document.createElement('div');
-        connector.dataset.connector = '1';
-        connector.className = 'pl-3 py-1 flex items-center hidden';
-        connector.innerHTML = '<div class="w-8 flex flex-col items-center justify-center text-[#004B87]"><div class="w-0.5 h-3.5 bg-[#004B87]/80 rounded-full"></div><span class="material-symbols-outlined text-[16px] leading-none -mt-1">arrow_drop_down</span></div>';
-
-        row.append(card, connector);
-        signerList.appendChild(row);
+        signerList.append(createSignerRow(person, 'signers[]'));
         renumberSigners();
-      }
-    }
-
-    function openSearch() {
-      searchRow.classList.remove('hidden');
-      signerEmpty.classList.add('hidden');
-      renumberSigners();
-      searchInput.value = '';
-      searchResults.classList.add('hidden');
-      searchInput.focus();
-    }
-
-    function closeSearch() {
-      searchRow.classList.add('hidden');
-      searchResults.classList.add('hidden');
-      searchResults.innerHTML = '';
-      renumberSigners();
-    }
-
-    function showResultMessage(text) {
-      const li = document.createElement('li');
-      li.className = 'px-3 py-2 text-sm text-on-surface-variant';
-      li.textContent = text;
-
-      searchResults.appendChild(li);
-      searchResults.classList.remove('hidden');
-    }
-
-    function runSearch() {
-      const q = searchInput.value.trim().toLowerCase();
-      searchResults.innerHTML = '';
-
-      if (q.length < 2) {
-        showResultMessage('Ketik minimal 2 karakter.');
-      } else {
-        const taken = signerIds();
-        const found = CANDIDATES.filter((c) => {
-          let include = false;
-
-          if (!taken.includes(c.id)) {
-            const hay = [c.full_name, c.identity_number, c.email].join(' ').toLowerCase();
-            include = hay.includes(q);
-          }
-
-          return include;
-        }).slice(0, 8);
-
-        if (found.length === 0) {
-          showResultMessage('Tidak ditemukan. Pastikan NIP/NIM atau email benar.');
-        } else {
-          found.forEach((c) => {
-            const li = document.createElement('li');
-            li.className = 'px-3 py-2 cursor-pointer hover:bg-surface-container-low';
-
-            const n = document.createElement('p');
-            n.className = 'text-sm font-semibold text-primary';
-            n.textContent = c.full_name;
-
-            const d = document.createElement('p');
-            d.className = 'text-xs text-on-surface-variant';
-            d.textContent = [c.email, c.identity_number, c.position].filter(Boolean).join(' • ');
-
-            li.append(n, d);
-
-            li.addEventListener('click', () => {
-              addSigner({ id: c.id, name: c.full_name, identity: c.identity_number, email: c.email });
-              closeSearch();
-            });
-
-            searchResults.appendChild(li);
-          });
-
-          searchResults.classList.remove('hidden');
-        }
       }
     }
 
@@ -614,7 +447,7 @@ $requesterEmail = $user['email'] ?? '-';
       const on = triageCheck.checked;
 
       signerSection.classList.toggle('opacity-40', on);
-      signerSection.classList.toggle('pointer-events-none', on);
+      signerSection.inert = on;
       sequentialContainer.classList.toggle('opacity-40', on);
       sequentialContainer.classList.toggle('pointer-events-none', on);
       sequentialCheck.disabled = on;
@@ -622,6 +455,8 @@ $requesterEmail = $user['email'] ?? '-';
       if (on) {
         closeSearch();
       }
+
+      renumberSigners();
     }
 
     function getSelectedTemplate() {
@@ -653,8 +488,18 @@ $requesterEmail = $user['email'] ?? '-';
       return values;
     }
 
+    function buildAutoDocumentNumber(selectedTemplate) {
+      const rawCode = selectedTemplate && selectedTemplate.template_code
+        ? String(selectedTemplate.template_code).trim().toUpperCase()
+        : 'SURAT';
+      const currentYear = new Date().getFullYear();
+
+      return NEXT_DOC_SEQ + '/PL3/' + rawCode + '/PNJ/' + currentYear;
+    }
+
     function buildTemplateValuesMap(selectedTemplate, forPreview) {
       const map = {
+        nomor_surat: buildAutoDocumentNumber(selectedTemplate),
         nama_lengkap: ME.name,
         nomor_induk: ME.identity,
         program_studi: ME.position,
@@ -1018,6 +863,7 @@ $requesterEmail = $user['email'] ?? '-';
 
             formData.append('submission_mode', 'template');
             formData.append('template_id', selected.id);
+            formData.append('document_number', exportValues.nomor_surat || '');
             formData.append('template_fields_json', JSON.stringify(fieldValues));
             formData.append('title', templateDocTitle ? templateDocTitle.value.trim() : '');
             formData.append('expires_at', tplExpires ? tplExpires.value : '');
@@ -1098,18 +944,40 @@ $requesterEmail = $user['email'] ?? '-';
 
     addSignerBtn.addEventListener('click', () => {
       userTouchedRouting = true;
-      openSearch();
     });
 
-    addSelfBtn.addEventListener('click', () => addSigner(ME));
-    searchBtn.addEventListener('click', runSearch);
-    searchClose.addEventListener('click', closeSearch);
-    searchInput.addEventListener('input', runSearch);
+    const closeSearch = setupSignerPicker(addSignerBtn, {
+      signerIds,
+      onSelect: (person) => addSigner({ id: person.id, name: person.full_name, identity: person.identity_number, email: person.email }),
+      onVisibilityChange: renumberSigners
+    });
 
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        runSearch();
+    addSelfBtn?.addEventListener('click', () => {
+      if (ME.canSign) {
+        addSigner(ME);
+      } else {
+        showError('Akun Anda harus aktif dan memiliki sertifikat TTE yang masih berlaku.');
+      }
+    });
+
+    setupSignerOrder(signerList, (row, announce) => {
+      userTouchedRouting = true;
+      renumberSigners();
+
+      if (announce) {
+        const name = row.querySelector('[data-signer-name]').textContent;
+        const position = row.querySelector('[data-number]').textContent;
+        signerAnnouncement.textContent = name + ' dipindah ke urutan ' + position + '.';
+      }
+    });
+
+    signerList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-remove-signer]');
+
+      if (button) {
+        userTouchedRouting = true;
+        button.closest('[data-signer-row]').remove();
+        renumberSigners();
       }
     });
 
@@ -1118,12 +986,10 @@ $requesterEmail = $user['email'] ?? '-';
       updateTriageState();
     });
 
-    if (sequentialCheck) {
-      sequentialCheck.addEventListener('change', () => {
-        userTouchedRouting = true;
-        renumberSigners();
-      });
-    }
+    sequentialCheck.addEventListener('change', () => {
+      userTouchedRouting = true;
+      renumberSigners();
+    });
 
     tabUploadBtn.addEventListener('click', () => switchTab('upload'));
     tabTemplateBtn.addEventListener('click', () => switchTab('template'));
@@ -1183,7 +1049,6 @@ $requesterEmail = $user['email'] ?? '-';
 
     renderDynamicTemplateFields();
     updateTriageState();
-    renumberSigners();
 
     const urlParams = new URLSearchParams(window.location.search);
 

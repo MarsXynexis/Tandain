@@ -51,19 +51,41 @@ class TriageController extends Controller
         }
     }
 
-    public function searchSigners()
+    public function file($id = null)
     {
         $this->adminCheck();
 
-        $keyword = trim($_GET['q'] ?? '');
+        $docModel = $this->model('Document');
+        $doc = !empty($id) ? $docModel->findById($id) : null;
+        $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
+
+        if (empty($doc) || !preg_match('/\Auploads\/documents\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath) || !is_file($relativePath)) {
+            http_response_code(404);
+        } else {
+            header('Content-Type: application/pdf');
+            header('Content-Length: ' . filesize($relativePath));
+
+            readfile($relativePath);
+        }
+
+        exit;
+    }
+
+    public function searchSigners()
+    {
+        $this->authCheck();
+
+        $keyword = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
+        $length = mb_strlen($keyword);
         $users = [];
 
-        if (strlen($keyword) >= 2) {
+        if ($length >= 2 && $length <= 100) {
             $userModel = $this->model('User');
-            $users = $userModel->searchActiveUsers($keyword, 8);
+            $users = $userModel->searchSignerCandidates($keyword);
         }
 
         header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
 
         echo json_encode($users);
     }
@@ -80,8 +102,6 @@ class TriageController extends Controller
             $expiresAt = trim($_POST['expires_at'] ?? '');
             $isSequential = isset($_POST['is_sequential']) && $_POST['is_sequential'] === '1';
             $signerIds = is_array($_POST['signer_ids'] ?? null) ? $_POST['signer_ids'] : [];
-            $stampTypes = is_array($_POST['stamp_types'] ?? null) ? $_POST['stamp_types'] : [];
-            $pageNumbers = is_array($_POST['page_numbers'] ?? null) ? $_POST['page_numbers'] : [];
 
             $docModel = $this->model('Document');
             $userModel = $this->model('User');
@@ -90,29 +110,10 @@ class TriageController extends Controller
             $signersList = [];
             $assignedSignerIds = [];
 
-            foreach ($signerIds as $index => $signerId) {
+            foreach ($signerIds as $signerId) {
                 if (!empty($signerId) && !in_array($signerId, $assignedSignerIds, true)) {
                     $assignedSignerIds[] = $signerId;
-
-                    $stampType = $stampTypes[$index] ?? 'DUAL_DISPLAY';
-
-                    if (!in_array($stampType, ['DUAL_DISPLAY', 'SIGNATURE_ONLY', 'QR_ONLY'], true)) {
-                        $stampType = 'DUAL_DISPLAY';
-                    }
-
-                    $pageNumber = !empty($pageNumbers[$index]) ? (int) $pageNumbers[$index] : 1;
-
-                    if ($pageNumber < 1) {
-                        $pageNumber = 1;
-                    }
-
-                    $signersList[] = [
-                        'signer_id' => $signerId,
-                        'stamp_type' => $stampType,
-                        'page_number' => $pageNumber,
-                        'coord_x' => 120,
-                        'coord_y' => 650,
-                    ];
+                    $signersList[] = ['signer_id' => $signerId];
                 }
             }
 
@@ -120,28 +121,79 @@ class TriageController extends Controller
                 $this->setFlash('error', 'Dokumen yang ingin didisposisikan tidak ditemukan.');
             } elseif ($doc['status'] !== 'PENDING_TRIAGE') {
                 $this->setFlash('error', 'Dokumen ini sudah tidak berada pada antrean disposisi.');
-            } elseif (empty($documentNumber)) {
-                $this->setFlash('error', 'Nomor naskah kedinasan wajib diisi.');
-            } elseif (empty($signersList)) {
-                $this->setFlash('error', 'Tetapkan minimal satu penandatangan sebelum menyimpan disposisi.');
-            } elseif (count($userModel->getAssignableSignersByIds($assignedSignerIds)) !== count($assignedSignerIds)) {
-                $this->setFlash('error', 'Penandatangan yang dipilih harus berstatus aktif dan memiliki sertifikat TTE.');
-            } elseif (!empty($expiresAt) && !$this->isValidDate($expiresAt)) {
-                $this->setFlash('error', 'Batas kedaluwarsa dokumen tidak valid.');
-            } elseif (!empty($expiresAt) && $expiresAt < date('Y-m-d')) {
-                $this->setFlash('error', 'Batas kedaluwarsa dokumen tidak boleh berada di masa lalu.');
-            } elseif (!empty($docModel->isDocumentNumberTaken($documentNumber, $documentId))) {
-                $this->setFlash('error', 'Nomor naskah kedinasan sudah digunakan oleh dokumen lain.');
             } else {
-                $success = $docModel->applyTriageDisposition($documentId, $_SESSION['user']['id'], $documentNumber, $signersList, $isSequential, $expiresAt);
+                $redirectUrl = '/Tandain/triage/review/' . rawurlencode($documentId);
 
-                if ($success) {
-                    $this->setFlash('success', 'Disposisi dokumen berhasil disimpan dan diteruskan ke penandatangan pertama.');
-
-                    $redirectUrl = '/Tandain/triage?status=dispatched';
+                if (empty($signersList)) {
+                    $this->setFlash('error', 'Tetapkan minimal satu penandatangan sebelum menyimpan disposisi.');
+                } elseif (count($userModel->getAssignableSignersByIds($assignedSignerIds)) !== count($assignedSignerIds)) {
+                    $this->setFlash('error', 'Pilih akun civitas aktif yang memiliki sertifikat TTE dan bukan Admin TU.');
+                } elseif (!empty($expiresAt) && !$this->isValidDate($expiresAt)) {
+                    $this->setFlash('error', 'Batas kedaluwarsa dokumen tidak valid.');
+                } elseif (!empty($expiresAt) && $expiresAt < date('Y-m-d')) {
+                    $this->setFlash('error', 'Batas kedaluwarsa dokumen tidak boleh berada di masa lalu.');
+                } elseif (!empty($documentNumber) && !empty($docModel->isDocumentNumberTaken($documentNumber, $documentId))) {
+                    $this->setFlash('error', 'Nomor naskah kedinasan sudah digunakan oleh dokumen lain.');
                 } else {
-                    $this->setFlash('error', 'Disposisi gagal disimpan. Periksa kembali data penandatangan.');
+                    $success = $docModel->applyTriageDisposition($documentId, $_SESSION['user']['id'], $documentNumber, $signersList, $isSequential, $expiresAt);
+
+                    if ($success) {
+                        $redirectUrl = '/Tandain/triage/position/' . rawurlencode($documentId);
+                    } else {
+                        $this->setFlash('error', 'Disposisi gagal disimpan. Periksa kembali data penandatangan.');
+                    }
                 }
+            }
+        }
+
+        $this->redirect($redirectUrl);
+    }
+
+    public function position($id = null)
+    {
+        $this->adminCheck();
+
+        $docModel = $this->model('Document');
+        $doc = !empty($id) ? $docModel->findById($id) : null;
+        $signers = !empty($doc) ? $docModel->getSignersForPositioning($doc['id']) : [];
+
+        if (empty($doc) || $doc['status'] !== 'PENDING_TRIAGE') {
+            $this->redirect('/Tandain/triage');
+        } elseif (empty($signers)) {
+            $this->redirect('/Tandain/triage/review/' . rawurlencode($doc['id']));
+        } else {
+            $data['title'] = 'Atur Posisi TTE Disposisi - Tandain';
+            $data['active_menu'] = 'triage';
+            $data['user'] = $_SESSION['user'];
+            $data['documentId'] = $doc['id'];
+            $data['signers'] = $signers;
+            $data['pdfUrl'] = '/Tandain/triage/file/' . rawurlencode($doc['id']);
+
+            $this->view('triage/position', $data);
+        }
+    }
+
+    public function savePositions($id = null)
+    {
+        $this->adminCheck();
+
+        $docModel = $this->model('Document');
+        $doc = !empty($id) ? $docModel->findById($id) : null;
+        $redirectUrl = '/Tandain/triage';
+
+        if (!empty($doc) && $doc['status'] === 'PENDING_TRIAGE') {
+            $redirectUrl = '/Tandain/triage/position/' . rawurlencode($doc['id']);
+            $positions = json_decode($_POST['positions'] ?? '[]', true);
+            $isSequential = in_array($doc['is_sequential'], [true, 1, '1', 't', 'true'], true);
+
+            if (!is_array($positions) || count($positions) === 0) {
+                $this->setFlash('error', 'Tempatkan kotak TTE dulu.');
+            } elseif ($docModel->updateSignerPositions($doc['id'], $positions, $isSequential, $_SESSION['user']['id'], 'PENDING_TRIAGE')) {
+                $this->setFlash('success', 'Disposisi dokumen berhasil disimpan dan diteruskan ke penandatangan pertama.');
+
+                $redirectUrl = '/Tandain/triage?status=dispatched';
+            } else {
+                $this->setFlash('error', 'Gagal menyimpan posisi tanda tangan.');
             }
         }
 

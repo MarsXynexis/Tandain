@@ -134,16 +134,27 @@ class User
 
     public function getAssignableSignersByIds($ids)
     {
-        if (empty($ids)) {
-            $rows = [];
-        } else {
+        $rows = [];
+        $validIds = array_filter($ids, static function ($id) {
+            return is_string($id) && preg_match('/\A[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\z/i', $id);
+        });
+
+        if ($ids && $validIds === $ids) {
             $placeholders = [];
 
             foreach ($ids as $index => $id) {
                 $placeholders[] = ':id' . $index;
             }
 
-            $sql = "SELECT users.id FROM " . $this->table . " AS users JOIN signer_certificates sc ON sc.user_id = users.id AND sc.status = 'ACTIVE' WHERE users.status = 'ACTIVE' AND users.id IN (" . implode(', ', $placeholders) . ")";
+            $sql = "SELECT DISTINCT users.id
+                    FROM " . $this->table . " AS users
+                    JOIN roles ON roles.id = users.role_id
+                    JOIN signer_certificates sc ON sc.user_id = users.id
+                        AND sc.status = 'ACTIVE'
+                        AND CURRENT_TIMESTAMP BETWEEN sc.valid_from AND sc.valid_until
+                    WHERE users.status = 'ACTIVE'
+                        AND roles.name <> 'admin_tu'
+                        AND users.id IN (" . implode(', ', $placeholders) . ")";
 
             $this->db->query($sql);
 
@@ -157,14 +168,29 @@ class User
         return $rows;
     }
 
-    public function searchActiveUsers($keyword, $limit = 8)
+    public function searchSignerCandidates($keyword)
     {
-        $sql = "SELECT users.id, users.full_name, users.identity_number, users.email, users.position, roles.name AS role_name, roles.display_name AS role_display_name, CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id LEFT JOIN signer_certificates sc ON sc.user_id = users.id AND sc.status = 'ACTIVE' WHERE users.status = 'ACTIVE' AND (users.full_name ILIKE :keyword OR users.identity_number ILIKE :keyword OR users.email ILIKE :keyword) ORDER BY users.full_name ASC LIMIT :limit";
+        $sql = "SELECT DISTINCT users.id, users.full_name, users.identity_number, users.email, users.position,
+                    roles.display_name AS role_display_name,
+                    CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert
+                FROM " . $this->table . " AS users
+                JOIN roles ON roles.id = users.role_id
+                LEFT JOIN signer_certificates sc ON sc.user_id = users.id
+                    AND sc.status = 'ACTIVE'
+                    AND CURRENT_TIMESTAMP BETWEEN sc.valid_from AND sc.valid_until
+                WHERE users.status = 'ACTIVE'
+                    AND roles.name <> 'admin_tu'
+                    AND (users.full_name ILIKE :name ESCAPE '!'
+                         OR users.identity_number ILIKE :identity ESCAPE '!'
+                         OR users.email ILIKE :email ESCAPE '!')
+                ORDER BY has_active_cert DESC, users.full_name ASC, users.id ASC LIMIT 8";
 
         $this->db->query($sql);
 
-        $this->db->bind('keyword', '%' . $keyword . '%');
-        $this->db->bind('limit', $limit);
+        $pattern = '%' . strtr($keyword, ['!' => '!!', '%' => '!%', '_' => '!_']) . '%';
+        $this->db->bind('name', $pattern);
+        $this->db->bind('identity', $pattern);
+        $this->db->bind('email', $pattern);
 
         return $this->db->resultSet();
     }
@@ -211,14 +237,5 @@ class User
         $this->db->query($sql);
 
         return $this->db->single();
-    }
-
-    public function getSignerCandidates()
-    {
-        $sql = "SELECT u.id, u.full_name, u.identity_number, u.email, u.position FROM " . $this->table . " u JOIN roles r ON r.id = u.role_id WHERE r.name = 'pegawai' AND u.status = 'ACTIVE' ORDER BY u.full_name ASC";
-
-        $this->db->query($sql);
-
-        return $this->db->resultSet();
     }
 }
