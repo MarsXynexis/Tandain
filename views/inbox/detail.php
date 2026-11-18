@@ -1,23 +1,11 @@
 <?php require_once 'views/layouts/header.php'; ?>
 <?php require_once 'views/layouts/sidebar.php'; ?>
 <?php require_once 'views/layouts/navbar.php'; ?>
-<?php require_once 'views/layouts/flash.php'; ?>
 
 <?php
 $document = $data['document'];
 
-$documentDate = strtotime($document['submitted_at'] ?? date('Y-m-d H:i:s'));
 $documentFile = $document['original_file_path'] ?? '';
-$documentStatus = [
-    'IN_PROGRESS' => 'Dalam Proses Tanda Tangan',
-    'COMPLETED' => 'Selesai',
-    'PENDING_TRIAGE' => 'Menunggu Disposisi',
-    'REJECTED' => 'Ditolak',
-    'CANCELLED' => 'Dibatalkan',
-][$document['status']] ?? 'Status Tidak Diketahui';
-$documentStatusClass = $document['status'] === 'COMPLETED'
-    ? 'bg-[#f0fdf4] text-[#15803d]'
-    : 'bg-[#bfdbfe] text-[#1d4ed8]';
 $canDecide = ($document['signer_status'] ?? '') === 'CURRENT_TURN'
     && ($document['status'] ?? '') === 'IN_PROGRESS';
 $currentSigner = null;
@@ -32,11 +20,25 @@ $hasActiveSignature = $currentSigner !== null && !empty($currentSigner['has_acti
 $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
 ?>
 
-<main class="flex-1 w-full p-8">
+<main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
     <div class="mx-auto w-full">
         <div class="mb-6">
             <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight font-bold">Persetujuan Dokumen</h1>
-            <p class="mt-1 font-body-md text-body-md text-on-surface-variant">Tinjau isi berkas, atur posisi tanda tangan, dan setujui dokumen untuk diproses lebih lanjut.</p>
+            <p class="mt-1 font-body-md text-body-md text-on-surface-variant">Tinjau isi berkas dan tentukan keputusan persetujuan</p>
+        </div>
+
+        <div class="space-y-3 [&:has([data-notice]:not([hidden]))]:mb-6">
+            <?php require 'views/layouts/flash.php'; ?>
+
+            <?php if (!empty($data['signing_warning'])): ?>
+                <?php $notice = ['type' => 'warning', 'message' => $data['signing_warning']]; ?>
+                <?php require 'views/layouts/notice.php'; ?>
+            <?php endif; ?>
+
+            <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
+                <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
+                <?php require 'views/layouts/notice.php'; ?>
+            <?php endif; ?>
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.8fr)]">
@@ -90,9 +92,9 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                     class="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 font-body-md text-body-md text-primary focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
                                     aria-label="Passphrase sertifikat">
                             </label>
-                            <div class="mt-6 flex justify-end gap-2">
-                                <button type="button" data-modal-close class="rounded-md border border-outline-variant px-4 py-2.5 font-label-md text-label-md font-semibold text-primary hover:bg-surface-container-low">Batal</button>
-                                <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-[#0f8f5a] px-4 py-2.5 font-label-md text-label-md font-semibold text-white hover:bg-[#0e7d4f]">
+                            <div class="mt-6 flex flex-wrap justify-end gap-3">
+                                <button type="button" data-modal-close class="btn-md inline-flex border border-outline-variant font-semibold text-primary hover:bg-surface-container-low">Batal</button>
+                                <button type="submit" class="btn-lg inline-flex items-center gap-2 bg-[#0f8f5a] font-semibold text-white hover:bg-[#0e7d4f]">
                                     <span class="material-symbols-outlined text-[18px]" aria-hidden="true">check</span>
                                     Setujui &amp; Tanda Tangani
                                 </button>
@@ -122,9 +124,9 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                     class="w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5 font-body-md text-body-md text-primary placeholder:text-on-surface-variant/70 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
                                     placeholder="Jelaskan alasan dokumen ditolak..."></textarea>
                             </label>
-                            <div class="mt-6 flex justify-end gap-2">
-                                <button type="button" data-modal-close class="rounded-md border border-outline-variant px-4 py-2.5 font-label-md text-label-md font-semibold text-primary hover:bg-surface-container-low">Batal</button>
-                                <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-[#b91c1c] px-4 py-2.5 font-label-md text-label-md font-semibold text-white hover:bg-[#991b1b]">
+                            <div class="mt-6 flex flex-wrap justify-end gap-3">
+                                <button type="button" data-modal-close class="btn-md inline-flex border border-outline-variant font-semibold text-primary hover:bg-surface-container-low">Batal</button>
+                                <button type="submit" class="btn-md inline-flex items-center gap-2 bg-[#b91c1c] font-semibold text-white hover:bg-[#991b1b]">
                                     <span class="material-symbols-outlined text-[18px]" aria-hidden="true">block</span>
                                     Tolak Dokumen
                                 </button>
@@ -165,87 +167,97 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
             <?php $identityLabel = ($document['requester_role_name'] ?? '') === 'pegawai' ? 'NIP' : (($document['requester_role_name'] ?? '') === 'mahasiswa' ? 'NIM' : 'NIM/NIP'); ?>
             <aside class="space-y-6">
                 <section class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
-                    <div class="flex items-start row justify-between">
+                    <div class="flex items-start justify-between">
                         <div>
                             <h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Pemohon</h3>
-                            <h2 class="mt-2 font-body-md text-headline-sm font-semibold text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></span>
-                            <h3 class="font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($document['requester_nim_nip'] ?? 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></span>
+                            <p class="mt-2 font-body-md text-body-md font-semibold text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($document['requester_nim_nip'] ?? 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></p>
                         </div>
                     </div>
 
-                    <div class="mt-3 space-y-3 border-t border-outline-variant/70 pt-4 text-sm">
+                    <div class="mt-4 space-y-3 border-t border-outline-variant/70 pt-4 text-sm">
                         <div>
                             <p class="font-label-md text-label-md text-on-surface-variant">Judul Dokumen</p>
                             <p class="mt-1 font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($document['title'], ENT_QUOTES, 'UTF-8'); ?></p>
                         </div>
 
+                        <?php if (!empty($document['document_number'])): ?>
+                            <div>
+                                <p class="font-label-md text-label-md text-on-surface-variant">Nomor Naskah</p>
+                                <p class="mt-1 font-code-tabular text-body-sm font-medium text-primary"><?= htmlspecialchars($document['document_number'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            </div>
+                        <?php endif; ?>
+
                         <div>
                             <p class="font-label-md text-label-md text-on-surface-variant">Tanggal Diajukan</p>
-                            <p class="mt-1 font-body-md text-body-md text-on-surface"><?= date('d M Y', $documentDate); ?> • <?= date('H:i', $documentDate); ?> WIB</p>
+                            <p class="mt-1 font-body-md text-body-md text-on-surface"><?= formatTanggalIndo($document['submitted_at'] ?? null, 'datetime'); ?></p>
                         </div>
 
                         <div>
                             <p class="font-label-md text-label-md text-on-surface-variant">Status</p>
-                            <div>
-                                <?php $signedCount = 0;
-                                foreach ($data['signers'] as $signer) {
-                                    if (!empty($signer['signed_at'])) {
-                                        $signedCount++;
-                                    }
+                            <?php renderStatusBadge($document['status']); ?>
+                        </div>
+
+                        <div>
+                            <?php
+                            $signedCount = 0;
+
+                            foreach ($data['signers'] as $signer) {
+                                if (!empty($signer['signed_at']) || ($signer['status'] ?? '') === 'SIGNED') {
+                                    $signedCount++;
                                 }
-                                ?>
-                                <?php $totalSigners = count($data['signers']); ?>
-                                <?php if ($document['status'] == 'REJECTED') {
-                                    $percent = 'Ditolak';
-                                } else {
-                                    $percent = $totalSigners > 0 ? round(($signedCount / $totalSigners) * 100) : 0;
-                                } ?>
-                                <?php if ($percent == 100) {
-                                    $percentClass = 'bg-[#15803d]';
-                                } elseif ($percent >= 50) {
-                                    $percentClass = 'bg-secondary-container';
-                                } else {
-                                    $percentClass = 'bg-[#b91c1c]';
-                                }
-                                ?>
-                                <div class="flex justify-between items-center mb-1.5">
-                                    <span class="font-label-sm text-[11px] font-semibold text-on-surface-variant"><?= $signedCount; ?>/<?= $totalSigners; ?> tanda tangan</span>
-                                    <span class="font-code-tabular text-[11px] font-bold text-on-surface-variant"><?= $percent; ?>%</span>
-                                </div>
-                                <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
-                                    <div class="<?= $percentClass; ?> h-2 rounded-full" style="width: <?= $percent; ?>%"></div>
-                                </div>
+                            }
+
+                            $totalSigners = count($data['signers']);
+                            $percent = $totalSigners > 0 ? (int) round(($signedCount / $totalSigners) * 100) : 0;
+
+                            if ($document['status'] === 'REJECTED') {
+                                $percentClass = 'bg-[#b91c1c]';
+                            } elseif ($percent === 100 && $totalSigners > 0) {
+                                $percentClass = 'bg-[#15803d]';
+                            } else {
+                                $percentClass = 'bg-brand';
+                            }
+                            ?>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <span class="font-label-sm text-[11px] font-semibold text-on-surface-variant"><?= $signedCount; ?>/<?= $totalSigners; ?> tanda tangan</span>
+                                <span class="font-code-tabular text-[11px] font-bold text-on-surface-variant"><?= $percent; ?>%</span>
+                            </div>
+
+                            <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                                <div class="<?= $percentClass; ?> h-2 rounded-full" style="width: <?= $percent; ?>%"></div>
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-between mt-6 gap-2">
-                        <?php if (
-                            !empty($document['original_file_path'])
-                            && ($document['requester_id'] ?? null) === $data['user']['id']
-                        ): ?>
-                            <a
-                                href="/Tandain/<?= htmlspecialchars(ltrim($document['original_file_path'], '/'), ENT_QUOTES, 'UTF-8'); ?>"
-                                download
-                                class="inline-flex items-center justify-center gap-2 rounded-md border border-outline-variant bg-white px-4 py-2.5 font-label-md text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-low">
-                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
-                                Original
-                            </a>
-                        <?php endif; ?>
-                        <?php if (($document['status'] ?? '') === 'COMPLETED' && !empty($document['final_file_path'])): ?>
-                            <a
-                                href="/Tandain/<?= htmlspecialchars(ltrim($document['final_file_path'], '/'), ENT_QUOTES, 'UTF-8'); ?>"
-                                download
-                                class="inline-flex items-center justify-center gap-2 rounded-md bg-[#15803d] px-4 py-2.5 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#166534]">
-                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
-                                Signed
-                            </a>
-                        <?php else: ?>
-                            <div class="inline-flex items-center justify-center gap-2 rounded-md bg-[#7b8f82] px-4 py-2.5 font-label-md text-label-md font-semibold text-white shadow-sm cursor-not-allowed" aria-disabled="true">
-                                <span class=" material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
-                                Signed
-                            </div>
-                        <?php endif; ?>
-                    </div>
+
+                    <?php
+                    $canDownloadOriginal = !empty($document['original_file_path']) && ($document['requester_id'] ?? null) === $data['user']['id'];
+                    $canDownloadSigned = ($document['status'] ?? '') === 'COMPLETED' && !empty($document['final_file_path']);
+                    ?>
+
+                    <?php if ($canDownloadOriginal || $canDownloadSigned): ?>
+                        <div class="flex flex-wrap items-center gap-2 mt-6">
+                            <?php if ($canDownloadOriginal): ?>
+                                <a
+                                    href="/Tandain/<?= htmlspecialchars(ltrim($document['original_file_path'], '/'), ENT_QUOTES, 'UTF-8'); ?>"
+                                    download
+                                    class="btn-md inline-flex flex-1 items-center justify-center gap-2 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low">
+                                    <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
+                                    <span>Original</span>
+                                </a>
+                            <?php endif; ?>
+
+                            <?php if ($canDownloadSigned): ?>
+                                <a
+                                    href="/Tandain/<?= htmlspecialchars(ltrim($document['final_file_path'], '/'), ENT_QUOTES, 'UTF-8'); ?>"
+                                    download
+                                    class="btn-md inline-flex flex-1 items-center justify-center gap-2 bg-[#15803d] font-semibold text-white shadow-sm transition-colors hover:bg-[#166534]">
+                                    <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
+                                    <span>Signed</span>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </section>
 
                 <section class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
@@ -260,25 +272,13 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                     <?php if ($signer['status'] === 'SIGNED' && $signedTimestamp !== false): ?>
                                         <p class="mt-1 inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
                                             <span class="material-symbols-outlined text-[14px]" aria-hidden="true">schedule</span>
-                                            Ditandatangani <?= date('d M Y, H:i', $signedTimestamp); ?> WIB
+                                            Ditandatangani <?= formatTanggalIndo($signedTimestamp, 'datetime'); ?>
                                         </p>
                                     <?php endif; ?>
                                 </div>
 
-                                <?php
-                                $signerStatus = [
-                                    'WAITING' => ['Menunggu giliran', 'hourglass_top', 'bg-[#fef3c7] text-[#92400e]'],
-                                    'CURRENT_TURN' => ['Dalam peninjauan', 'sync', 'bg-[#dbeafe] text-[#1d4ed8]'],
-                                    'SIGNED' => ['Signed', 'check_circle', 'bg-[#dcfce7] text-[#15803d]'],
-                                    'REJECTED' => ['Ditolak', 'cancel', 'bg-[#fee2e2] text-[#b91c1c]'],
-                                ][$signer['status']] ?? null;
-                                ?>
-                                <?php if ($signerStatus !== null): ?>
-                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label-sm font-label-sm <?= $signerStatus[2]; ?>">
-                                        <span class="material-symbols-outlined text-[14px]" aria-hidden="true"><?= $signerStatus[1]; ?></span>
-                                        <span><?= htmlspecialchars($signerStatus[0], ENT_QUOTES, 'UTF-8'); ?></span>
-                                    </span>
-                                <?php endif; ?>
+                                <?php renderStatusBadge($signer['status']); ?>
+
                                 <?php if ((string) $signer['signer_id'] === (string) $data['user']['id'] && $signer['status'] === 'CURRENT_TURN'): ?>
                                     <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label-sm font-label-sm bg-[#dcfce7] text-[#15803d]">
                                         <span class="material-symbols-outlined text-[14px]" aria-hidden="true">person</span>
@@ -292,7 +292,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                             name="stamp_type"
                                             value="SIGNATURE_ONLY"
                                             aria-pressed="<?= $signer['stamp_type'] === 'SIGNATURE_ONLY' ? 'true' : 'false'; ?>"
-                                            class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-2 font-label-md text-label-md font-semibold transition-colors <?= $signer['stamp_type'] === 'SIGNATURE_ONLY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
+                                            class="btn-md inline-flex flex-1 items-center justify-center gap-1.5 border font-semibold transition-colors <?= $signer['stamp_type'] === 'SIGNATURE_ONLY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
                                             <span class="material-symbols-outlined text-[16px]" aria-hidden="true">draw</span>
                                             TTD Polos
                                         </button>
@@ -301,7 +301,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                             name="stamp_type"
                                             value="DUAL_DISPLAY"
                                             aria-pressed="<?= $signer['stamp_type'] === 'DUAL_DISPLAY' ? 'true' : 'false'; ?>"
-                                            class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-2 font-label-md text-label-md font-semibold transition-colors <?= $signer['stamp_type'] === 'DUAL_DISPLAY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
+                                            class="btn-md inline-flex flex-1 items-center justify-center gap-1.5 border font-semibold transition-colors <?= $signer['stamp_type'] === 'DUAL_DISPLAY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
                                             <span class="material-symbols-outlined text-[16px]" aria-hidden="true">qr_code_2</span>
                                             TTD + QR
                                         </button>
@@ -336,12 +336,12 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                             </div>
                             <?php if ($canDecide): ?>
                                 <div class="flex shrink-0 flex-wrap gap-2">
-                                    <button type="button" data-modal-open="reject-document-modal" class="inline-flex items-center justify-center gap-2 rounded-md border border-[#f3b4b4] bg-[#fff0f0] px-4 py-2.5 font-label-md text-label-md font-semibold text-[#b91c1c] transition-colors hover:bg-[#fde7e7]">
+                                    <button type="button" data-modal-open="reject-document-modal" class="btn-md inline-flex items-center justify-center gap-2 border border-[#f3b4b4] bg-[#fff0f0] font-semibold text-[#b91c1c] transition-colors hover:bg-[#fde7e7]">
                                         <span class="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
                                         Tolak
                                     </button>
                                     <?php if ($canSign): ?>
-                                        <button type="button" data-modal-open="agree-document-modal" class="inline-flex items-center justify-center gap-2 rounded-md bg-[#0f8f5a] px-4 py-2.5 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#0e7d4f]">
+                                        <button type="button" data-modal-open="agree-document-modal" class="btn-md inline-flex items-center justify-center gap-2 bg-[#0f8f5a] font-semibold text-white shadow-sm transition-colors hover:bg-[#0e7d4f]">
                                             <span class="material-symbols-outlined text-[18px]" aria-hidden="true">check</span>
                                             Setujui
                                         </button>
@@ -432,33 +432,159 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                             const marker = document.createElement('div');
                             const qrOnly = signer.stampType === 'QR_ONLY';
                             const signatureOnly = signer.stampType === 'SIGNATURE_ONLY';
-                            const markerWidth = qrOnly ? 60 : 160;
-                            const markerHeight = 60;
-                            marker.className = 'absolute z-10 flex items-center justify-center gap-0.5 overflow-hidden bg-white';
-                            marker.style.width = `${markerWidth * viewport.scale / 1.3}px`;
-                            marker.style.height = `${60 * viewport.scale / 1.3}px`;
+                            const scaleFactor = viewport.scale / 1.3;
+                            const markerHeight = 65;
+                            let markerWidth = 215;
+
+                            if (qrOnly) {
+                                markerWidth = 65;
+                            } else if (signatureOnly) {
+                                markerWidth = 175;
+                            }
+
+                            marker.className = 'absolute z-10 flex items-stretch gap-1 overflow-hidden bg-white p-0.5 shadow-sm';
+                            marker.style.width = `${markerWidth * scaleFactor}px`;
+                            marker.style.height = `${markerHeight * scaleFactor}px`;
                             marker.style.left = `${Math.max(0, Math.min(1, signer.x)) * viewport.width}px`;
                             marker.style.top = `${Math.max(0, Math.min(1, signer.y)) * viewport.height}px`;
-                            marker.title = `${signer.name} — halaman ${pageNumber}`;
+                            marker.title = `${signer.name} (Halaman ${pageNumber})`;
 
-                            if (!signatureOnly) {
+                            const makeIpbBox = (topText, bottomText, sigUrl, signerName, isFlex1) => {
+                                const box = document.createElement('div');
+                                box.style.display = 'flex';
+                                box.style.flexDirection = 'column';
+                                box.style.justifyContent = 'space-between';
+                                box.style.backgroundColor = '#ffffff';
+                                box.style.boxSizing = 'border-box';
+
+                                if (isFlex1) {
+                                    box.style.flex = '1';
+                                    box.style.minWidth = '0';
+                                } else {
+                                    box.style.width = '100%';
+                                    box.style.height = '100%';
+                                }
+
+                                const topRow = document.createElement('div');
+                                topRow.style.display = 'flex';
+                                topRow.style.alignItems = 'center';
+                                topRow.style.width = '100%';
+                                topRow.style.lineHeight = '1';
+
+                                const leftTopLine = document.createElement('span');
+                                leftTopLine.style.width = `${Math.max(4, Math.round(6 * scaleFactor))}px`;
+                                leftTopLine.style.height = '1px';
+                                leftTopLine.style.backgroundColor = '#000000';
+                                leftTopLine.style.flexShrink = '0';
+
+                                const topLabel = document.createElement('span');
+                                topLabel.textContent = topText;
+                                topLabel.style.fontSize = `${Math.max(6.5, Math.round(7.5 * scaleFactor))}px`;
+                                topLabel.style.fontFamily = 'monospace, sans-serif';
+                                topLabel.style.fontWeight = '500';
+                                topLabel.style.color = '#000000';
+                                topLabel.style.padding = '0 2px';
+                                topLabel.style.whiteSpace = 'nowrap';
+                                topLabel.style.flexShrink = '0';
+
+                                const rightTopLine = document.createElement('span');
+                                rightTopLine.style.flex = '1';
+                                rightTopLine.style.height = '1px';
+                                rightTopLine.style.backgroundColor = '#000000';
+
+                                topRow.appendChild(leftTopLine);
+                                topRow.appendChild(topLabel);
+                                topRow.appendChild(rightTopLine);
+
+                                const midRow = document.createElement('div');
+                                midRow.style.flex = '1';
+                                midRow.style.display = 'flex';
+                                midRow.style.alignItems = 'center';
+                                midRow.style.justifyContent = 'center';
+                                midRow.style.borderLeft = '1px solid #000000';
+                                midRow.style.borderRight = '1px solid #000000';
+                                midRow.style.padding = '1px 3px';
+                                midRow.style.minHeight = '0';
+                                midRow.style.overflow = 'hidden';
+
+                                if (sigUrl) {
+                                    const img = document.createElement('img');
+                                    img.src = sigUrl;
+                                    img.alt = `Tanda tangan ${signerName}`;
+                                    img.style.maxHeight = '100%';
+                                    img.style.maxWidth = '100%';
+                                    img.style.objectFit = 'contain';
+                                    midRow.appendChild(img);
+                                } else {
+                                    const placeholder = document.createElement('span');
+                                    placeholder.textContent = signerName;
+                                    placeholder.style.fontSize = `${Math.max(7.5, Math.round(9.5 * scaleFactor))}px`;
+                                    placeholder.style.fontWeight = '600';
+                                    placeholder.style.color = '#475569';
+                                    placeholder.style.textAlign = 'center';
+                                    placeholder.style.overflow = 'hidden';
+                                    placeholder.style.textOverflow = 'ellipsis';
+                                    placeholder.style.whiteSpace = 'nowrap';
+                                    midRow.appendChild(placeholder);
+                                }
+
+                                const botRow = document.createElement('div');
+                                botRow.style.display = 'flex';
+                                botRow.style.alignItems = 'center';
+                                botRow.style.width = '100%';
+                                botRow.style.lineHeight = '1';
+
+                                const leftBotLine = document.createElement('span');
+                                leftBotLine.style.width = `${Math.max(4, Math.round(6 * scaleFactor))}px`;
+                                botRow.appendChild(leftBotLine);
+                                leftBotLine.style.height = '1px';
+                                leftBotLine.style.backgroundColor = '#000000';
+                                leftBotLine.style.flexShrink = '0';
+
+                                const botLabel = document.createElement('span');
+                                botLabel.textContent = bottomText;
+                                botLabel.style.fontSize = `${Math.max(6, Math.round(7 * scaleFactor))}px`;
+                                botLabel.style.fontFamily = 'monospace, sans-serif';
+                                botLabel.style.color = '#475569';
+                                botLabel.style.padding = '0 2px';
+                                botLabel.style.whiteSpace = 'nowrap';
+                                botLabel.style.flexShrink = '0';
+                                botRow.appendChild(botLabel);
+
+                                const rightBotLine = document.createElement('span');
+                                rightBotLine.style.flex = '1';
+                                rightBotLine.style.height = '1px';
+                                rightBotLine.style.backgroundColor = '#000000';
+                                botRow.appendChild(rightBotLine);
+
+                                box.appendChild(topRow);
+                                box.appendChild(midRow);
+                                box.appendChild(botRow);
+
+                                return box;
+                            };
+
+                            if (qrOnly) {
                                 const qrImage = document.createElement('img');
                                 qrImage.src = qrUrl;
                                 qrImage.alt = `Kode QR dokumen untuk ${signer.name}`;
-                                qrImage.className = 'h-full shrink-0 object-contain';
-                                qrImage.style.width = `${markerHeight * viewport.scale / 1.3}px`;
+                                qrImage.className = 'h-full w-full object-contain';
                                 marker.appendChild(qrImage);
-                            }
+                            } else if (signatureOnly) {
+                                const box = makeIpbBox('digitally signed @ tandain.pnj.ac.id', 'tandain.pnj.ac.id', signer.signatureUrl, signer.name, false);
+                                marker.appendChild(box);
+                            } else {
+                                const qrImage = document.createElement('img');
+                                qrImage.src = qrUrl;
+                                qrImage.alt = `Kode QR dokumen untuk ${signer.name}`;
+                                qrImage.style.width = `${(markerHeight - 4) * scaleFactor}px`;
+                                qrImage.style.height = `${(markerHeight - 4) * scaleFactor}px`;
+                                qrImage.style.objectFit = 'contain';
+                                qrImage.style.flexShrink = '0';
+                                marker.appendChild(qrImage);
 
-                            if (!qrOnly && signer.signatureUrl) {
-                                const signatureImage = document.createElement('img');
-                                signatureImage.src = signer.signatureUrl;
-                                signatureImage.alt = `Tanda tangan ${signer.name}`;
-                                signatureImage.className = 'h-full min-w-0 flex-1 object-contain';
-                                marker.appendChild(signatureImage);
-                            } else if (!qrOnly && !signatureOnly) {
-                                marker.classList.add('border-2', 'border-dashed', 'border-amber-500', 'px-1', 'text-center', 'text-xs', 'font-semibold', 'text-amber-900');
-                                marker.textContent = `${signer.name}`;
+                                const box = makeIpbBox('digitally signed', 'tandain.pnj.ac.id', signer.signatureUrl, signer.name, true);
+                                marker.appendChild(box);
                             }
 
                             pageWrapper.appendChild(marker);

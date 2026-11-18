@@ -117,10 +117,7 @@ class InboxController extends Controller
                     $missingItems[] = 'gambar tanda tangan aktif';
                 }
 
-                $this->setFlash(
-                    'error',
-                    'Untuk menyetujui dokumen, lengkapi terlebih dahulu ' . implode(' dan ', $missingItems) . '.'
-                );
+                $data['signing_warning'] = 'Untuk menyetujui dokumen, lengkapi terlebih dahulu ' . implode(' dan ', $missingItems) . '.';
             }
         }
 
