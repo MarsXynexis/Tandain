@@ -1,6 +1,7 @@
 {
   "require": {
     "php": ">=8.0",
-    "tecnickcom/tcpdf": "^6.11"
+    "tecnickcom/tcpdf": "^6.11",
+    "league/oauth2-google": "^5.0"
   }
 }
