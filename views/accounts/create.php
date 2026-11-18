@@ -2,16 +2,16 @@
 <?php require_once 'views/layouts/sidebar.php'; ?>
 <?php require_once 'views/layouts/navbar.php'; ?>
 
-  <main class="flex-1 w-full p-8 flex flex-col gap-6">
+  <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
 
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex w-full max-w-2xl flex-col justify-between gap-4 md:flex-row md:items-center">
       <div>
         <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Tambah Akun Civitas</h1>
         <p class="font-body-md text-body-md text-on-surface-variant mt-1">Daftarkan akun civitas agar dapat masuk dan menggunakan layanan TTE</p>
       </div>
 
       <div>
-        <a class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant font-label-md text-label-md text-primary hover:bg-surface-container-low transition-colors" href="/Tandain/accounts">
+        <a class="btn-md inline-flex items-center gap-1.5 border border-outline-variant text-primary hover:bg-surface-container-low transition-colors" href="/Tandain/accounts">
           <span class="material-symbols-outlined text-[18px]">arrow_back</span>
           <span>Kembali</span>
         </a>
@@ -21,10 +21,8 @@
     <?php require_once 'views/layouts/flash.php'; ?>
 
     <?php if (!empty($data['error'])): ?>
-      <div class="p-4 rounded-xl border border-red-200 bg-red-50 text-[#b91c1c] font-body-sm text-body-sm flex items-center gap-3" role="alert">
-        <span class="material-symbols-outlined text-[20px]">error</span>
-        <span><?= htmlspecialchars($data['error'], ENT_QUOTES, 'UTF-8'); ?></span>
-      </div>
+      <?php $notice = ['type' => 'error', 'message' => $data['error']]; ?>
+      <?php require 'views/layouts/notice.php'; ?>
     <?php endif; ?>
 
     <section class="max-w-2xl bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col gap-6">
@@ -79,11 +77,11 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
-          <a href="/Tandain/accounts" class="px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors">
+          <a href="/Tandain/accounts" class="btn-md inline-flex border border-outline-variant text-on-surface-variant hover:text-primary transition-colors">
             Batal
           </a>
 
-          <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#004B87] text-white font-label-md text-label-md font-semibold hover:bg-[#003865] transition-all shadow-sm active:scale-[0.98]">
+          <button type="submit" class="btn-lg inline-flex items-center gap-2 bg-brand text-white font-semibold hover:bg-brand-hover transition-all shadow-sm active:scale-[0.98]">
             <span class="material-symbols-outlined text-[18px]">check</span>
             <span>Simpan Akun</span>
           </button>

@@ -6,12 +6,6 @@
 $templateData = $data['template'] ?? ($template ?? []);
 $schemaList = $data['schemaFields'] ?? ($schemaFields ?? []);
 
-$activeFlash = $data['flash'] ?? ($flash ?? ($_SESSION['flash'] ?? null));
-
-if (isset($_SESSION['flash'])) {
-    unset($_SESSION['flash']);
-}
-
 $templateId = $templateData['id'] ?? '';
 $titleValue = $templateData['title'] ?? '';
 $codeValue = $templateData['template_code'] ?? '';
@@ -23,9 +17,9 @@ $isActiveValue = ($rawActive === true || $rawActive === 1 || $rawActive === '1' 
 $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaList : []), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 ?>
 
-  <main class="flex-1 min-w-0 w-full max-w-full overflow-x-hidden p-6 lg:p-8 flex flex-col gap-6">
+  <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
 
-    <div class="max-w-[1400px] mx-auto w-full flex flex-col gap-6">
+    <div class="min-w-0 w-full flex flex-col gap-6">
 
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -37,41 +31,21 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
               </span>
             <?php endif; ?>
           </div>
-          <p class="font-body-md text-body-md text-on-surface-variant mt-1">Perbarui konfigurasi kolom isian dan format lembar kerja naskah dinas resmi PNJ.</p>
+          <p class="font-body-md text-body-md text-on-surface-variant mt-1">Perbarui konfigurasi kolom isian dan format lembar kerja naskah dinas resmi PNJ</p>
         </div>
 
         <div>
-          <a href="/Tandain/template" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant font-label-md text-label-md text-primary hover:bg-surface-container-low transition-colors">
+          <a href="/Tandain/template" class="btn-md inline-flex items-center gap-1.5 border border-outline-variant text-primary hover:bg-surface-container-low transition-colors">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Kembali</span>
           </a>
         </div>
       </div>
 
-      <?php if (!empty($activeFlash) && is_array($activeFlash)): ?>
-        <?php
-        if (($activeFlash['type'] ?? '') === 'success') {
-            $flashClass = 'border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]';
-            $flashIcon = 'check_circle';
-        } elseif (($activeFlash['type'] ?? '') === 'error') {
-            $flashClass = 'border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]';
-            $flashIcon = 'error';
-        } else {
-            $flashClass = 'border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8]';
-            $flashIcon = 'info';
-        }
-        ?>
+      <?php require 'views/layouts/flash.php'; ?>
 
-        <div class="flex items-center gap-3 rounded-xl border px-4 py-3 font-body-sm text-body-sm <?= $flashClass; ?>" role="status">
-          <span class="material-symbols-outlined text-[20px]" aria-hidden="true"><?= $flashIcon; ?></span>
-          <span><?= htmlspecialchars($activeFlash['message'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
-        </div>
-      <?php endif; ?>
-
-      <div id="builder-client-error" class="hidden items-center gap-3 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-[#b91c1c] font-body-sm text-body-sm" role="alert">
-        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">error</span>
-        <span id="builder-client-error-text"></span>
-      </div>
+      <?php $notice = ['type' => 'error', 'id' => 'builder-client-error']; ?>
+      <?php require 'views/layouts/notice.php'; ?>
 
       <form id="template-builder-form" method="POST" action="/Tandain/template/update/<?= urlencode($templateId); ?>" class="flex flex-col gap-6" novalidate>
 
@@ -136,7 +110,7 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
               </div>
             </div>
 
-            <button id="btn-add-field" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#004B87] hover:bg-[#003865] text-white font-label-md text-label-md font-semibold transition-colors shadow-sm">
+            <button id="btn-add-field" type="button" class="btn-md inline-flex items-center gap-1.5 bg-brand hover:bg-brand-hover text-white font-semibold transition-colors shadow-sm">
               <span class="material-symbols-outlined text-[18px]">add</span>
               <span>Tambah Kolom Isian</span>
             </button>
@@ -162,7 +136,7 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
             </div>
 
             <div class="flex items-center gap-2">
-              <button id="btn-test-pdf" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#004B87] text-[#004B87] hover:bg-[#004B87] hover:text-white font-label-md text-label-md font-semibold transition-colors">
+              <button id="btn-test-pdf" type="button" class="btn-md inline-flex items-center gap-1.5 border border-[#004B87] text-[#004B87] hover:bg-[#004B87] hover:text-white font-semibold transition-colors">
                 <span class="material-symbols-outlined text-[18px]" id="btn-test-pdf-icon">picture_as_pdf</span>
                 <span id="btn-test-pdf-label">Pratinjau PDF</span>
               </button>
@@ -186,7 +160,7 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
                 }
               </style>
 
-              <div class="sticky top-2 z-20 bg-surface-container-lowest border border-outline-variant rounded-xl p-2.5 shadow-sm flex items-center justify-between gap-2">
+              <div class="lg:sticky lg:top-20 z-20 bg-surface-container-lowest border border-outline-variant rounded-xl p-2.5 shadow-sm flex items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-1">
                   <button type="button" data-cmd="bold" title="Tebal (Ctrl+B)" class="p-1.5 rounded-lg border border-outline-variant bg-surface-container-low hover:bg-surface-container text-primary transition-colors">
                     <span class="material-symbols-outlined text-[18px]">format_bold</span>
@@ -270,7 +244,7 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
 
             </div>
 
-            <div class="xl:col-span-4 flex flex-col gap-4 xl:sticky xl:top-2">
+            <div class="xl:col-span-4 flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
 
               <div class="bg-surface-container-low/70 border border-outline-variant rounded-xl p-4 flex flex-col gap-3.5 shadow-sm">
                 <div>
@@ -281,22 +255,22 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
                 <div class="flex flex-col gap-1.5">
                   <span class="text-xs font-semibold text-primary">Data Pemohon</span>
                   <div class="flex flex-wrap gap-1.5">
-                    <button type="button" data-insert-tag="{{nama_lengkap}}" title="Nama lengkap pemohon dari akun login" class="px-2.5 py-1 rounded-md border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-code-tabular text-xs font-medium transition-colors shadow-2xs">{{nama_lengkap}}</button>
-                    <button type="button" data-insert-tag="{{nomor_induk}}" title="NIM atau NIP pemohon" class="px-2.5 py-1 rounded-md border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-code-tabular text-xs font-medium transition-colors shadow-2xs">{{nomor_induk}}</button>
-                    <button type="button" data-insert-tag="{{program_studi}}" title="Program studi pemohon" class="px-2.5 py-1 rounded-md border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-code-tabular text-xs font-medium transition-colors shadow-2xs">{{program_studi}}</button>
-                    <button type="button" data-insert-tag="{{email}}" title="Email resmi kampus" class="px-2.5 py-1 rounded-md border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-code-tabular text-xs font-medium transition-colors shadow-2xs">{{email}}</button>
-                    <button type="button" data-insert-tag="{{jabatan}}" title="Jabatan atau status civitas" class="px-2.5 py-1 rounded-md border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-code-tabular text-xs font-medium transition-colors shadow-2xs">{{jabatan}}</button>
+                    <button type="button" data-insert-tag="{{nama_lengkap}}" title="Nama lengkap pemohon dari akun login" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{nama_lengkap}}</button>
+                    <button type="button" data-insert-tag="{{nomor_induk}}" title="NIM atau NIP pemohon" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{nomor_induk}}</button>
+                    <button type="button" data-insert-tag="{{program_studi}}" title="Program studi pemohon" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{program_studi}}</button>
+                    <button type="button" data-insert-tag="{{email}}" title="Email resmi kampus" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{email}}</button>
+                    <button type="button" data-insert-tag="{{jabatan}}" title="Jabatan atau status civitas" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{jabatan}}</button>
                   </div>
                 </div>
 
                 <div class="flex flex-col gap-1.5 pt-2.5 border-t border-outline-variant/60">
                   <span class="text-xs font-semibold text-primary">Kedinasan &amp; Pengesahan</span>
                   <div class="flex flex-wrap gap-1.5">
-                    <button type="button" data-insert-tag="{{nomor_surat}}" title="Nomor naskah dinas resmi" class="px-2.5 py-1 rounded-md border border-outline-variant bg-white hover:bg-[#dceafe] text-primary font-code-tabular text-xs font-medium transition-colors shadow-2xs">{{nomor_surat}}</button>
-                    <button type="button" data-insert-tag="{{tanggal_surat}}" title="Tanggal naskah dinas" class="px-2.5 py-1 rounded-md border border-outline-variant bg-white hover:bg-[#dceafe] text-primary font-code-tabular text-xs font-medium transition-colors shadow-2xs">{{tanggal_surat}}</button>
-                    <button type="button" data-insert-tag="{{kolom_ttd_1}}" title="Slot tanda tangan pejabat 1" class="px-2.5 py-1 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-code-tabular text-xs font-semibold transition-colors shadow-2xs">{{kolom_ttd_1}}</button>
-                    <button type="button" data-insert-tag="{{kolom_ttd_2}}" title="Slot tanda tangan pejabat 2" class="px-2.5 py-1 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-code-tabular text-xs font-semibold transition-colors shadow-2xs">{{kolom_ttd_2}}</button>
-                    <button type="button" data-insert-tag="{{qr_verifikasi}}" title="QR Code verifikasi" class="px-2.5 py-1 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-code-tabular text-xs font-semibold transition-colors shadow-2xs">{{qr_verifikasi}}</button>
+                    <button type="button" data-insert-tag="{{nomor_surat}}" title="Nomor naskah dinas resmi" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{nomor_surat}}</button>
+                    <button type="button" data-insert-tag="{{tanggal_surat}}" title="Tanggal naskah dinas" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{tanggal_surat}}</button>
+                    <button type="button" data-insert-tag="{{kolom_ttd_1}}" title="Slot tanda tangan pejabat 1" class="btn-md inline-flex border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-code-tabular font-semibold transition-colors shadow-sm">{{kolom_ttd_1}}</button>
+                    <button type="button" data-insert-tag="{{kolom_ttd_2}}" title="Slot tanda tangan pejabat 2" class="btn-md inline-flex border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-code-tabular font-semibold transition-colors shadow-sm">{{kolom_ttd_2}}</button>
+                    <button type="button" data-insert-tag="{{qr_verifikasi}}" title="QR Code verifikasi" class="btn-md inline-flex border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-code-tabular font-semibold transition-colors shadow-sm">{{qr_verifikasi}}</button>
                   </div>
                 </div>
 
@@ -315,27 +289,27 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
                 </div>
 
                 <div class="flex flex-col gap-1.5">
-                  <button type="button" data-snippet-key="title" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-outline-variant bg-white hover:bg-surface-container text-primary font-label-md text-xs font-semibold transition-colors text-left shadow-2xs">
+                  <button type="button" data-snippet-key="title" class="btn-md inline-flex items-center justify-start gap-2 border border-outline-variant bg-white hover:bg-surface-container text-primary font-semibold transition-colors text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px] text-secondary">title</span>
                     <span>Judul &amp; Nomor Surat</span>
                   </button>
 
-                  <button type="button" data-snippet-key="applicant_table" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-outline-variant bg-white hover:bg-surface-container text-primary font-label-md text-xs font-semibold transition-colors text-left shadow-2xs">
+                  <button type="button" data-snippet-key="applicant_table" class="btn-md inline-flex items-center justify-start gap-2 border border-outline-variant bg-white hover:bg-surface-container text-primary font-semibold transition-colors text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px] text-secondary">table_rows</span>
                     <span>Tabel Data Pemohon</span>
                   </button>
 
-                  <button type="button" data-snippet-key="ttd_single" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-label-md text-xs font-semibold transition-colors text-left shadow-2xs">
+                  <button type="button" data-snippet-key="ttd_single" class="btn-md inline-flex items-center justify-start gap-2 border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-semibold transition-colors text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px] text-[#15803d]">draw</span>
                     <span>Tanda Tangan 1 Pejabat (Kanan)</span>
                   </button>
 
-                  <button type="button" data-snippet-key="ttd_double" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-label-md text-xs font-semibold transition-colors text-left shadow-2xs">
+                  <button type="button" data-snippet-key="ttd_double" class="btn-md inline-flex items-center justify-start gap-2 border border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] font-semibold transition-colors text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px] text-[#15803d]">group</span>
                     <span>Tanda Tangan 2 Pejabat (Kiri &amp; Kanan)</span>
                   </button>
 
-                  <button type="button" data-snippet-key="tembusan" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-outline-variant bg-white hover:bg-surface-container text-primary font-label-md text-xs font-semibold transition-colors text-left shadow-2xs">
+                  <button type="button" data-snippet-key="tembusan" class="btn-md inline-flex items-center justify-start gap-2 border border-outline-variant bg-white hover:bg-surface-container text-primary font-semibold transition-colors text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px] text-secondary">format_list_numbered</span>
                     <span>Blok Tembusan</span>
                   </button>
@@ -349,17 +323,17 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
                 </div>
 
                 <div class="flex flex-col gap-1.5">
-                  <button type="button" data-load-preset="sk_mhs" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-label-md text-xs font-semibold transition-all text-left shadow-2xs">
+                  <button type="button" data-load-preset="sk_mhs" class="btn-md inline-flex items-center justify-start gap-2 border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-semibold transition-all text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px]">school</span>
                     <span>Surat Keterangan Mahasiswa</span>
                   </button>
 
-                  <button type="button" data-load-preset="pengumuman" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-label-md text-xs font-semibold transition-all text-left shadow-2xs">
+                  <button type="button" data-load-preset="pengumuman" class="btn-md inline-flex items-center justify-start gap-2 border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-semibold transition-all text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px]">campaign</span>
                     <span>Pengumuman Resmi PNJ</span>
                   </button>
 
-                  <button type="button" data-load-preset="rekomendasi_2ttd" class="inline-flex items-center justify-start gap-2 px-3 py-2 rounded-lg border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-label-md text-xs font-semibold transition-all text-left shadow-2xs">
+                  <button type="button" data-load-preset="rekomendasi_2ttd" class="btn-md inline-flex items-center justify-start gap-2 border border-outline-variant bg-white hover:bg-secondary hover:text-white text-primary font-semibold transition-all text-left shadow-sm">
                     <span class="material-symbols-outlined text-[16px]">history_edu</span>
                     <span>Surat Rekomendasi (2 Pejabat)</span>
                   </button>
@@ -372,12 +346,12 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
 
         </section>
 
-        <div class="flex items-center justify-between gap-3 pt-2 pb-6">
-          <a href="/Tandain/template" class="px-5 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant hover:text-primary hover:bg-surface-container-low font-label-md text-label-md font-semibold transition-colors">
+        <div class="flex flex-wrap items-center justify-end gap-3 pt-2 pb-6">
+          <a href="/Tandain/template" class="btn-md inline-flex border border-outline-variant text-on-surface-variant hover:text-primary hover:bg-surface-container-low font-semibold transition-colors">
             Batal
           </a>
 
-          <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#004B87] hover:bg-[#003865] text-white font-label-md text-label-md font-semibold transition-all shadow-sm active:scale-[0.98]">
+          <button type="submit" class="btn-lg inline-flex items-center gap-2 bg-brand hover:bg-brand-hover text-white font-semibold transition-all shadow-sm active:scale-[0.98]">
             <span class="material-symbols-outlined text-[18px]">save</span>
             <span>Simpan Perubahan</span>
           </button>
@@ -416,11 +390,11 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
           <span id="pdf-test-meta" class="font-code-tabular text-xs text-on-surface-variant"></span>
 
           <div class="flex items-center gap-3">
-            <button id="btn-cancel-pdf-modal" type="button" class="px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:text-primary font-label-md text-label-md font-medium transition-colors">
+            <button id="btn-cancel-pdf-modal" type="button" class="btn-md inline-flex border border-outline-variant text-on-surface-variant hover:text-primary font-medium transition-colors">
               Tutup
             </button>
 
-            <a id="btn-download-test-pdf" href="#" download="pratinjau-template.pdf" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#004B87] hover:bg-[#003865] text-white font-label-md text-label-md font-semibold transition-colors shadow-sm">
+            <a id="btn-download-test-pdf" href="#" download="pratinjau-template.pdf" class="btn-md inline-flex items-center gap-1.5 bg-brand hover:bg-brand-hover text-white font-semibold transition-colors shadow-sm">
               <span class="material-symbols-outlined text-[18px]">download</span>
               <span>Unduh Salinan PDF</span>
             </a>
@@ -436,10 +410,10 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
         <div class="flex items-center justify-between gap-2 pb-2 border-b border-outline-variant/60">
           <div class="flex items-center gap-2">
             <span data-row-badge class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container text-primary font-code-tabular text-xs font-bold">Field #1</span>
-            <button type="button" data-row-tag-preview class="hidden font-code-tabular text-xs text-[#15803d] bg-[#f0fdf4] border border-[#bbf7d0] px-2 py-0.5 rounded font-semibold hover:bg-[#dcfce7] transition-all cursor-pointer" title="Klik untuk menyisipkan tag ke naskah surat"></button>
+            <button type="button" data-row-tag-preview class="btn-md hidden font-code-tabular text-[#15803d] bg-[#f0fdf4] border border-[#bbf7d0] font-semibold hover:bg-[#dcfce7] transition-all cursor-pointer" title="Klik untuk menyisipkan tag ke naskah surat"></button>
           </div>
 
-          <button type="button" data-remove-field class="inline-flex items-center gap-1 px-2 py-1 rounded text-[#b91c1c] hover:bg-red-50 font-label-md text-xs font-semibold transition-colors">
+          <button type="button" data-remove-field class="btn-md inline-flex items-center gap-1 text-[#b91c1c] hover:bg-red-50 font-semibold transition-colors">
             <span class="material-symbols-outlined text-[16px]">delete</span>
             <span>Hapus</span>
           </button>
@@ -511,26 +485,25 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
     (function () {
       const INITIAL_SCHEMA_FIELDS = <?= $initialSchemaJson; ?>;
 
-      const DEFAULT_INITIAL_BODY = '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700;"><u>SURAT KETERANGAN</u></p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor {{nomor_surat}}</p>\n</div>\n<p style="text-align: justify; margin: 0 0 10px 0;">Yang bertanda tangan di bawah ini menerangkan dengan sesungguhnya bahwa:</p>\n<table style="width: 100%; border-collapse: collapse; margin: 10px 0 14px 0;">\n  <tr>\n    <td style="width: 160px; padding: 2px 0; vertical-align: top;">Nama Lengkap</td>\n    <td style="width: 16px; padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top; font-weight: 700;">{{nama_lengkap}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">NIM / NIP</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{nomor_induk}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Program Studi</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{program_studi}}</td>\n  </tr>\n</table>\n<p style="text-align: justify; margin: 0 0 10px 0;">Adalah benar mahasiswa terdaftar aktif di Politeknik Negeri Jakarta pada semester berjalan.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian surat keterangan ini dibuat dengan sebenarnya untuk dipergunakan sebagaimana mestinya.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan Teknik Informatika dan Komputer,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Nama Pejabat Penandatangan</p>\n      <p style="margin: 0;">NIP 198003152005011002</p>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n';
+      const DEFAULT_INITIAL_BODY = '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700;"><u>SURAT KETERANGAN</u></p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor {{nomor_surat}}</p>\n</div>\n<p style="text-align: justify; margin: 0 0 10px 0;">Yang bertanda tangan di bawah ini menerangkan dengan sesungguhnya bahwa:</p>\n<table style="width: 100%; border-collapse: collapse; margin: 10px 0 14px 0;">\n  <tr>\n    <td style="width: 160px; padding: 2px 0; vertical-align: top;">Nama Lengkap</td>\n    <td style="width: 16px; padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top; font-weight: 700;">{{nama_lengkap}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">NIM / NIP</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{nomor_induk}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Program Studi</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{program_studi}}</td>\n  </tr>\n</table>\n<p style="text-align: justify; margin: 0 0 10px 0;">Adalah benar mahasiswa terdaftar aktif di Politeknik Negeri Jakarta pada semester berjalan.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian surat keterangan ini dibuat dengan sebenarnya untuk dipergunakan sebagaimana mestinya.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan Teknik Informatika dan Komputer,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n';
 
       const PRESETS = {
-        sk_mhs: '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700;"><u>SURAT KETERANGAN</u></p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor {{nomor_surat}}</p>\n</div>\n<p style="text-align: justify; margin: 0 0 10px 0;">Yang bertanda tangan di bawah ini menerangkan dengan sesungguhnya bahwa:</p>\n<table style="width: 100%; border-collapse: collapse; margin: 10px 0 14px 0;">\n  <tr>\n    <td style="width: 160px; padding: 2px 0; vertical-align: top;">Nama Lengkap</td>\n    <td style="width: 16px; padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top; font-weight: 700;">{{nama_lengkap}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">NIM / NIP</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{nomor_induk}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Program Studi</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{program_studi}}</td>\n  </tr>\n</table>\n<p style="text-align: justify; margin: 0 0 10px 0;">Adalah benar mahasiswa terdaftar aktif pada jurusan kami untuk tahun akademik berjalan dan berkelakuan baik dalam mengikuti seluruh kegiatan akademik di Politeknik Negeri Jakarta.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian surat keterangan ini dibuat dengan sebenarnya untuk dipergunakan sebagaimana mestinya.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan Teknik Informatika dan Komputer,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Nama Pejabat Penandatangan</p>\n      <p style="margin: 0;">NIP 198003152005011002</p>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
-        pengumuman: '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700; letter-spacing: 0.5px;">PENGUMUMAN</p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor 1053/DST/PL3.A/B/DV.01.00/2026</p>\n  <p style="margin: 12px 0 0 0; font-size: 10.5pt;">tentang</p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: 700;">Perubahan Mekanisme Pengajuan Surat Keterangan Mahasiswa</p>\n</div>\n<p style="text-align: justify; margin: 0 0 12px 0;">Diberitahukan kepada seluruh mahasiswa Politeknik Negeri Jakarta bahwa terdapat perubahan mekanisme pengajuan surat keterangan mahasiswa yang semula diajukan melalui laman surat-akademik.pnj.ac.id, untuk sementara waktu diajukan melalui link sebagai berikut :</p>\n<p style="text-align: center; margin: 12px 0; font-weight: 700;"><a href="https://s.pnj.ac.id/SuratKeteranganOnline" style="color: #000000; text-decoration: underline;">https://s.pnj.ac.id/SuratKeteranganOnline</a></p>\n<div style="text-align: center; margin: 14px 0;">{{qr_verifikasi}}</div>\n<p style="text-align: justify; margin: 0 0 12px 0;">Sehubungan dengan perubahan tersebut, seluruh mahasiswa yang membutuhkan surat keterangan diharapkan untuk mengajukan permohonan melalui tautan yang telah disediakan dengan mengisi data dan melengkapi persyaratan sesuai dengan ketentuan yang berlaku.</p>\n<p style="text-align: justify; margin: 0 0 12px 0;">Dengan adanya perubahan mekanisme ini, diharapkan proses pengajuan dan pelayanan surat keterangan mahasiswa dapat berjalan lebih tertib, efektif, dan mudah diakses.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian pengumuman ini disampaikan untuk menjadi perhatian seluruh mahasiswa. Atas perhatian dan kerja samanya, diucapkan terima kasih.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 20px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">2 November 2026</p>\n      <p style="margin: 0 0 4px 0;">Wakil Direktur Bidang Akademik,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Prof. Iwan Susanto, M.T., Ph.D.</p>\n      <p style="margin: 0;">NIP 197905042006041002</p>\n    </td>\n  </tr>\n</table>\n<div class="pnj-tembusan" style="margin-top: 18px; font-size: 10pt; line-height: 1.35; text-align: left;">\n  <p style="margin: 0 0 2px 0;">Tembusan :</p>\n  <ol style="margin: 2px 0 0 0; padding-left: 20px;">\n    <li>Direktur;</li>\n    <li>Para Wakil Direktur;</li>\n    <li>Para Ketua Jurusan;</li>\n    <li>Koordinator PSDKU Kab. Demak;</li>\n    <li>Koordinator PSDKU Kota Pekalongan;</li>\n    <li>Kabag. Akademik dan Kemahasiswaan.</li>\n  </ol>\n</div>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
-        rekomendasi_2ttd: '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700;"><u>SURAT PENGANTAR PRAKTEK KERJA LAPANGAN</u></p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor {{nomor_surat}}</p>\n</div>\n<p style="text-align: justify; margin: 0 0 10px 0;">Pimpinan Jurusan Teknik Informatika dan Komputer Politeknik Negeri Jakarta dengan ini menerangkan bahwa mahasiswa berikut:</p>\n<table style="width: 100%; border-collapse: collapse; margin: 10px 0 14px 0;">\n  <tr>\n    <td style="width: 160px; padding: 2px 0; vertical-align: top;">Nama Lengkap</td>\n    <td style="width: 16px; padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top; font-weight: 700;">{{nama_lengkap}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">NIM / NIP</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{nomor_induk}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Program Studi</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{program_studi}}</td>\n  </tr>\n</table>\n<p style="text-align: justify; margin: 0 0 10px 0;">Diberikan rekomendasi dan pengantar resmi untuk melaksanakan kegiatan Praktek Kerja Lapangan (PKL) / Magang Industri pada instansi mitra sesuai ketentuan kurikulum pendidikan vokasi Politeknik Negeri Jakarta.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian surat pengantar ini diberikan untuk dapat dipergunakan sebagaimana mestinya.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-right: 15px;">\n      <p style="margin: 0 0 2px 0;">Mengetahui,</p>\n      <p style="margin: 0 0 4px 0;">Koordinator Program Studi,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Nama Pejabat Pertama</p>\n      <p style="margin: 0;">NIP 197908242008122001</p>\n    </td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 15px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan TIK,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_2}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Nama Pejabat Kedua</p>\n      <p style="margin: 0;">NIP 196803121994031002</p>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n'
+        sk_mhs: '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700;"><u>SURAT KETERANGAN</u></p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor {{nomor_surat}}</p>\n</div>\n<p style="text-align: justify; margin: 0 0 10px 0;">Yang bertanda tangan di bawah ini menerangkan dengan sesungguhnya bahwa:</p>\n<table style="width: 100%; border-collapse: collapse; margin: 10px 0 14px 0;">\n  <tr>\n    <td style="width: 160px; padding: 2px 0; vertical-align: top;">Nama Lengkap</td>\n    <td style="width: 16px; padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top; font-weight: 700;">{{nama_lengkap}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">NIM / NIP</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{nomor_induk}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Program Studi</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{program_studi}}</td>\n  </tr>\n</table>\n<p style="text-align: justify; margin: 0 0 10px 0;">Adalah benar mahasiswa terdaftar aktif pada jurusan kami untuk tahun akademik berjalan dan berkelakuan baik dalam mengikuti seluruh kegiatan akademik di Politeknik Negeri Jakarta.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian surat keterangan ini dibuat dengan sebenarnya untuk dipergunakan sebagaimana mestinya.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan Teknik Informatika dan Komputer,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
+        pengumuman: '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700; letter-spacing: 0.5px;">PENGUMUMAN</p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor 1053/DST/PL3.A/B/DV.01.00/2026</p>\n  <p style="margin: 12px 0 0 0; font-size: 10.5pt;">tentang</p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt; font-weight: 700;">Perubahan Mekanisme Pengajuan Surat Keterangan Mahasiswa</p>\n</div>\n<p style="text-align: justify; margin: 0 0 12px 0;">Diberitahukan kepada seluruh mahasiswa Politeknik Negeri Jakarta bahwa terdapat perubahan mekanisme pengajuan surat keterangan mahasiswa yang semula diajukan melalui laman surat-akademik.pnj.ac.id, untuk sementara waktu diajukan melalui link sebagai berikut :</p>\n<p style="text-align: center; margin: 12px 0; font-weight: 700;"><a href="https://s.pnj.ac.id/SuratKeteranganOnline" style="color: #000000; text-decoration: underline;">https://s.pnj.ac.id/SuratKeteranganOnline</a></p>\n<div style="text-align: center; margin: 14px 0;">{{qr_verifikasi}}</div>\n<p style="text-align: justify; margin: 0 0 12px 0;">Sehubungan dengan perubahan tersebut, seluruh mahasiswa yang membutuhkan surat keterangan diharapkan untuk mengajukan permohonan melalui tautan yang telah disediakan dengan mengisi data dan melengkapi persyaratan sesuai dengan ketentuan yang berlaku.</p>\n<p style="text-align: justify; margin: 0 0 12px 0;">Dengan adanya perubahan mekanisme ini, diharapkan proses pengajuan dan pelayanan surat keterangan mahasiswa dapat berjalan lebih tertib, efektif, dan mudah diakses.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian pengumuman ini disampaikan untuk menjadi perhatian seluruh mahasiswa. Atas perhatian dan kerja samanya, diucapkan terima kasih.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 20px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">2 November 2026</p>\n      <p style="margin: 0 0 4px 0;">Wakil Direktur Bidang Akademik,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n    </td>\n  </tr>\n</table>\n<div class="pnj-tembusan" style="margin-top: 18px; font-size: 10pt; line-height: 1.35; text-align: left;">\n  <p style="margin: 0 0 2px 0;">Tembusan :</p>\n  <ol style="margin: 2px 0 0 0; padding-left: 20px;">\n    <li>Direktur;</li>\n    <li>Para Wakil Direktur;</li>\n    <li>Para Ketua Jurusan;</li>\n    <li>Koordinator PSDKU Kab. Demak;</li>\n    <li>Koordinator PSDKU Kota Pekalongan;</li>\n    <li>Kabag. Akademik dan Kemahasiswaan.</li>\n  </ol>\n</div>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
+        rekomendasi_2ttd: '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700;"><u>SURAT PENGANTAR PRAKTEK KERJA LAPANGAN</u></p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor {{nomor_surat}}</p>\n</div>\n<p style="text-align: justify; margin: 0 0 10px 0;">Pimpinan Jurusan Teknik Informatika dan Komputer Politeknik Negeri Jakarta dengan ini menerangkan bahwa mahasiswa berikut:</p>\n<table style="width: 100%; border-collapse: collapse; margin: 10px 0 14px 0;">\n  <tr>\n    <td style="width: 160px; padding: 2px 0; vertical-align: top;">Nama Lengkap</td>\n    <td style="width: 16px; padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top; font-weight: 700;">{{nama_lengkap}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">NIM / NIP</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{nomor_induk}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Program Studi</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{program_studi}}</td>\n  </tr>\n</table>\n<p style="text-align: justify; margin: 0 0 10px 0;">Diberikan rekomendasi dan pengantar resmi untuk melaksanakan kegiatan Praktek Kerja Lapangan (PKL) / Magang Industri pada instansi mitra sesuai ketentuan kurikulum pendidikan vokasi Politeknik Negeri Jakarta.</p>\n<p style="text-align: justify; margin: 0 0 20px 0;">Demikian surat pengantar ini diberikan untuk dapat dipergunakan sebagaimana mestinya.</p>\n<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-right: 15px;">\n      <p style="margin: 0 0 2px 0;">Mengetahui,</p>\n      <p style="margin: 0 0 4px 0;">Koordinator Program Studi,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n    </td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 15px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan TIK,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_2}}</div>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n'
       };
 
       const SNIPPETS = {
         title: '<div class="pnj-letter-heading" style="text-align: center; margin: 0 0 16px 0;">\n  <p style="margin: 0; font-size: 11pt; font-weight: 700;"><u>SURAT KETERANGAN</u></p>\n  <p style="margin: 2px 0 0 0; font-size: 10.5pt;">Nomor {{nomor_surat}}</p>\n</div>\n',
         paragraph: '<p style="text-align: justify; margin: 0 0 12px 0;">Yang bertanda tangan di bawah ini menerangkan dengan sesungguhnya bahwa mahasiswa Politeknik Negeri Jakarta berikut terdaftar aktif pada semester berjalan.</p>\n',
         applicant_table: '<table style="width: 100%; border-collapse: collapse; margin: 10px 0 14px 0;">\n  <tr>\n    <td style="width: 160px; padding: 2px 0; vertical-align: top;">Nama Lengkap</td>\n    <td style="width: 16px; padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top; font-weight: 700;">{{nama_lengkap}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">NIM / NIP</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{nomor_induk}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Program Studi</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{program_studi}}</td>\n  </tr>\n  <tr>\n    <td style="padding: 2px 0; vertical-align: top;">Email</td>\n    <td style="padding: 2px 0; vertical-align: top; text-align: center;">:</td>\n    <td style="padding: 2px 0; vertical-align: top;">{{email}}</td>\n  </tr>\n</table>\n',
-        ttd_single: '<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan Teknik Informatika dan Komputer,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Nama Pejabat Penandatangan</p>\n      <p style="margin: 0;">NIP 198003152005011002</p>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
-        ttd_double: '<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-right: 15px;">\n      <p style="margin: 0 0 2px 0;">Mengetahui,</p>\n      <p style="margin: 0 0 4px 0;">Koordinator Program Studi,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Nama Pejabat Pertama</p>\n      <p style="margin: 0;">NIP 197908242008122001</p>\n    </td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 15px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan TIK,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_2}}</div>\n      <p style="margin: 4px 0 0 0; font-weight: 700;">Nama Pejabat Kedua</p>\n      <p style="margin: 0;">NIP 196803121994031002</p>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
+        ttd_single: '<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%;"></td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 10px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan Teknik Informatika dan Komputer,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
+        ttd_double: '<table style="width: 100%; border-collapse: collapse; margin-top: 24px; page-break-inside: avoid;">\n  <tr>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-right: 15px;">\n      <p style="margin: 0 0 2px 0;">Mengetahui,</p>\n      <p style="margin: 0 0 4px 0;">Koordinator Program Studi,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_1}}</div>\n    </td>\n    <td style="width: 50%; vertical-align: top; text-align: left; padding-left: 15px;">\n      <p style="margin: 0 0 2px 0;">Depok, {{tanggal_surat}}</p>\n      <p style="margin: 0 0 4px 0;">Ketua Jurusan TIK,</p>\n      <div style="height: 75px; min-height: 75px; display: flex; align-items: center; margin: 4px 0;">{{kolom_ttd_2}}</div>\n    </td>\n  </tr>\n</table>\n<p style="margin: 16px 0 0 0;"><br></p>\n',
         tembusan: '<div class="pnj-tembusan" style="margin-top: 18px; font-size: 10pt; line-height: 1.35; text-align: left;">\n  <p style="margin: 0 0 2px 0;">Tembusan :</p>\n  <ol style="margin: 2px 0 0 0; padding-left: 20px;">\n    <li>Wakil Direktur Bidang Akademik;</li>\n    <li>Ketua Jurusan terkait;</li>\n    <li>Arsip.</li>\n  </ol>\n</div>\n<p style="margin: 16px 0 0 0;"><br></p>\n'
       };
 
       const builderForm = document.getElementById('template-builder-form');
       const clientErrorBox = document.getElementById('builder-client-error');
-      const clientErrorText = document.getElementById('builder-client-error-text');
       const titleInput = document.getElementById('template-title');
       const codeInput = document.getElementById('template-code');
       const editableEl = document.getElementById('pnj-letter-body-editable');
@@ -708,19 +681,15 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
       }
 
       function showClientError(message) {
-        if (clientErrorBox && clientErrorText) {
-          clientErrorText.textContent = message;
-          clientErrorBox.classList.remove('hidden');
-          clientErrorBox.classList.add('flex');
+        if (clientErrorBox) {
+          showNotice(clientErrorBox, message);
           clientErrorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
 
       function clearClientError() {
-        if (clientErrorBox && clientErrorText) {
-          clientErrorText.textContent = '';
-          clientErrorBox.classList.add('hidden');
-          clientErrorBox.classList.remove('flex');
+        if (clientErrorBox) {
+          hideNotice(clientErrorBox);
         }
       }
 
@@ -892,7 +861,7 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
             chipBtn.type = 'button';
             chipBtn.dataset.insertTag = tagText;
             chipBtn.title = item.label !== '' ? item.label : item.name;
-            chipBtn.className = 'px-2.5 py-1 rounded-md border border-[#c3c0ff] bg-[#e3dfff]/60 hover:bg-[#e3dfff] text-[#372abf] font-code-tabular text-xs font-semibold transition-colors shadow-2xs';
+            chipBtn.className = 'px-2.5 py-1 rounded-md border border-[#bfdbfe] bg-[#eff6ff] hover:bg-[#dbeafe] text-[#004B87] font-code-tabular text-xs font-semibold transition-colors shadow-sm';
             chipBtn.textContent = tagText;
 
             chipBtn.addEventListener('mousedown', function (e) {
@@ -908,56 +877,89 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
         }
       }
 
-      function insertAtCursor(text) {
-        if (!editableEl) return;
+      let savedSelectionRange = null;
 
-        editableEl.focus();
+      function saveCurrentSelection() {
         const sel = window.getSelection();
 
         if (sel && sel.rangeCount > 0) {
-          let range = sel.getRangeAt(0);
+          const range = sel.getRangeAt(0);
 
-          if (!editableEl.contains(range.commonAncestorContainer)) {
-            range = document.createRange();
+          if (editableEl && editableEl.contains(range.commonAncestorContainer)) {
+            savedSelectionRange = range.cloneRange();
+          }
+        }
+      }
+
+      function insertAtCursor(text) {
+        if (!editableEl) return;
+
+        let range = null;
+        const sel = window.getSelection();
+
+        if (savedSelectionRange && editableEl.contains(savedSelectionRange.commonAncestorContainer)) {
+          range = savedSelectionRange.cloneRange();
+        } else if (sel && sel.rangeCount > 0) {
+          const candidateRange = sel.getRangeAt(0);
+
+          if (editableEl.contains(candidateRange.commonAncestorContainer)) {
+            range = candidateRange.cloneRange();
+          }
+        }
+
+        if (!range) {
+          ensureTrailingParagraph();
+          const lastChild = editableEl.lastElementChild;
+          range = document.createRange();
+
+          if (lastChild) {
+            range.selectNodeContents(lastChild);
+            range.collapse(false);
+          } else {
             range.selectNodeContents(editableEl);
             range.collapse(false);
-            sel.removeAllRanges();
-            sel.addRange(range);
+          }
+        }
+
+        editableEl.focus();
+
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+
+        range.deleteContents();
+
+        if (text.indexOf('<') !== -1) {
+          const temp = document.createElement('div');
+          temp.innerHTML = text;
+          const frag = document.createDocumentFragment();
+          let node;
+          let lastNode;
+
+          while ((node = temp.firstChild)) {
+            lastNode = frag.appendChild(node);
           }
 
-          range.deleteContents();
+          range.insertNode(frag);
 
-          if (text.indexOf('<') !== -1) {
-            const temp = document.createElement('div');
-            temp.innerHTML = text;
-            const frag = document.createDocumentFragment();
-            let node;
-            let lastNode;
-
-            while ((node = temp.firstChild)) {
-              lastNode = frag.appendChild(node);
-            }
-
-            range.insertNode(frag);
-
-            if (lastNode) {
-              range = range.cloneRange();
-              range.setStartAfter(lastNode);
-              range.collapse(true);
-              sel.removeAllRanges();
-              sel.addRange(range);
-            }
-          } else {
-            const textNode = document.createTextNode(text);
-            range.insertNode(textNode);
-            range.setStartAfter(textNode);
+          if (lastNode) {
+            range = range.cloneRange();
+            range.setStartAfter(lastNode);
             range.collapse(true);
             sel.removeAllRanges();
             sel.addRange(range);
           }
         } else {
-          editableEl.innerHTML += text;
+          const textNode = document.createTextNode(text);
+          range.insertNode(textNode);
+          range.setStartAfter(textNode);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
         }
+
+        savedSelectionRange = range.cloneRange();
 
         ensureTrailingParagraph();
         syncHiddenInput();
@@ -1151,18 +1153,22 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
         });
 
         editableEl.addEventListener('keyup', function () {
+          saveCurrentSelection();
           updateToolbarActiveStates();
         });
 
         editableEl.addEventListener('mouseup', function () {
+          saveCurrentSelection();
           updateToolbarActiveStates();
         });
 
         editableEl.addEventListener('focus', function () {
+          saveCurrentSelection();
           updateToolbarActiveStates();
         });
 
         document.addEventListener('selectionchange', function () {
+          saveCurrentSelection();
           updateToolbarActiveStates();
         });
 
@@ -1275,6 +1281,70 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
 
                 syncHiddenInput();
                 return;
+              }
+
+              if (range.collapsed && range.startOffset === 0) {
+                if (cell.cellIndex > 0) {
+                  e.preventDefault();
+                  const prevCell = row.cells[cell.cellIndex - 1];
+                  const newRange = document.createRange();
+                  newRange.selectNodeContents(prevCell);
+                  newRange.collapse(false);
+                  sel.removeAllRanges();
+                  sel.addRange(newRange);
+                  return;
+                } else if (cell.cellIndex === 0) {
+                  const isRowEmpty = row.textContent.trim() === '';
+
+                  if (isRowEmpty) {
+                    e.preventDefault();
+                    const prevRow = row.previousElementSibling;
+                    row.remove();
+
+                    if (table.rows.length === 0) {
+                      const fallbackP = document.createElement('p');
+                      fallbackP.innerHTML = '<br>';
+                      fallbackP.style.margin = '0 0 12px 0';
+                      table.parentNode.insertBefore(fallbackP, table.nextSibling);
+                      table.remove();
+
+                      const newRange = document.createRange();
+                      newRange.selectNodeContents(fallbackP);
+                      newRange.collapse(false);
+                      sel.removeAllRanges();
+                      sel.addRange(newRange);
+                    } else if (prevRow) {
+                      const targetCell = prevRow.cells[prevRow.cells.length - 1];
+                      const newRange = document.createRange();
+                      newRange.selectNodeContents(targetCell);
+                      newRange.collapse(false);
+                      sel.removeAllRanges();
+                      sel.addRange(newRange);
+                    }
+
+                    syncHiddenInput();
+                    return;
+                  } else if (row.previousElementSibling) {
+                    e.preventDefault();
+                    const prevRow = row.previousElementSibling;
+                    const targetCell = prevRow.cells[prevRow.cells.length - 1];
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(targetCell);
+                    newRange.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                    return;
+                  } else if (table.previousElementSibling) {
+                    e.preventDefault();
+                    const prev = table.previousElementSibling;
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(prev);
+                    newRange.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                    return;
+                  }
+                }
               }
             }
           } else {

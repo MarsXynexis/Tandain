@@ -15,10 +15,6 @@ class TemplateController extends Controller
             $status = 'all';
         }
 
-        $flash = $_SESSION['flash'] ?? null;
-
-        unset($_SESSION['flash']);
-
         $data['title'] = 'Template Surat - Tandain';
         $data['active_menu'] = 'templates';
         $data['user'] = $_SESSION['user'];
@@ -26,7 +22,6 @@ class TemplateController extends Controller
         $data['stats'] = $templateModel->getTemplateStatistics();
         $data['search'] = $search;
         $data['current_status'] = $status;
-        $data['flash'] = $flash;
 
         $this->view('template/index', $data);
     }
@@ -35,10 +30,6 @@ class TemplateController extends Controller
     {
         $this->adminCheck();
 
-        $flash = $_SESSION['flash'] ?? null;
-
-        unset($_SESSION['flash']);
-
         $old = $_SESSION['template_old'] ?? null;
 
         unset($_SESSION['template_old']);
@@ -46,7 +37,6 @@ class TemplateController extends Controller
         $data['title'] = 'Buat Template Surat - Tandain';
         $data['active_menu'] = 'templates';
         $data['user'] = $_SESSION['user'];
-        $data['flash'] = $flash;
         $data['old'] = $old;
         $data['schemaFields'] = is_array($old['schema_fields'] ?? null) ? $old['schema_fields'] : [];
 
@@ -104,10 +94,6 @@ class TemplateController extends Controller
 
             $this->redirect('/Tandain/template');
         } else {
-            $flash = $_SESSION['flash'] ?? null;
-
-            unset($_SESSION['flash']);
-
             $old = $_SESSION['template_old'] ?? null;
 
             unset($_SESSION['template_old']);
@@ -129,7 +115,6 @@ class TemplateController extends Controller
             $data['user'] = $_SESSION['user'];
             $data['template'] = $template;
             $data['schemaFields'] = $schemaFields;
-            $data['flash'] = $flash;
 
             $this->view('template/edit', $data);
         }

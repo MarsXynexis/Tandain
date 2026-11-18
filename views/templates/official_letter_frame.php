@@ -267,13 +267,13 @@ if (isset($letterBodyHtml) && is_string($letterBodyHtml)) {
     color: #334155;
     font-size: 8.5pt;
     font-weight: 600;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     padding: 6px;
     border-radius: 3px;
-    margin: 4px 0;
+    margin: 4px auto;
   }
 
   .pnj-ttd-space {

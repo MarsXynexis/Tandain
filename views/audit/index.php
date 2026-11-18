@@ -22,7 +22,7 @@ $badgeClasses = [
 ];
 ?>
 
-  <main class="flex-1 w-full p-8 flex flex-col gap-6">
+  <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
@@ -55,7 +55,7 @@ $badgeClasses = [
               <?php endforeach; ?>
             </select>
 
-            <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-container-low hover:bg-surface-container text-primary border border-outline-variant rounded-lg font-label-md text-label-md font-semibold transition-colors">
+            <button type="submit" class="btn-md inline-flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container text-primary border border-outline-variant font-semibold transition-colors">
               <span class="material-symbols-outlined text-[18px]">filter_list</span>
               <span>Filter</span>
             </button>
@@ -72,21 +72,21 @@ $badgeClasses = [
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-xs">
+        <table class="data-table min-w-[880px]">
           <thead>
             <tr class="bg-surface-container-low border-b border-outline-variant h-10 text-[11px] font-bold uppercase tracking-wider text-outline">
-              <th class="py-2.5 px-4 whitespace-nowrap">Waktu Kejadian</th>
-              <th class="py-2.5 px-4 whitespace-nowrap">Aksi Peristiwa</th>
-              <th class="py-2.5 px-4 min-w-[200px]">Dokumen Terkait</th>
-              <th class="py-2.5 px-4 min-w-[170px]">Aktor / Civitas</th>
-              <th class="py-2.5 px-4">Catatan &amp; Detail</th>
+              <th scope="col" class="whitespace-nowrap">Waktu Kejadian</th>
+              <th scope="col" class="whitespace-nowrap">Aksi Peristiwa</th>
+              <th scope="col" class="min-w-[200px]">Dokumen Terkait</th>
+              <th scope="col" class="min-w-[170px]">Aktor / Civitas</th>
+              <th scope="col">Catatan &amp; Detail</th>
             </tr>
           </thead>
 
-          <tbody class="divide-y divide-surface-container font-body-sm text-xs">
+          <tbody class="divide-y divide-surface-container">
             <?php if (empty($data['logs'])): ?>
               <tr>
-                <td colspan="5" class="py-12 text-center text-on-surface-variant">
+                <td colspan="5" class="table-empty text-center text-on-surface-variant">
                   <div class="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
                     <div class="w-12 h-12 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center mb-1">
                       <span class="material-symbols-outlined text-[26px]">history</span>
@@ -104,40 +104,40 @@ $badgeClasses = [
                 $docId = $log['document_id'] ?? '';
                 ?>
                 <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                  <td class="py-2.5 px-4 whitespace-nowrap font-code-tabular text-on-surface-variant">
-                    <div class="font-medium text-primary"><?= date('d M Y', strtotime($log['created_at'])); ?></div>
-                    <div class="text-[11px] text-outline"><?= date('H:i:s', strtotime($log['created_at'])); ?> WIB</div>
+                  <td class="table-date text-on-surface-variant">
+                    <div class="font-medium text-primary"><?= formatTanggalIndo($log['created_at']); ?></div>
+                    <div class="table-meta"><?= formatTanggalIndo($log['created_at'], 'time-seconds'); ?></div>
                   </td>
 
-                  <td class="py-2.5 px-4 whitespace-nowrap">
+                  <td class="whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border <?= $badgeClass; ?>">
                       <?= htmlspecialchars($actionLabels[$actValue] ?? ucwords(strtolower(str_replace('_', ' ', $actValue))), ENT_QUOTES, 'UTF-8'); ?>
                     </span>
                   </td>
 
-                  <td class="py-2.5 px-4 min-w-[200px]">
+                  <td class="min-w-[200px]">
                     <?php if (!empty($docId)): ?>
-                      <a href="/Tandain/triage/review/<?= urlencode($docId); ?>" class="font-semibold text-primary hover:text-secondary transition-colors leading-snug line-clamp-1 inline-flex items-center gap-1 group-hover:text-secondary" title="Lihat detail dokumen">
+                      <a href="/Tandain/triage/review/<?= urlencode($docId); ?>" class="table-title text-primary hover:text-secondary transition-colors leading-snug line-clamp-1 inline-flex items-center gap-1 group-hover:text-secondary" title="Lihat detail dokumen">
                         <span><?= htmlspecialchars($log['document_title'], ENT_QUOTES, 'UTF-8'); ?></span>
                         <span class="material-symbols-outlined text-[13px] opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
                       </a>
                     <?php else: ?>
-                      <span class="font-semibold text-primary"><?= htmlspecialchars($log['document_title'], ENT_QUOTES, 'UTF-8'); ?></span>
+                      <span class="table-title text-primary"><?= htmlspecialchars($log['document_title'], ENT_QUOTES, 'UTF-8'); ?></span>
                     <?php endif; ?>
 
                     <?php if (!empty($log['document_number'])): ?>
-                      <span class="font-code-tabular text-[11px] text-outline block mt-0.5">
+                      <span class="table-meta font-code-tabular block mt-0.5">
                         <?= htmlspecialchars($log['document_number'], ENT_QUOTES, 'UTF-8'); ?>
                       </span>
                     <?php endif; ?>
                   </td>
 
-                  <td class="py-2.5 px-4 min-w-[170px]">
+                  <td class="min-w-[170px]">
                     <?php if (!empty($log['user_full_name'])): ?>
                       <div class="font-medium text-primary leading-tight">
                         <?= htmlspecialchars($log['user_full_name'], ENT_QUOTES, 'UTF-8'); ?>
                       </div>
-                      <div class="font-code-tabular text-[11px] text-outline">
+                      <div class="table-meta font-code-tabular">
                         <?= htmlspecialchars($log['user_identity_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
                         <?php if (!empty($log['user_role_display'])): ?>
                           <span class="text-on-surface-variant font-normal">&bull; <?= htmlspecialchars($log['user_role_display'], ENT_QUOTES, 'UTF-8'); ?></span>
@@ -148,7 +148,7 @@ $badgeClasses = [
                     <?php endif; ?>
                   </td>
 
-                  <td class="py-2.5 px-4 text-on-surface-variant text-[12px] leading-relaxed">
+                  <td class="text-on-surface-variant text-[12px] leading-relaxed">
                     <?= htmlspecialchars($log['notes'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
                   </td>
                 </tr>
@@ -158,8 +158,8 @@ $badgeClasses = [
         </table>
       </div>
 
-      <div class="p-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
-        <span class="font-body-sm text-body-sm text-on-surface-variant">
+      <div class="table-footer bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
+        <span class="text-xs text-on-surface-variant">
           Menampilkan <strong class="text-primary font-semibold"><?= count($data['logs']); ?></strong> peristiwa log audit
         </span>
       </div>
