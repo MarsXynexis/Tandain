@@ -15,10 +15,11 @@ class DocumentController extends Controller
         $filter = $_GET['status'] ?? 'all';
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = 8;
-        $offset = ($page - 1) * $perPage;
 
         $total = $documentModel->countUserDocuments($userId, $search, $filter);
         $totalPages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $totalPages);
+        $offset = ($page - 1) * $perPage;
 
         $data['title'] = 'Dokumen Diunggah - Tandain';
         $data['active_menu'] = 'uploaded';
@@ -450,10 +451,6 @@ class DocumentController extends Controller
     {
         $this->authCheck();
 
-        $data['title'] = 'Pesetujuan Dokumen - Tandain';
-        $data['active_menu'] = 'signed';
-        $data['user'] = $_SESSION['user'];
-
-        $this->view('document/signed', $data);
+        $this->redirect('/Tandain/inbox');
     }
 }

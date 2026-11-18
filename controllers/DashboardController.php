@@ -17,10 +17,11 @@ class DashboardController extends Controller
         $isAdmin = ($userRole === 'admin_tu');
 
         if ($isAdmin) {
-            // $data['doc_stats'] = $docModel->getDashboardStatistics();
+            $data['doc_stats'] = $docModel->getDashboardStatistics();
             $data['recent_documents'] = $docModel->getAllDocumentsWithDetails('', '', 5);
         } else {
-            $data['recent_documents'] = $docModel->getAllDocumentsWithDetails('', '', 5, $_SESSION['user']['id']);
+            $userId = $_SESSION['user']['id'];
+            $data['recent_documents'] = $docModel->getAllDocumentsWithDetails('', '', 5, $userId);
         }
 
         $data['title'] = 'Dashboard - Tandain';

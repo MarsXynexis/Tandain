@@ -186,80 +186,49 @@ class Document
         return $success;
     }
 
-   public function getAllDocumentsWithDetails($search = '', $status = '', $limit = 50, $userId = null)
-{
-    if (!empty($userId)) {
-        // Mode User (Menampilkan dokumen sebagai Pemohon ATAU Penandatangan)
-        $sql = "SELECT 
-                    d.id, 
-                    d.document_number, 
-                    d.title, 
-                    d.status, 
-                    d.routing_type, 
-                    d.created_at, 
-                    d.completed_at, 
-                    u.full_name AS requester_name, 
-                    u.identity_number AS requester_nim,
-                    ds.status AS signer_status,
-                    ds.signed_at
-                FROM " . $this->table . " d 
-                JOIN users u ON u.id = d.requester_id 
-                LEFT JOIN document_signers ds 
-                    ON ds.document_id = d.id 
-                    AND ds.signer_id = :signer_id
-                WHERE (d.requester_id = :requester_id OR (ds.signer_id IS NOT NULL AND ds.status != 'WAITING'))";
-    } else {
-        // Mode Semua Dokumen (Misal untuk Admin TU tanpa duplikasi baris signer)
-        $sql = "SELECT 
-                    d.id, 
-                    d.document_number, 
-                    d.title, 
-                    d.status, 
-                    d.routing_type, 
-                    d.created_at, 
-                    d.completed_at, 
-                    u.full_name AS requester_name, 
-                    u.identity_number AS requester_nim,
-                    NULL AS signer_status,
-                    NULL AS signed_at
-                FROM " . $this->table . " d 
-                JOIN users u ON u.id = d.requester_id 
-                WHERE 1=1";
+    public function getAllDocumentsWithDetails($search = '', $status = '', $limit = 50, $userId = null)
+    {
+        if (!empty($userId)) {
+            $sql = "SELECT d.id, d.requester_id, d.document_number, d.title, d.status, d.routing_type, d.created_at, d.completed_at, u.full_name AS requester_name, u.identity_number AS requester_nim, ds.status AS signer_status, ds.signed_at FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id LEFT JOIN document_signers ds ON ds.document_id = d.id AND ds.signer_id = :signer_id WHERE (d.requester_id = :requester_id OR (ds.signer_id IS NOT NULL AND ds.status != 'WAITING'))";
+        } else {
+            $sql = "SELECT d.id, d.requester_id, d.document_number, d.title, d.status, d.routing_type, d.created_at, d.completed_at, u.full_name AS requester_name, u.identity_number AS requester_nim, NULL AS signer_status, NULL AS signed_at FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id WHERE 1=1";
+        }
+
+        if (!empty($search)) {
+            $sql .= " AND (d.title ILIKE :search OR d.document_number ILIKE :search OR u.full_name ILIKE :search)";
+        }
+
+        if (!empty($status)) {
+            $sql .= " AND d.status = :status";
+        }
+
+        if (!empty($userId)) {
+            $orderBy = "COALESCE(d.completed_at, ds.signed_at, d.created_at) DESC";
+        } else {
+            $orderBy = "COALESCE(d.completed_at, d.created_at) DESC";
+        }
+
+        $sql .= " ORDER BY " . $orderBy . " LIMIT :limit";
+
+        $this->db->query($sql);
+
+        if (!empty($userId)) {
+            $this->db->bind('signer_id', $userId);
+            $this->db->bind('requester_id', $userId);
+        }
+
+        if (!empty($search)) {
+            $this->db->bind('search', '%' . $search . '%');
+        }
+
+        if (!empty($status)) {
+            $this->db->bind('status', $status);
+        }
+
+        $this->db->bind('limit', (int) $limit);
+
+        return $this->db->resultSet();
     }
-
-    if (!empty($search)) {
-        $sql .= " AND (d.title ILIKE :search OR d.document_number ILIKE :search OR u.full_name ILIKE :search)";
-    }
-
-    if (!empty($status)) {
-        $sql .= " AND d.status = :status";
-    }
-
-    $orderBy = !empty($userId) 
-        ? "COALESCE(d.completed_at, ds.signed_at, d.created_at) DESC" 
-        : "COALESCE(d.completed_at, d.created_at) DESC";
-
-    $sql .= " ORDER BY " . $orderBy . " LIMIT :limit";
-
-    $this->db->query($sql);
-
-    if (!empty($userId)) {
-        $this->db->bind('signer_id', $userId);
-        $this->db->bind('requester_id', $userId);
-    }
-
-    if (!empty($search)) {
-        $this->db->bind('search', '%' . $search . '%');
-    }
-
-    if (!empty($status)) {
-        $this->db->bind('status', $status);
-    }
-
-    $this->db->bind('limit', (int) $limit);
-
-    return $this->db->resultSet();
-}
 
     public function getArchivedDocuments($search = '', $status = 'all')
     {

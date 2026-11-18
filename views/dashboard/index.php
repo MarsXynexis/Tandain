@@ -4,28 +4,9 @@
 
 <?php $isAdmin = !empty($data['is_admin']); ?>
 
-<main class="flex-1 p-8 w-full flex flex-col gap-6">
+<main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
 
-  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div>
-      <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Beranda</h1>
-      <p class="font-body-md text-body-md text-on-surface-variant mt-1">Platform Tanda Tangan &amp; Segel Elektronik Politeknik Negeri Jakarta</p>
-    </div>
-
-    <?php if ($isAdmin): ?>
-      <div class="flex items-center gap-3">
-        <a href="/Tandain/triage" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-outline-variant text-primary font-label-md text-label-md font-semibold hover:bg-surface-container-low transition-colors">
-          <span class="material-symbols-outlined text-[18px]">move_to_inbox</span>
-          <span>Antrean Disposisi</span>
-        </a>
-
-        <a href="/Tandain/archive" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#004B87] text-white font-label-md text-label-md font-semibold hover:bg-[#003865] transition-all shadow-sm active:scale-[0.98]">
-          <span class="material-symbols-outlined text-[18px]">folder_open</span>
-          <span>Arsip Dokumen</span>
-        </a>
-      </div>
-    <?php endif; ?>
-  </div>
+  <h1 class="font-headline-lg text-headline-lg font-bold tracking-tight text-primary">Beranda</h1>
 
   <?php if ($isAdmin): ?>
 
@@ -35,18 +16,16 @@
         <div class="min-w-0">
           <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Total Dokumen</p>
           <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_documents'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Berkas terdaftar</p>
         </div>
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8e7ff] text-[#5145d8]">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
           <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">folder_open</span>
         </div>
       </div>
 
-      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/triage?status=pending">
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-colors hover:border-secondary/50" href="/Tandain/triage?status=pending">
         <div class="min-w-0">
           <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Menunggu Disposisi</p>
           <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_pending_triage'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Perlu ditelaah TU</p>
         </div>
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#fef3c7] text-[#b45309]">
           <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">hourglass_top</span>
@@ -57,18 +36,16 @@
         <div class="min-w-0">
           <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Sedang Diproses</p>
           <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_in_progress'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Dalam alur TTE</p>
         </div>
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dbeafe] text-[#1d4ed8]">
           <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">sync</span>
         </div>
       </div>
 
-      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/50 hover:shadow-md" href="/Tandain/archive?status=COMPLETED">
+      <a class="flex items-start justify-between gap-4 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-sm transition-colors hover:border-secondary/50" href="/Tandain/archive?status=COMPLETED">
         <div class="min-w-0">
           <p class="font-body-md text-[13px] font-semibold text-on-surface-variant">Dokumen Selesai</p>
           <p class="mt-2 font-headline-xl text-[32px] font-bold leading-none tracking-tight text-primary"><?= htmlspecialchars((string)($data['doc_stats']['total_completed'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="mt-2 font-body-sm text-[12px] leading-5 text-on-surface-variant">Tersimpan di arsip</p>
         </div>
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d]">
           <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;" aria-hidden="true">verified</span>
@@ -79,52 +56,44 @@
 
   <?php else: ?>
 
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <nav aria-label="Aksi dokumen" class="grid grid-cols-1 gap-4 md:grid-cols-3 xl:gap-6">
+      <a href="/Tandain/document/create" class="block rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm transition-colors hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+        <div class="flex h-24 items-center justify-center rounded-lg bg-brand-soft text-brand md:h-32">
+          <span class="material-symbols-outlined text-[44px] md:text-[52px]" aria-hidden="true">upload_file</span>
+        </div>
 
-      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/document/create">
-        <div class="flex h-32 items-center justify-center rounded-lg bg-[#e8e7ff] text-[#5145d8] transition-colors group-hover:bg-[#dedcff]">
-          <span class="material-symbols-outlined text-[64px]" aria-hidden="true">upload_file</span>
-        </div>
-        <div class="mt-3">
-          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Kirim Dokumen Baru</h2>
-          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Unggah berkas atau pilih template untuk meminta tanda tangan.</p>
-        </div>
+        <h2 class="mt-3 font-headline-sm text-headline-sm font-semibold text-primary">Ajukan Dokumen</h2>
+        <p class="mt-1 text-body-sm text-on-surface-variant">Unggah PDF atau gunakan template surat.</p>
       </a>
 
-      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/inbox">
-        <div class="flex h-32 items-center justify-center rounded-lg bg-[#dceafe] text-[#1d4ed8] transition-colors group-hover:bg-[#cfe0fc]">
-          <span class="material-symbols-outlined text-[64px]" aria-hidden="true">draw</span>
+      <a href="/Tandain/inbox" class="block rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm transition-colors hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+        <div class="flex h-24 items-center justify-center rounded-lg bg-blue-100 text-blue-700 md:h-32">
+          <span class="material-symbols-outlined text-[44px] md:text-[52px]" aria-hidden="true">draw</span>
         </div>
-        <div class="mt-3">
-          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Tandatangani Surat</h2>
-          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Periksa dan beri tanda tangan pada surat yang Anda terima.</p>
-        </div>
+
+        <h2 class="mt-3 font-headline-sm text-headline-sm font-semibold text-primary">Tinjau dan Tandatangani</h2>
+        <p class="mt-1 text-body-sm text-on-surface-variant">Periksa dokumen yang menunggu tanda tangan Anda.</p>
       </a>
 
-      <a class="group rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-all hover:-translate-y-0.5 hover:border-secondary hover:shadow-md" href="/Tandain/document">
-        <div class="flex h-32 items-center justify-center rounded-lg bg-[#dcfce7] text-[#15803d] transition-colors group-hover:bg-[#c8f7d8]">
-          <span class="material-symbols-outlined text-[64px]" aria-hidden="true">folder_shared</span>
+      <a href="/Tandain/document" class="block rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm transition-colors hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+        <div class="flex h-24 items-center justify-center rounded-lg bg-green-100 text-green-700 md:h-32">
+          <span class="material-symbols-outlined text-[44px] md:text-[52px]" aria-hidden="true">folder_shared</span>
         </div>
-        <div class="mt-3">
-          <h2 class="font-label-lg text-label-lg font-semibold text-primary">Riwayat &amp; Status Surat</h2>
-          <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Pantau proses persetujuan dan unduh surat yang sudah selesai.</p>
-        </div>
-      </a>
 
-    </section>
+        <h2 class="mt-3 font-headline-sm text-headline-sm font-semibold text-primary">Daftar Dokumen</h2>
+        <p class="mt-1 text-body-sm text-on-surface-variant">Pantau status dokumen yang Anda ajukan.</p>
+      </a>
+    </nav>
 
   <?php endif; ?>
 
   <section class="rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden flex flex-col">
 
     <div class="p-6 border-b border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-container-lowest">
-      <div class="flex flex-col gap-1">
-        <h2 class="font-headline-sm text-headline-sm font-bold text-primary">Aktivitas Dokumen Terbaru</h2>
-        <p class="font-body-sm text-body-sm text-on-surface-variant">Daftar verifikasi dan status pengesahan berkas digital di sistem Tandain.</p>
-      </div>
+      <h2 class="font-headline-sm text-headline-sm font-bold text-primary">Aktivitas Dokumen Terbaru</h2>
 
       <div>
-        <a href="<?= $isAdmin ? '/Tandain/archive?status=all' : '/Tandain/document'; ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md font-semibold transition-colors">
+        <a href="<?= $isAdmin ? '/Tandain/archive?status=all' : '/Tandain/document'; ?>" class="btn-md inline-flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container text-primary font-semibold transition-colors">
           <span><?= $isAdmin ? 'Lihat Arsip Dokumen' : 'Lihat Dokumen Saya'; ?></span>
           <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </a>
@@ -132,120 +101,86 @@
     </div>
 
     <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse">
+      <table class="data-table min-w-[740px]">
         <thead>
           <tr class="bg-surface-container-low border-b border-outline-variant text-[13px] font-label-md uppercase tracking-wider text-on-surface-variant">
-            <th class="py-3.5 px-6 font-semibold">Judul Dokumen</th>
-            <th class="py-3.5 px-6 font-semibold">Pemohon</th>
-            <th class="py-3.5 px-6 font-semibold text-right">Tanggal Diajukan</th>
-            <th class="py-3.5 px-6 font-semibold text-center">Status</th>
-            <th class="py-3.5 px-6 font-semibold text-right">Aksi</th>
+            <th scope="col">Judul Dokumen</th>
+            <th scope="col">Pemohon</th>
+            <th scope="col">Tanggal Diajukan</th>
+            <th scope="col" class="text-center">Status</th>
+            <th scope="col" class="text-right">Aksi</th>
           </tr>
         </thead>
 
-        <tbody class="divide-y divide-outline-variant/60 font-body-sm text-body-sm">
+        <tbody class="divide-y divide-outline-variant/60">
           <?php if (empty($data['recent_documents'])): ?>
             <tr>
-              <td colspan="5" class="py-8 text-center text-on-surface-variant">
+              <td colspan="5" class="table-empty text-center text-on-surface-variant">
                 Belum ada dokumen yang terdaftar dalam sistem.
               </td>
             </tr>
           <?php else: ?>
             <?php foreach ($data['recent_documents'] as $doc): ?>
               <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                <td class="py-4 px-6">
-                  <div class="font-label-lg text-label-lg font-semibold text-primary">
+                <td>
+                  <div class="table-title text-primary">
                     <?= htmlspecialchars($doc['title'], ENT_QUOTES, 'UTF-8'); ?>
                   </div>
                   <?php if (!empty($doc['document_number'])): ?>
-                    <div class="font-code-tabular text-[12px] text-outline mt-0.5">
+                    <div class="table-meta font-code-tabular mt-0.5">
                       <?= htmlspecialchars($doc['document_number'], ENT_QUOTES, 'UTF-8'); ?>
                     </div>
                   <?php endif; ?>
                 </td>
 
-                <td class="py-4 px-6">
-                  <p class="font-label-md text-label-md font-semibold text-primary">
+                <td>
+                  <p class="text-sm font-medium text-primary">
                     <?= htmlspecialchars($doc['requester_name'], ENT_QUOTES, 'UTF-8'); ?>
                   </p>
-                  <p class="font-code-tabular text-[12px] text-outline">
+                  <p class="table-meta font-code-tabular">
                     <?= htmlspecialchars($doc['requester_nim'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
                   </p>
                 </td>
 
-                <td class="py-4 px-6 text-right font-code-tabular text-on-surface-variant whitespace-nowrap">
-                  <div><?= date('d M Y', strtotime($doc['created_at'])); ?></div>
-                  <div class="text-[12px] text-outline"><?= date('H:i', strtotime($doc['created_at'])); ?> WIB</div>
+                <td class="table-date text-on-surface-variant">
+                  <div><?= formatTanggalIndo($doc['created_at']); ?></div>
+                  <div class="table-meta"><?= formatTanggalIndo($doc['created_at'], 'time'); ?></div>
                 </td>
 
-                <td class="py-4 px-6 text-center whitespace-nowrap">
-                  <?php if ($doc['status'] === 'COMPLETED'): ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]">
-                      <span class="material-symbols-outlined text-[14px]">check</span>
-                      <span>Dokumen Selesai</span>
-                    </span>
-                  <?php elseif ($doc['status'] === 'PENDING_TRIAGE'): ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
-                      <span class="material-symbols-outlined text-[14px]">hourglass_top</span>
-                      <span>Menunggu Disposisi</span>
-                    </span>
-                  <?php elseif ($doc['status'] === 'IN_PROGRESS'): ?>
-                    <?php if (($doc['signer_status'] ?? null) === 'CURRENT_TURN'): ?>
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
-                        <span class="material-symbols-outlined text-[14px]">edit</span>
-                        <span>Giliran Anda</span>
-                      </span>
-                    <?php else: ?>
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#dbeafe] text-[#1d4ed8] border border-[#bfdbfe]">
-                        <span class="material-symbols-outlined text-[14px]">sync</span>
-                        <span>Sedang Diproses</span>
-                      </span>
-                    <?php endif ?>
-                  <?php elseif ($doc['status'] === 'REJECTED'): ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca]">
-                      <span class="material-symbols-outlined text-[14px]">close</span>
-                      <span>Ditolak</span>
-                    </span>
-                  <?php elseif ($doc['status'] === 'CANCELLED'): ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
-                      <span class="material-symbols-outlined text-[14px]">block</span>
-                      <span>Dibatalkan</span>
-                    </span>
-                  <?php elseif ($doc['status'] === 'DRAFT'): ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
-                      <span>Draf</span>
-                    </span>
-                  <?php else: ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-label-sm font-semibold bg-surface-container text-on-surface-variant border border-outline-variant">
-                      <span>Status Tidak Dikenal</span>
-                    </span>
-                  <?php endif; ?>
+                <td class="text-center whitespace-nowrap">
+                  <?php $badgeStatus = $doc['status'] === 'IN_PROGRESS' && ($doc['signer_status'] ?? '') === 'CURRENT_TURN' ? 'CURRENT_TURN' : $doc['status']; ?>
+                  <?php renderStatusBadge($badgeStatus); ?>
                 </td>
 
-                <td class="py-4 px-6 text-right whitespace-nowrap">
+                <td class="text-right whitespace-nowrap">
                   <?php if ($isAdmin && $doc['status'] === 'PENDING_TRIAGE'): ?>
-                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#004B87] text-white font-label-md text-label-md font-semibold hover:bg-[#003865] transition-all shadow-sm active:scale-[0.98]">
-                      <span class="material-symbols-outlined text-[16px]">assignment_turned_in</span>
-                      <span>Telaah &amp; Disposisi</span>
+                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="btn-sm inline-flex items-center gap-1.5 bg-brand text-white font-semibold hover:bg-brand-hover transition-all shadow-sm active:scale-[0.98]">
+                      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                      <span>Lihat Detail</span>
                     </a>
                   <?php elseif ($isAdmin): ?>
-                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors">
-                      <span class="material-symbols-outlined text-[16px]">visibility</span>
-                      <span>Lihat Rincian</span>
+                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="btn-sm inline-flex items-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+                      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                      <span>Lihat Detail</span>
                     </a>
                   <?php else: ?>
-                    <?php if ($doc['signer_status'] === 'CURRENT_TURN'): ?>
-                      <a href="/Tandain/inbox/detail?document_id=<?= $doc['id']; ?>" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#004B87] text-white font-label-md text-label-md font-semibold hover:bg-[#003865] transition-all shadow-sm active:scale-[0.98]">
-                        <span class="material-symbols-outlined text-[16px]">edit_document</span>
-                        <span>Review & TTE</span>
+                    <?php if (($doc['signer_status'] ?? null) === 'CURRENT_TURN'): ?>
+                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex items-center gap-1.5 bg-brand text-white font-semibold hover:bg-brand-hover transition-all shadow-sm active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                        <span>Lihat Detail</span>
+                      </a>
+                    <?php elseif (($doc['requester_id'] ?? '') === ($data['user']['id'] ?? '')): ?>
+                      <a href="/Tandain/document/detail?id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex items-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                        <span>Lihat Detail</span>
                       </a>
                     <?php else: ?>
-                      <a href="/Tandain/document" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors">
-                        <span class="material-symbols-outlined text-[16px]">visibility</span>
-                        <span>Lihat Dokumen</span>
-                      <?php endif; ?>
+                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex items-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                        <span>Lihat Detail</span>
                       </a>
                     <?php endif; ?>
+                  <?php endif; ?>
                 </td>
               </tr>
             <?php endforeach; ?>

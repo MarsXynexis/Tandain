@@ -4,24 +4,33 @@
 
 <?php
 $inboxCounts = ['all' => 0, 'signed' => 0, 'waiting' => 0, 'rejected' => 0];
-foreach ($data['documents'] as $inboxDocument) {
-  if ($inboxDocument['signer_status'] === 'WAITING') {
-    continue;
-  }
+$inboxRows = [];
 
-  $inboxCounts['all']++;
-  $filterStatus = $inboxDocument['signer_status'] === 'CURRENT_TURN'
-    ? 'waiting'
-    : ($inboxDocument['signer_status'] === 'REJECTED' ? 'rejected' : 'signed');
-  $inboxCounts[$filterStatus]++;
+foreach ($data['documents'] as $inboxDocument) {
+  if ($inboxDocument['signer_status'] !== 'WAITING') {
+    if ($inboxDocument['document_status'] === 'REJECTED' || $inboxDocument['signer_status'] === 'REJECTED') {
+      $filterStatus = 'rejected';
+    } elseif ($inboxDocument['signer_status'] === 'CURRENT_TURN') {
+      $filterStatus = 'waiting';
+    } else {
+      $filterStatus = 'signed';
+    }
+
+    $inboxDocument['filter_status'] = $filterStatus;
+    $inboxRows[] = $inboxDocument;
+    $inboxCounts['all']++;
+    $inboxCounts[$filterStatus]++;
+  }
 }
 ?>
 
-<main class="flex-1 w-full p-8 flex flex-col gap-6">
+<main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
   <section>
     <h1 class="font-headline-lg text-headline-lg font-bold tracking-tight text-primary">Persetujuan Dokumen</h1>
-    <p class="font-body-md text-body-md text-on-surface-variant mt-1">Daftar dokumen yang memerlukan persetujuan dan pembubuhan tanda tangan elektronik Anda.</p>
+    <p class="font-body-md text-body-md text-on-surface-variant mt-1">Daftar dokumen yang memerlukan persetujuan dan pembubuhan tanda tangan elektronik Anda</p>
   </section>
+
+  <?php require 'views/layouts/flash.php'; ?>
 
   <section class="flex flex-col overflow-hidden rounded-lg border border-outline-variant/40 bg-surface-container-lowest shadow-sm">
     <div class="flex flex-col items-stretch gap-3 border-b border-outline-variant/30 p-5 md:flex-row md:items-center">
@@ -30,110 +39,65 @@ foreach ($data['documents'] as $inboxDocument) {
         <input id="inbox-search" class="h-10 w-full rounded border border-outline-variant/50 bg-surface-container-low/40 pl-10 pr-4 font-body-md text-body-md text-primary placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary" placeholder="Cari judul atau nomor dokumen..." type="search">
       </label>
 
-      <div class="flex shrink-0 items-center gap-1 overflow-x-auto rounded bg-surface-container-high p-1" role="group" aria-label="Filter status dokumen">
-        <button class="inbox-filter whitespace-nowrap rounded-md bg-white px-3.5 py-1.5 font-label-md text-label-md font-semibold text-primary shadow-sm" type="button" data-filter="all" aria-pressed="true">Semua (<?= $inboxCounts['all']; ?>)</button>
-        <button class="inbox-filter whitespace-nowrap rounded-md px-3.5 py-1.5 font-label-md text-label-md font-medium text-on-surface-variant transition-colors hover:text-primary" type="button" data-filter="signed" aria-pressed="false">Ditandatangani (<?= $inboxCounts['signed']; ?>)</button>
-        <button class="inbox-filter whitespace-nowrap rounded-md px-3.5 py-1.5 font-label-md text-label-md font-medium text-on-surface-variant transition-colors hover:text-primary" type="button" data-filter="rejected" aria-pressed="false">Ditolak (<?= $inboxCounts['rejected']; ?>)</button>
-        <button class="inbox-filter whitespace-nowrap rounded-md px-3.5 py-1.5 font-label-md text-label-md font-medium text-on-surface-variant transition-colors hover:text-primary" type="button" data-filter="waiting" aria-pressed="false">Pending (<?= $inboxCounts['waiting']; ?>)</button>
+      <div class="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-surface-container-high p-1 md:max-w-[65%]" role="group" aria-label="Filter status dokumen">
+        <button class="btn-sm inline-flex inbox-filter whitespace-nowrap bg-white font-semibold text-primary shadow-sm" type="button" data-filter="all" aria-pressed="true">Semua (<?= $inboxCounts['all']; ?>)</button>
+        <button class="btn-sm inline-flex inbox-filter whitespace-nowrap font-medium text-on-surface-variant transition-colors hover:text-primary" type="button" data-filter="signed" aria-pressed="false">Ditandatangani (<?= $inboxCounts['signed']; ?>)</button>
+        <button class="btn-sm inline-flex inbox-filter whitespace-nowrap font-medium text-on-surface-variant transition-colors hover:text-primary" type="button" data-filter="rejected" aria-pressed="false">Ditolak (<?= $inboxCounts['rejected']; ?>)</button>
+        <button class="btn-sm inline-flex inbox-filter whitespace-nowrap font-medium text-on-surface-variant transition-colors hover:text-primary" type="button" data-filter="waiting" aria-pressed="false">Pending (<?= $inboxCounts['waiting']; ?>)</button>
       </div>
     </div>
 
     <div class="overflow-x-auto">
-      <table class="w-full min-w-[920px] border-collapse text-left">
+      <table class="data-table min-w-[920px]">
         <thead>
-          <tr class="border-b border-outline-variant/40 bg-surface-container-low/60 text-[11px] font-bold uppercase tracking-[0.05em] text-on-surface-variant">
-            <th class="w-20 px-6 py-3 text-center">No</th>
-            <th class="w-[30%] px-6 py-3">Judul Dokumen</th>
-            <th class="w-[280px] px-6 py-3">Pemohon</th>
-            <th class="w-[180px] px-6 py-3">Tanggal Diajukan</th>
-            <th class="w-[320px] px-6 py-3 text-center">Status</th>
-            <th class="w-[200px] px-6 py-3 text-right">Aksi</th>
+          <tr class="border-b border-outline-variant/40">
+            <th scope="col" class="w-20 text-center">No</th>
+            <th scope="col" class="w-[30%]">Judul Dokumen</th>
+            <th scope="col" class="w-[280px]">Pemohon</th>
+            <th scope="col" class="w-[180px]">Tanggal Diajukan</th>
+            <th scope="col" class="w-[320px] text-center">Status</th>
+            <th scope="col" class="w-[200px] text-right">Aksi</th>
           </tr>
         </thead>
         <tbody id="inbox-rows">
           <?php $data['number'] = 1; ?>
-          <?php foreach ($data['documents'] as $document): ?>
-            <?php if ($document['signer_status'] === 'WAITING') continue; ?>
-            <?php $submittedTimestamp = strtotime($document['submitted_at']); ?>
+          <?php foreach ($inboxRows as $document): ?>
             <?php $identityLabel = ($document['requester_role_name'] ?? '') === 'pegawai' ? 'NIP' : (($document['requester_role_name'] ?? '') === 'mahasiswa' ? 'NIM' : 'NIM/NIP'); ?>
-            <?php $rowFilterStatus = $document['signer_status'] === 'CURRENT_TURN' ? 'waiting' : ($document['signer_status'] === 'REJECTED' ? 'rejected' : 'signed'); ?>
+            <?php $rowFilterStatus = $document['filter_status']; ?>
             <tr class="inbox-row border-b border-outline-variant/20 transition-colors hover:bg-surface-container-low/40" data-status="<?= $rowFilterStatus; ?>" data-search="<?= htmlspecialchars(strtolower($document['document_title'] . ' ' . $document['requester_name']), ENT_QUOTES, 'UTF-8'); ?>">
-              <td class="inbox-row-number px-6 py-5 text-center font-body-md text-body-md text-on-surface-variant"><?= htmlspecialchars($data['number'], ENT_QUOTES, 'UTF-8'); ?></td>
-              <td class="px-6 py-5">
-                <a href="<?= '/Tandain/inbox/detail?document_id=' . urlencode($document['document_id']); ?>" class="block font-headline-sm text-[15px] font-semibold text-primary hover:text-secondary transition-colors leading-tight">
+              <td class="inbox-row-number text-center font-body-md text-body-md text-on-surface-variant"><?= htmlspecialchars($data['number'], ENT_QUOTES, 'UTF-8'); ?></td>
+              <td>
+                <a href="<?= '/Tandain/inbox/detail?document_id=' . urlencode($document['document_id']); ?>" class="block table-title text-primary hover:text-secondary transition-colors leading-tight">
                   <?= htmlspecialchars($document['document_title'], ENT_QUOTES, 'UTF-8'); ?>
                 </a>
               </td>
-              <td class="px-6 py-5">
-                <span class="block font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></span>
-                <span class="block font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($document['requester_nim_nip'] ?? 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></span>
+              <td>
+                <span class="text-sm font-medium text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                <span class="table-meta block"><?= $identityLabel; ?>: <?= htmlspecialchars($document['requester_nim_nip'] ?? 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></span>
               </td>
-              <td class="whitespace-nowrap px-6 py-5">
-                <p class="font-body-sm text-body-sm font-medium text-on-surface"><?= $submittedTimestamp !== false ? date('d M Y', $submittedTimestamp) : '-'; ?></p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $submittedTimestamp !== false ? date('H:i', $submittedTimestamp) . ' WIB' : '-'; ?></p>
+              <td class="table-date">
+                <p class="font-medium text-on-surface"><?= formatTanggalIndo($document['submitted_at']); ?></p>
+                <p class="table-meta"><?= formatTanggalIndo($document['submitted_at'], 'time'); ?></p>
               </td>
-              <td class="px-6 py-5 text-center">
-                <?php if ($document['signer_status'] === 'CURRENT_TURN'): ?>
-                  <?php
-                  $statusLabel = 'Menunggu Tanda Tangan Anda';
-                  $statusIcon = 'edit';
-                  $statusBadge = 'bg-[#fffbeb] text-[#b45309]';
-                  ?>
-                <?php elseif ($document['signer_status'] === 'SIGNED' && $document['document_status'] === 'IN_PROGRESS'): ?>
-                  <?php
-                  $statusLabel = 'Menunggu Penandatangan Selanjutnya';
-                  $statusIcon = 'hourglass_top';
-                  $statusBadge = 'bg-[#eff6ff] text-[#1d4ed8]';
-                  ?>
-                <?php elseif ($document['signer_status'] === 'SIGNED'): ?>
-                  <?php
-                  $statusLabel = 'Sudah Ditandatangani';
-                  $statusIcon = 'check';
-                  $statusBadge = 'bg-[#dcfce7] text-[#047857]';
-                  ?>
-                <?php elseif ($document['signer_status'] === 'REJECTED'): ?>
-                  <?php
-                  $statusLabel = 'Ditolak';
-                  $statusIcon = 'close';
-                  $statusBadge = 'bg-[#fef2f2] text-[#b91c1c]';
-                  ?>
-                <?php else: ?>
-                  <?php
-                  $statusLabel = 'Dibatalkan';
-                  $statusIcon = 'block';
-                  $statusBadge = 'bg-surface-container text-on-surface-variant';
-                  ?>
+              <td class="text-center">
+                <?php renderStatusBadge($rowFilterStatus === 'rejected' ? 'REJECTED' : $document['signer_status']); ?>
+
+                <?php if ($document['signer_status'] === 'SIGNED' && $document['document_status'] === 'IN_PROGRESS'): ?>
+                  <p class="table-meta mt-1">Menunggu penandatangan berikutnya</p>
                 <?php endif; ?>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm <?= $statusBadge; ?>">
-                  <span class="material-symbols-outlined text-[14px]" aria-hidden="true"><?= $statusIcon; ?></span>
-                  <span><?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8'); ?></span>
-                </span>
               </td>
-              <td class="whitespace-nowrap px-6 py-5">
-                <div class="flex items-center justify-end gap-1.5">
-                  <?php if ($document['signer_status'] === 'CURRENT_TURN'): ?>
-                    <a class="w-full inline-flex justify-between rounded bg-[#004b87] px-7 py-2 font-label-md text-label-md font-semibold text-white shadow-sm transition-colors hover:bg-[#003865]" href="/Tandain/inbox/detail?document_id=<?= urlencode($document['document_id']); ?>">
-                      <span class="material-symbols-outlined text-[14px]" aria-hidden="true">edit_document</span>
-                      Review &amp; TTE
+              <td class="whitespace-nowrap">
+                <div class="flex items-center justify-end">
+                  <?php if ($rowFilterStatus === 'waiting'): ?>
+                    <a class="btn-sm inline-flex w-full items-center justify-center gap-2 bg-brand font-semibold text-white shadow-sm transition-colors hover:bg-brand-hover" href="/Tandain/inbox/detail?document_id=<?= urlencode($document['document_id']); ?>">
+                      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                      <span>Lihat Detail</span>
                     </a>
                   <?php else: ?>
-                    <a class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-sm border border-outline-variant bg-white px-2.5 py-1.5 font-body-sm text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low" href="/Tandain/inbox/detail?document_id=<?= urlencode($document['document_id']); ?>">
-                      <span class="material-symbols-outlined text-[14px]" aria-hidden="true">visibility</span>
-                      Detail
+                    <a class="btn-sm inline-flex w-full items-center justify-center gap-2 border border-slate-300 bg-white font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900" href="/Tandain/inbox/detail?document_id=<?= urlencode($document['document_id']); ?>">
+                      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                      <span>Lihat Detail</span>
                     </a>
-                    <?php if ($document['signer_status'] === 'SIGNED'): ?>
-                      <?php if ($document['document_status'] === 'COMPLETED'): ?>
-                        <a class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-sm bg-[#047857] px-2.5 py-1.5 font-body-sm text-body-sm font-medium text-white shadow-sm transition-colors hover:bg-[#065f46]" href="/Tandain/inbox/detail?document_id=<?= urlencode($document['document_id']); ?>&amp;download=signed">
-                          <span class="material-symbols-outlined text-[13px]" aria-hidden="true">download</span>
-                          Signed
-                        </a>
-                      <?php else: ?>
-                        <div class="inline-flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 rounded-sm bg-[#7b8f82] px-2.5 py-1.5 font-body-sm text-body-sm font-medium text-white shadow-sm" aria-disabled="true">
-                          <span class="material-symbols-outlined text-[13px]" aria-hidden="true">download</span>
-                          Signed
-                        </div>
-                      <?php endif; ?>
-                    <?php endif; ?>
                   <?php endif; ?>
                 </div>
               </td>
@@ -141,22 +105,22 @@ foreach ($data['documents'] as $inboxDocument) {
             <?php $data['number'] += 1; ?>
           <?php endforeach; ?>
           <tr id="inbox-empty" class="hidden">
-            <td class="px-6 py-10 text-center font-body-md text-body-md text-on-surface-variant" colspan="6">Tidak ada dokumen yang sesuai.</td>
+            <td class="table-empty text-center font-body-md text-body-md text-on-surface-variant" colspan="6">Tidak ada dokumen yang sesuai.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <footer class="flex flex-col gap-3 border-t border-outline-variant/30 bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <p id="inbox-count" class="font-body-sm text-body-sm text-on-surface-variant">Menampilkan <span id="inbox-visible-count" class="font-semibold text-primary">0</span> dari <span id="inbox-filter-count" class="font-semibold text-primary"><?= $inboxCounts['all']; ?></span> permohonan</p>
-      <nav id="inbox-pagination" class="flex items-center justify-end gap-2" aria-label="Pagination">
-        <button id="inbox-previous" class="inline-flex items-center gap-1 rounded border border-outline-variant/40 px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant" type="button" aria-label="Halaman sebelumnya">
+    <footer class="table-footer flex flex-col gap-3 border-t border-outline-variant/30 bg-white sm:flex-row sm:items-center sm:justify-between">
+      <p id="inbox-count" class="text-xs text-on-surface-variant">Menampilkan <span id="inbox-visible-count" class="font-semibold text-primary">0</span> dari <span id="inbox-filter-count" class="font-semibold text-primary"><?= $inboxCounts['all']; ?></span> permohonan</p>
+      <nav id="inbox-pagination" class="flex min-w-0 max-w-full items-center gap-2" aria-label="Halaman permohonan">
+        <button id="inbox-previous" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant/40 text-on-surface-variant" type="button" aria-label="Halaman sebelumnya">
           <span class="material-symbols-outlined text-[14px]" aria-hidden="true">chevron_left</span>
-          Sebelumnya
+          <span class="hidden sm:inline">Sebelumnya</span>
         </button>
-        <div id="inbox-page-numbers" class="flex items-center gap-1" aria-label="Nomor halaman"></div>
-        <button id="inbox-next" class="inline-flex items-center gap-1 rounded border border-outline-variant/40 px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-low" type="button" aria-label="Halaman berikutnya">
-          Selanjutnya
+        <div id="inbox-page-numbers" class="flex min-w-0 items-center gap-1 overflow-x-auto p-1" aria-label="Nomor halaman"></div>
+        <button id="inbox-next" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant/40 text-primary hover:bg-surface-container-low" type="button" aria-label="Halaman berikutnya">
+          <span class="hidden sm:inline">Selanjutnya</span>
           <span class="material-symbols-outlined text-[14px]" aria-hidden="true">chevron_right</span>
         </button>
       </nav>
@@ -185,8 +149,8 @@ foreach ($data['documents'] as $inboxDocument) {
       button.textContent = String(page);
       button.setAttribute('aria-label', `Halaman ${page}`);
       button.className = isActive
-        ? 'flex h-7 w-7 items-center justify-center rounded bg-on-surface font-label-md text-label-md font-semibold text-surface'
-        : 'flex h-7 w-7 items-center justify-center rounded font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low';
+        ? 'btn-sm btn-icon flex shrink-0 bg-primary-container font-semibold text-on-primary'
+        : 'btn-sm btn-icon flex shrink-0 font-semibold text-on-surface-variant hover:bg-surface-container-low';
       if (isActive) button.setAttribute('aria-current', 'page');
       button.addEventListener('click', () => {
         currentPage = page;

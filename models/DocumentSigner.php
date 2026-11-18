@@ -12,7 +12,7 @@ class DocumentSigner
 
     public function getDocumentsBySignerId($userId)
     {
-        $sql = "SELECT
+        $sql = "SELECT DISTINCT
             ds.id AS signer_row_id,
             ds.signing_order,
             ds.status AS signer_status,
@@ -40,8 +40,8 @@ class DocumentSigner
         LEFT JOIN signer_certificates sc ON sc.user_id = ds.signer_id AND sc.status = 'ACTIVE'
         WHERE ds.signer_id = :signer_id
           AND NOT ds.status = 'WAITING'
-          AND d.status IN ('IN_PROGRESS', 'COMPLETED')
-        ORDER BY d.created_at DESC";
+          AND d.status IN ('IN_PROGRESS', 'COMPLETED', 'REJECTED')
+        ORDER BY submitted_at DESC";
 
 
         $this->db->query($sql);
