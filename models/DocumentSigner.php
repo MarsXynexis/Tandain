@@ -1,5 +1,7 @@
 <?php
 
+require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'PDFStamper.php';
+
 class DocumentSigner
 {
     private $table = 'document_signers';
@@ -148,12 +150,14 @@ class DocumentSigner
         }
 
         $pdo = $this->db->getConnection();
+        $newPdfAbsolutePath = null;
 
         try {
             $pdo->beginTransaction();
 
             $documentQuery = $pdo->prepare(
-                "SELECT id, status, original_file_path, initial_sha256_hash, is_sequential
+                "SELECT id, status, original_file_path, final_file_path,
+                        initial_sha256_hash, final_sha256_hash, is_sequential
                  FROM documents
                  WHERE id = ?
                  FOR UPDATE"
@@ -210,8 +214,16 @@ class DocumentSigner
                 throw new RuntimeException('Unable to calculate the signature image hash.');
             }
 
-            $relativePath = $document['original_file_path'];
-            if (!is_string($relativePath) || !preg_match('/\Auploads\/documents\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath)) {
+            $hasFinalFile = is_string($document['final_file_path']) && $document['final_file_path'] !== '';
+            $relativePath = $hasFinalFile ? $document['final_file_path'] : $document['original_file_path'];
+            $sourceHash = $hasFinalFile ? $document['final_sha256_hash'] : $document['initial_sha256_hash'];
+
+            if (
+                !is_string($relativePath)
+                || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath)
+                || !is_string($sourceHash)
+                || !preg_match('/\A[a-f0-9]{64}\z/i', $sourceHash)
+            ) {
                 $pdo->rollBack();
                 return ['ok' => false, 'message' => 'Berkas dokumen tidak valid.'];
             }
@@ -220,7 +232,7 @@ class DocumentSigner
                 . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
             $actualHash = is_file($documentPath) ? hash_file('sha256', $documentPath) : false;
 
-            if (!is_string($actualHash) || !hash_equals($document['initial_sha256_hash'], $actualHash)) {
+            if (!is_string($actualHash) || !hash_equals($sourceHash, $actualHash)) {
                 $pdo->rollBack();
                 return ['ok' => false, 'message' => 'Berkas dokumen tidak tersedia atau telah berubah.'];
             }
@@ -303,6 +315,23 @@ class DocumentSigner
                 return ['ok' => false, 'message' => 'Tanda tangan digital gagal diverifikasi. Silakan coba lagi.'];
             }
 
+            $newPdfRelativePath = PDFStamper::stamp(
+                $documentPath,
+                $signatureFile,
+                $documentId,
+                (int) $signer['signing_order'],
+                (string) $signer['stamp_type'],
+                (int) $signer['page_number'],
+                (float) $signer['coord_x'],
+                (float) $signer['coord_y']
+            );
+            $newPdfAbsolutePath = dirname(__DIR__) . DIRECTORY_SEPARATOR
+                . str_replace('/', DIRECTORY_SEPARATOR, $newPdfRelativePath);
+            $newPdfHash = hash_file('sha256', $newPdfAbsolutePath);
+            if (!is_string($newPdfHash)) {
+                throw new RuntimeException('Unable to calculate the stamped PDF hash.');
+            }
+
             $signatureValue = json_encode([
                 'algorithm' => 'RSA-SHA256',
                 'payload' => base64_encode($payload),
@@ -360,15 +389,27 @@ class DocumentSigner
             $remainingQuery->execute([$documentId]);
             $completed = (int) $remainingQuery->fetchColumn() === 0;
 
+            $updateDocument = $pdo->prepare(
+                "UPDATE documents
+                 SET final_file_path = ?, final_sha256_hash = ?
+                 WHERE id = ? AND status = 'IN_PROGRESS'"
+            );
+            $updateDocument->execute([$newPdfRelativePath, $newPdfHash, $documentId]);
+            if ($updateDocument->rowCount() !== 1) {
+                throw new RuntimeException('Document file path changed while signing.');
+            }
+
             if ($completed) {
-                $pdo->prepare(
+                $completeDocument = $pdo->prepare(
                     "UPDATE documents
                      SET status = 'COMPLETED',
-                         final_file_path = original_file_path,
-                         final_sha256_hash = initial_sha256_hash,
                          completed_at = CURRENT_TIMESTAMP
                      WHERE id = ? AND status = 'IN_PROGRESS'"
-                )->execute([$documentId]);
+                );
+                $completeDocument->execute([$documentId]);
+                if ($completeDocument->rowCount() !== 1) {
+                    throw new RuntimeException('Document status changed while completing signatures.');
+                }
             }
 
             $pdo->prepare(
@@ -377,15 +418,22 @@ class DocumentSigner
             )->execute([
                 $documentId,
                 $signerId,
-                'Tanda tangan digital RSA-SHA256 dibubuhkan menggunakan sertifikat ' . $certificate['certificate_serial'] . '.',
+                'Tanda tangan digital RSA-SHA256 dibubuhkan menggunakan sertifikat '
+                    . $certificate['certificate_serial'] . ' dan stempel visual PDF diperbarui.',
             ]);
 
             $pdo->commit();
 
             return ['ok' => true, 'completed' => $completed];
         } catch (Throwable $exception) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
+            try {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+            } finally {
+                if ($newPdfAbsolutePath !== null && is_file($newPdfAbsolutePath)) {
+                    @unlink($newPdfAbsolutePath);
+                }
             }
 
             throw $exception;

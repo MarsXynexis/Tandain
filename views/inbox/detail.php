@@ -35,10 +35,6 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                 <?php require 'views/layouts/notice.php'; ?>
             <?php endif; ?>
 
-            <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
-                <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
-                <?php require 'views/layouts/notice.php'; ?>
-            <?php endif; ?>
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.8fr)]">
@@ -265,25 +261,31 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                     <div class="mt-4 space-y-3">
                         <?php foreach ($data['signers'] as $index => $signer): ?>
                             <?php $signedTimestamp = !empty($signer['signed_at']) ? strtotime($signer['signed_at']) : false; ?>
-                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
-                                <div class="min-w-0">
-                                    <p class="truncate font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['signer_name'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                    <p class="font-body-sm text-body-sm text-on-surface-variant">Halaman <?= (int) $signer['page_number']; ?></p>
-                                    <?php if ($signer['status'] === 'SIGNED' && $signedTimestamp !== false): ?>
-                                        <p class="mt-1 inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
-                                            <span class="material-symbols-outlined text-[14px]" aria-hidden="true">schedule</span>
-                                            Ditandatangani <?= formatTanggalIndo($signedTimestamp, 'datetime'); ?>
-                                        </p>
-                                    <?php endif; ?>
+                            <div class="flex flex-wrap items-start gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+                                <div class="flex w-full items-center justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="whitespace-normal break-words font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['signer_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <p class="font-body-sm text-body-sm text-on-surface-variant">Halaman <?= (int) $signer['page_number']; ?></p>
+                                        <?php if ($signer['status'] === 'SIGNED' && $signedTimestamp !== false): ?>
+                                            <p class="mt-1 inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
+                                                <span class="material-symbols-outlined text-[14px]" aria-hidden="true">schedule</span>
+                                                Ditandatangani <?= formatTanggalIndo($signedTimestamp, 'datetime'); ?>
+                                            </p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <?php renderStatusBadge($signer['status']); ?>
+                                    </div>
                                 </div>
 
-                                <?php renderStatusBadge($signer['status']); ?>
+                                <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
+                                    <span class="w-full inline-flex items-center gap-2 rounded bg-[#fee2e2] px-2 py-2 text-[#b91c1c] font-body-sm text-body-sm" role="alert">
+                                        <span class="material-symbols-outlined text-[24px]" aria-hidden="true">error</span>
+                                        <span><strong>Alasan penolakan:</strong> <br> <?= htmlspecialchars($document['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </span>
+                                <?php endif; ?>
 
                                 <?php if ((string) $signer['signer_id'] === (string) $data['user']['id'] && $signer['status'] === 'CURRENT_TURN'): ?>
-                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label-sm font-label-sm bg-[#dcfce7] text-[#15803d]">
-                                        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">person</span>
-                                        <span>Anda</span>
-                                    </span>
                                     <form method="POST" action="/Tandain/inbox/updateStampType" class="flex w-full flex-wrap gap-2 border-t border-outline-variant/70 pt-3">
                                         <input type="hidden" name="document_id" value="<?= htmlspecialchars($document['id'], ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($data['stamp_csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">

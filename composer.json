@@ -2,6 +2,7 @@
   "require": {
     "php": ">=8.0",
     "tecnickcom/tcpdf": "^6.11",
-    "league/oauth2-google": "^5.0"
+    "league/oauth2-google": "^5.0",
+    "setasign/fpdi": "^2.6"
   }
 }
