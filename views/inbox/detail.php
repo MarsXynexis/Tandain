@@ -59,14 +59,23 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                             <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Pastikan anda telah membaca dokumen secara menyeluruh.</p>
                         </div>
 
-
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button id="pdf-zoom-out" type="button" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant" aria-label="Perkecil PDF">
+                                <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">zoom_out</span>
+                            </button>
+                            <input id="pdf-zoom-range" type="range" min="50" max="200" step="10" value="100" class="w-24 accent-brand" aria-label="Skala tampilan PDF">
+                            <span id="pdf-zoom-value" class="min-w-[42px] text-center font-code-tabular text-[11px] text-on-surface-variant">100%</span>
+                            <button id="pdf-zoom-in" type="button" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant" aria-label="Perbesar PDF">
+                                <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">zoom_in</span>
+                            </button>
+                        </div>
                     </div>
 
                     <?php if ($documentFile !== ''): ?>
-                        <div class="h-[720px] overflow-auto bg-surface-container-low p-4">
+                        <div class="h-[720px] overflow-y-auto overflow-x-scroll bg-surface-container-low p-4">
                             <p id="pdf-loading" class="py-8 text-center font-body-md text-body-md text-on-surface-variant" role="status">Memuat dokumen...</p>
                             <div id="pdf-error" class="hidden py-8 text-center font-body-md text-body-md text-error" role="alert"></div>
-                            <div id="pdf-container" class="space-y-4 overflow-x-auto pb-2" aria-label="Pratinjau dokumen dengan posisi tanda tangan"></div>
+                            <div id="pdf-container" class="min-w-full w-max space-y-4 pb-2" aria-label="Pratinjau dokumen dengan posisi tanda tangan"></div>
                         </div>
                     <?php else: ?>
                         <p class="p-6 text-center font-body-md text-body-md text-on-surface-variant">Pratinjau dokumen tidak tersedia.</p>
@@ -421,6 +430,25 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
         const pdfContainer = document.getElementById('pdf-container');
         const pdfLoading = document.getElementById('pdf-loading');
         const pdfError = document.getElementById('pdf-error');
+        const zoomRange = document.getElementById('pdf-zoom-range');
+        const zoomValue = document.getElementById('pdf-zoom-value');
+        const zoomInButton = document.getElementById('pdf-zoom-in');
+        const zoomOutButton = document.getElementById('pdf-zoom-out');
+
+        const setPdfZoom = (value) => {
+            const zoomPercent = Math.max(50, Math.min(200, Number(value)));
+            zoomRange.value = String(zoomPercent);
+            zoomValue.textContent = `${zoomPercent}%`;
+            pdfContainer.style.zoom = String(zoomPercent / 100);
+
+            zoomOutButton.disabled = zoomPercent <= 50;
+            zoomInButton.disabled = zoomPercent >= 200;
+        };
+
+        zoomRange.addEventListener('input', (event) => setPdfZoom(event.target.value));
+        zoomOutButton.addEventListener('click', () => setPdfZoom(Number(zoomRange.value) - 10));
+        zoomInButton.addEventListener('click', () => setPdfZoom(Number(zoomRange.value) + 10));
+        setPdfZoom(100);
 
         pdfjsLib.getDocument(pdfUrl).promise
             .then(async (pdf) => {
@@ -455,7 +483,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                     }).promise;
 
                     signerPositions
-                        .filter((signer) => signer.page === pageNumber && (!hasStampedPdf || signer.status !== 'SIGNED'))
+                        .filter((signer) => signer.page === pageNumber && signer.status !== 'SIGNED')
                         .forEach((signer) => {
                             const marker = document.createElement('div');
                             const qrOnly = signer.stampType === 'QR_ONLY';
@@ -479,6 +507,28 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                             marker.style.top = `${clampedTop}px`;
                             marker.style.gap = qrOnly || signatureOnly ? '0px' : `${2 * pxPerMm}px`;
                             marker.title = `${signer.name} (Halaman ${pageNumber})`;
+
+                            const previewWatermark = document.createElement('span');
+                            previewWatermark.textContent = 'PREVIEW';
+                            previewWatermark.setAttribute('aria-hidden', 'true');
+                            previewWatermark.style.position = 'absolute';
+                            previewWatermark.style.zIndex = '20';
+                            previewWatermark.style.left = '50%';
+                            previewWatermark.style.top = '50%';
+                            previewWatermark.style.transform = 'translate(-50%, -50%) rotate(-24deg)';
+                            previewWatermark.style.padding = `${Math.max(1, 1 * scaleFactor)}px ${Math.max(3, 3 * scaleFactor)}px`;
+                            previewWatermark.style.border = `${Math.max(1, scaleFactor)}px solid rgba(185, 28, 28, 0.75)`;
+                            previewWatermark.style.borderRadius = `${Math.max(2, 3 * scaleFactor)}px`;
+                            previewWatermark.style.backgroundColor = 'rgba(255, 255, 255, 0.82)';
+                            previewWatermark.style.color = 'rgba(185, 28, 28, 0.85)';
+                            previewWatermark.style.fontFamily = 'sans-serif';
+                            previewWatermark.style.fontSize = `${Math.max(7, 9 * scaleFactor)}px`;
+                            previewWatermark.style.fontWeight = '800';
+                            previewWatermark.style.lineHeight = '1';
+                            previewWatermark.style.letterSpacing = '0.08em';
+                            previewWatermark.style.whiteSpace = 'nowrap';
+                            previewWatermark.style.pointerEvents = 'none';
+                            marker.appendChild(previewWatermark);
 
                             const makeIpbBox = (topText, bottomText, sigUrl, signerName, isFlex1) => {
                                 const box = document.createElement('div');

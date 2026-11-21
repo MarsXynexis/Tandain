@@ -102,9 +102,9 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
               <span class="material-symbols-outlined text-[16px] text-outline transition-transform duration-200 <?= $signatureActive ? 'rotate-180' : ''; ?>" id="signature-chevron">expand_more</span>
             </button>
 
-            <div class="ml-8 pl-3 pr-2 flex-col gap-1 border-l border-dashed border-secondary/60 py-1 <?= $signatureActive ? 'flex' : 'hidden'; ?>" id="signature-submenu">
-              <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= in_array($activeMenu, ['certificate', 'certificate_create'], true) ? 'bg-[#eff6ff] text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/certificate" <?= in_array($activeMenu, ['certificate', 'certificate_create'], true) ? 'aria-current="page"' : ''; ?>>Sertifikat Digital</a>
-              <a class="px-2 py-1.5 rounded text-[14px] font-medium <?= $activeMenu === 'signature_image' ? 'bg-[#eff6ff] text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/certificate/sign" <?= $activeMenu === 'signature_image' ? 'aria-current="page"' : ''; ?>>Gambar Tanda Tangan</a>
+            <div class="ml-8 pl-3 pr-2 flex-col gap-2 border-l border-dashed border-secondary/60 py-2 <?= $signatureActive ? 'flex' : 'hidden'; ?>" id="signature-submenu">
+              <a class="px-2 py-2 rounded text-[12px] font-medium <?= in_array($activeMenu, ['certificate', 'certificate_create'], true) ? 'bg-[#eff6ff] text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/certificate" <?= in_array($activeMenu, ['certificate', 'certificate_create'], true) ? 'aria-current="page"' : ''; ?>>Sertifikat Digital</a>
+              <a class="px-2 py-2 rounded text-[12px] font-medium <?= $activeMenu === 'signature_image' ? 'bg-[#eff6ff] text-secondary font-semibold border-l-2 border-secondary pl-[10px]' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'; ?> transition-colors" href="/Tandain/certificate/sign" <?= $activeMenu === 'signature_image' ? 'aria-current="page"' : ''; ?>>Gambar Tanda Tangan</a>
             </div>
           </div>
 

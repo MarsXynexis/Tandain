@@ -37,7 +37,7 @@ $requesterEmail = $user['email'] ?? '-';
       <p class="font-body-md text-body-md text-on-surface-variant mt-1" id="page-subtitle">Unggah berkas PDF dan tentukan alur pihak penandatangan</p>
     </div>
 
-    <form class="space-y-4" id="document-form" method="POST" action="/Tandain/document/create" enctype="multipart/form-data" novalidate>
+    <form class="" id="document-form" method="POST" action="/Tandain/document/create" enctype="multipart/form-data" novalidate>
 
       <?php require 'views/layouts/flash.php'; ?>
 
@@ -215,7 +215,7 @@ $requesterEmail = $user['email'] ?? '-';
 
       </section>
 
-      <section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 lg:p-5 shadow-sm" id="section-signers">
+      <section class=" mt-4 bg-surface-container-lowest border border-outline-variant rounded-lg p-4 lg:p-5 shadow-sm" id="section-signers">
 
         <div class="flex flex-col gap-3 border-b border-surface-container mb-3 pb-3">
 
