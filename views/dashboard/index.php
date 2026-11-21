@@ -154,28 +154,33 @@
 
                 <td class="text-right whitespace-nowrap">
                   <?php if ($isAdmin && $doc['status'] === 'PENDING_TRIAGE'): ?>
-                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="btn-sm inline-flex items-center gap-1.5 bg-brand text-white font-semibold hover:bg-brand-hover transition-all shadow-sm active:scale-[0.98]">
+                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 bg-brand text-white font-semibold hover:bg-brand-hover transition-all shadow-sm active:scale-[0.98]">
                       <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                       <span>Lihat Detail</span>
                     </a>
                   <?php elseif ($isAdmin): ?>
-                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="btn-sm inline-flex items-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+                    <a href="/Tandain/triage/review/<?= $doc['id']; ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
                       <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                       <span>Lihat Detail</span>
                     </a>
                   <?php else: ?>
                     <?php if (($doc['signer_status'] ?? null) === 'CURRENT_TURN'): ?>
-                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex items-center gap-1.5 bg-brand text-white font-semibold hover:bg-brand-hover transition-all shadow-sm active:scale-[0.98]">
-                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
-                        <span>Lihat Detail</span>
+                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 bg-brand text-white font-semibold hover:bg-brand-hover transition-all shadow-sm active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">edit</span>
+                        <span>Review & TTD</span>
+                      </a>
+                    <?php elseif (($doc['status'] ?? null) === 'DRAFT'): ?>
+                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-brand text-brand font-bold hover:bg-brand-hover hover:text-white transition-all shadow-sm active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">draw</span>
+                        <span>Atur Posisi TTE</span>
                       </a>
                     <?php elseif (($doc['requester_id'] ?? '') === ($data['user']['id'] ?? '')): ?>
-                      <a href="/Tandain/document/detail?id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex items-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+                      <a href="/Tandain/document/detail?id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
                         <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                         <span>Lihat Detail</span>
                       </a>
                     <?php else: ?>
-                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex items-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
                         <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                         <span>Lihat Detail</span>
                       </a>

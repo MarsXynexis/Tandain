@@ -26,7 +26,7 @@ function formatTanggalIndo($value, $format = 'date')
     return $result;
 }
 
-function renderStatusBadge($status)
+function renderStatusBadge($status, $size = 'normal')
 {
     $statuses = [
         'DRAFT' => ['Draf', 'edit_note', 'neutral'],
@@ -45,12 +45,17 @@ function renderStatusBadge($status)
         'EXPIRED' => ['Kedaluwarsa', 'schedule', 'warning'],
         'CERT_ACTIVE' => ['Sertifikat Aktif', 'verified', 'success'],
         'CERT_INACTIVE' => ['Tanpa Sertifikat Aktif', 'gpp_maybe', 'neutral'],
+        'YOU' => ['Anda', 'person', 'success'],
     ];
 
     [$label, $icon, $tone] = $statuses[$status] ?? ['Status Tidak Diketahui', 'help', 'neutral'];
+    $sizeClass = $size === 'small'
+        ? ' status-badge--small gap-0.5 px-1.5 py-0.5 text-[11px] leading-[14px]'
+        : '';
+    $iconClass = $size === 'small' ? ' text-[11px]' : '';
     ?>
-    <span class="status-badge" data-tone="<?= $tone; ?>">
-      <span class="material-symbols-outlined" aria-hidden="true"><?= $icon; ?></span>
+    <span class="status-badge<?= $sizeClass; ?>" data-tone="<?= $tone; ?>">
+      <span class="material-symbols-outlined<?= $iconClass; ?>" aria-hidden="true"><?= $icon; ?></span>
       <?= $label; ?>
     </span>
     <?php

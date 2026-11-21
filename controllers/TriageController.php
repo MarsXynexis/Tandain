@@ -44,7 +44,7 @@ class TriageController extends Controller
             $data['active_menu'] = 'triage_review';
             $data['user'] = $_SESSION['user'];
             $data['document'] = $doc;
-            $data['current_signers'] = $signerModel->getByDocumentId($id);
+            $data['current_signers'] = $signerModel->getSignerByDocumentId($id);
             $data['can_dispose'] = ($doc['status'] === 'PENDING_TRIAGE');
 
             $this->view('triage/review', $data);

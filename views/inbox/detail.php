@@ -43,7 +43,6 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
             <?php endif; ?>
 
             <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
-                <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
                 <?php require 'views/layouts/notice.php'; ?>
             <?php endif; ?>
         </div>
@@ -178,7 +177,10 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                         <div>
                             <h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Pemohon</h3>
                             <p class="mt-2 font-body-md text-body-md font-semibold text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></p>
-                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($document['requester_nim_nip'] ?? 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></p>
+                            <?php $requesterIdentityNumber = $document['requester_nim_nip'] ?? $document['requester_nim_nip'] ?? ''; ?>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($requesterIdentityNumber !== '' ? $requesterIdentityNumber : 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $document['requester_position'] ?? ''; ?></p>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $document['requester_email'] ?? 'Email Tidak tersedia'; ?></p>
                         </div>
                     </div>
 
@@ -201,7 +203,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                         </div>
 
                         <div>
-                            <p class="font-label-md text-label-md text-on-surface-variant">Status</p>
+                            <p class="font-label-md text-label-md text-on-surface-variant mb-2">Status</p>
                             <?php renderStatusBadge($document['status']); ?>
                         </div>
 
@@ -270,31 +272,30 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                     <div class="mt-4 space-y-3">
                         <?php foreach ($data['signers'] as $index => $signer): ?>
                             <?php $signedTimestamp = !empty($signer['signed_at']) ? strtotime($signer['signed_at']) : false; ?>
-                            <div class="flex flex-wrap items-start gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+                            <div class="flex flex-wrap items-start gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
                                 <div class="flex w-full items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
                                         <p class="whitespace-normal break-words font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['signer_name'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                        <p class="font-body-sm text-body-sm text-on-surface-variant">Halaman <?= (int) $signer['page_number']; ?></p>
-                                        <?php if ($signer['status'] === 'SIGNED' && $signedTimestamp !== false): ?>
-                                            <p class="mt-1 inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
-                                                <span class="material-symbols-outlined text-[14px]" aria-hidden="true">schedule</span>
-                                                Ditandatangani <?= formatTanggalIndo($signedTimestamp, 'datetime'); ?>
-                                            </p>
-                                        <?php endif; ?>
+                                        <div class="mt-1 flex items-center gap-2">
+                                            <p class="font-body-sm text-body-sm text-on-surface-variant">Halaman <?= (int) $signer['page_number']; ?></p>
+                                            <?php if ((string) $signer['signer_id'] === (string) $data['user']['id']): ?>
+                                                <?php renderStatusBadge('YOU', 'small'); ?>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                     <div class="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                                        <?php if ((string) $signer['signer_id'] === (string) $data['user']['id']): ?>
-                                            <span class="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-2 py-0.5 text-label-sm font-label-sm text-[#15803d]">
-                                                <span class="material-symbols-outlined text-[13px]" aria-hidden="true">person</span>
-                                                <span>Anda</span>
-                                            </span>
-                                        <?php endif; ?>
                                         <?php renderStatusBadge($signer['status']); ?>
                                     </div>
                                 </div>
 
+                                <?php if ($signer['status'] === 'SIGNED' && $signedTimestamp !== false): ?>
+                                    <p class=" inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">schedule</span>
+                                        Ditandatangani <?= formatTanggalIndo($signedTimestamp, 'datetime'); ?>
+                                    </p>
+                                <?php endif; ?>
                                 <?php if ($signer['status'] === 'REJECTED' && !empty($signer['rejection_reason'])): ?>
-                                    <p class="w-full font-body-sm text-body-sm text-error">Alasan: <?= htmlspecialchars($signer['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    <p class="w-full font-body-sm text-body-sm text-error bg-error-container/70 border border-error-container p-2 rounded">Alasan: <?= htmlspecialchars($signer['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?></p>
                                 <?php endif; ?>
 
                                 <?php if ((string) $signer['signer_id'] === (string) $data['user']['id'] && $signer['status'] === 'CURRENT_TURN'): ?>

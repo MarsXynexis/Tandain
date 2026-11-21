@@ -80,10 +80,6 @@ class DocumentSigner
         return $this->db->resultSet();
     }
 
-    public function getByDocumentId($documentId)
-    {
-        return $this->getSignerByDocumentId($documentId);
-    }
 
     public function getDetailDocumentById($documentId, $signerId)
     {
@@ -91,14 +87,16 @@ class DocumentSigner
             d.*,
             d.created_at AS submitted_at,
             req.full_name AS requester_name,
-            req.identity_number AS requester_nim,
+            req.identity_number AS requester_nim_nip,
             req.email AS requester_email,
             req.position AS requester_position,
+            requester_role.name AS requester_role_name,
             ds.status AS signer_status,
             ds.stamp_type AS signer_stamp_type
         FROM documents d
         JOIN document_signers ds ON ds.document_id = d.id
         JOIN users req ON req.id = d.requester_id
+        LEFT JOIN roles requester_role ON requester_role.id = req.role_id
         WHERE d.id = :document_id
           AND ds.signer_id = :signer_id
         LIMIT 1";

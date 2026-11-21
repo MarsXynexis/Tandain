@@ -107,6 +107,17 @@
     font-size: .875rem;
 }
 
+.status-badge--small {
+    gap: .125rem;
+    padding: .125rem .375rem;
+    font-size: .6875rem;
+    line-height: .875rem;
+}
+
+.status-badge--small .material-symbols-outlined {
+    font-size: .6875rem;
+}
+
 .status-badge[data-tone="success"] {
     border-color: #bbf7d0;
     background: #dcfce7;

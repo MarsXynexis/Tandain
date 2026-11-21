@@ -21,7 +21,21 @@ class Document
 
     public function findByIdWithRequester($id)
     {
-        $sql = "SELECT d.*, u.full_name AS requester_name, u.identity_number AS requester_nim, u.email AS requester_email, u.position AS requester_position, t.full_name AS triage_admin_name FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id LEFT JOIN users t ON t.id = d.triage_handled_by WHERE d.id = :id LIMIT 1";
+        $sql = "SELECT d.*,
+                       u.full_name AS requester_name,
+                       u.identity_number AS requester_nim,
+                       u.identity_number AS requester_nim_nip,
+                       u.email AS requester_email,
+                       u.position AS requester_position,
+                       requester_role.name AS requester_role_name,
+                       requester_role.display_name AS requester_role_display_name,
+                       t.full_name AS triage_admin_name
+                FROM " . $this->table . " d
+                JOIN users u ON u.id = d.requester_id
+                LEFT JOIN roles requester_role ON requester_role.id = u.role_id
+                LEFT JOIN users t ON t.id = d.triage_handled_by
+                WHERE d.id = :id
+                LIMIT 1";
 
         $this->db->query($sql);
 
@@ -321,6 +335,8 @@ class Document
             $sql .= " AND d.status = 'COMPLETED'";
         } else if ($filter === 'in_progress') {
             $sql .= " AND d.status IN ('PENDING_TRIAGE', 'IN_PROGRESS')";
+        } else if ($filter === 'draft') {
+            $sql .= " AND d.status = 'DRAFT'";
         }
 
         $this->db->query($sql);
@@ -350,6 +366,8 @@ class Document
             $sql .= " AND d.status = 'COMPLETED'";
         } else if ($filter === 'in_progress') {
             $sql .= " AND d.status IN ('PENDING_TRIAGE', 'IN_PROGRESS')";
+        } else if ($filter === 'draft') {
+            $sql .= " AND d.status = 'DRAFT'";
         }
 
         $sql .= " ORDER BY d.created_at DESC LIMIT :limit OFFSET :offset";
@@ -371,6 +389,7 @@ class Document
     {
         $sql = "SELECT COUNT(*) AS total_all, 
                 COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS total_completed, 
+                COUNT(CASE WHEN status = 'DRAFT' THEN 1 END) AS total_draft, 
                 COUNT(CASE WHEN status IN ('PENDING_TRIAGE', 'IN_PROGRESS') THEN 1 END) AS total_in_progress 
                 FROM " . $this->table . " WHERE requester_id = :user_id";
 
@@ -386,7 +405,22 @@ class Document
             return false;
         }
 
-        $this->db->query("SELECT * FROM " . $this->table . " WHERE id = :id AND requester_id = :user_id LIMIT 1");
+        $sql = "SELECT d.*,
+                       req.full_name AS requester_name,
+                       req.identity_number AS requester_nim,
+                       req.identity_number AS requester_nim_nip,
+                       req.email AS requester_email,
+                       req.position AS requester_position,
+                       requester_role.name AS requester_role_name,
+                       requester_role.display_name AS requester_role_display_name
+                FROM " . $this->table . " d
+                JOIN users req ON req.id = d.requester_id
+                LEFT JOIN roles requester_role ON requester_role.id = req.role_id
+                WHERE d.id = :id
+                  AND d.requester_id = :user_id
+                LIMIT 1";
+
+        $this->db->query($sql);
         $this->db->bind('id', $id);
         $this->db->bind('user_id', $userId);
 
@@ -395,7 +429,7 @@ class Document
 
     public function getSignersByDocumentId($documentId)
     {
-        $sql = "SELECT u.full_name, u.email, u.position, s.status, s.signed_at, s.rejection_reason 
+        $sql = "SELECT u.full_name, u.email, u.position, s.signer_id,s.status, s.signed_at, s.rejection_reason, s.page_number 
                 FROM document_signers s 
                 JOIN users u ON u.id = s.signer_id 
                 WHERE s.document_id = :document_id 

@@ -55,6 +55,9 @@ if ($filter !== 'all') {
             <a href="/Tandain/document?status=in_progress&q=<?= $searchUrl; ?>" class="btn-sm inline-flex shrink-0 whitespace-nowrap transition-colors <?= $filter === 'in_progress' ? $activeTab : $inactiveTab; ?>">
               Sedang Diproses (<?= $counts['total_in_progress']; ?>)
             </a>
+            <a href="/Tandain/document?status=draft&q=<?= $searchUrl; ?>" class="btn-sm inline-flex shrink-0 whitespace-nowrap transition-colors <?= $filter === 'draft' ? $activeTab : $inactiveTab; ?>">
+              Draft (<?= $counts['total_draft']; ?>)
+            </a>
           </div>
         </div>
       </div>
@@ -140,23 +143,15 @@ if ($filter !== 'all') {
               </td>
               <td class="text-right whitespace-nowrap">
                 <?php if ($doc['status'] === 'DRAFT'): ?>
-                  <div class="inline-flex items-center justify-end gap-1.5">
+                  <div class="inline-flex w-full items-center justify-end gap-1.5">
                     <?php if ($totalSigner > 0): ?>
-                      <a href="/Tandain/document/position/<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex gap-1.5 bg-brand text-white transition-colors hover:bg-brand-hover">
+                      <a href="/Tandain/document/position/<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex flex-1 items-center justify-center gap-1.5 bg-brand text-white transition-colors hover:bg-brand-hover">
                         <span class="material-symbols-outlined text-[15px]" aria-hidden="true">draw</span>
                         <span>Atur Posisi TTE</span>
                       </a>
                     <?php endif; ?>
-
-                    <form method="POST" action="/Tandain/document/delete/<?= rawurlencode($doc['id']); ?>" class="inline" data-confirm-form>
-                      <button type="submit" class="btn-sm inline-flex items-center gap-1 border border-outline-variant text-[#b91c1c] hover:bg-red-50 transition-colors" title="Hapus Draf">
-                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">delete</span>
-                        <span>Hapus</span>
-                      </button>
-                    </form>
-                  </div>
                 <?php else: ?>
-                  <a href="<?= $detailUrl; ?>" class="btn-sm inline-flex gap-1.5 border border-outline-variant font-medium text-on-surface transition-colors hover:bg-surface-container-low">
+                  <a href="<?= $detailUrl; ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-outline-variant font-medium text-on-surface transition-colors hover:bg-surface-container-low">
                     <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                     <span>Lihat Detail</span>
                   </a>

@@ -83,15 +83,15 @@ foreach ($data['documents'] as $inboxDocument) {
                 <?php renderStatusBadge($rowFilterStatus === 'rejected' ? 'REJECTED' : $document['signer_status']); ?>
 
                 <?php if ($document['signer_status'] === 'SIGNED' && $document['document_status'] === 'IN_PROGRESS'): ?>
-                  <p class="table-meta mt-1">Menunggu penandatangan berikutnya</p>
+                  <p class="table-meta mt-1 text-[9px]">Menunggu penandatangan berikutnya</p>
                 <?php endif; ?>
               </td>
               <td class="whitespace-nowrap">
                 <div class="flex items-center justify-end">
                   <?php if ($rowFilterStatus === 'waiting'): ?>
                     <a class="btn-sm inline-flex w-full items-center justify-center gap-2 bg-brand font-semibold text-white shadow-sm transition-colors hover:bg-brand-hover" href="/Tandain/inbox/detail?document_id=<?= urlencode($document['document_id']); ?>">
-                      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
-                      <span>Lihat Detail</span>
+                      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">edit</span>
+                      <span>Review & TTD</span>
                     </a>
                   <?php else: ?>
                     <a class="btn-sm inline-flex w-full items-center justify-center gap-2 border border-slate-300 bg-white font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900" href="/Tandain/inbox/detail?document_id=<?= urlencode($document['document_id']); ?>">

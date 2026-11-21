@@ -441,6 +441,7 @@ class DocumentController extends Controller
 
         $userId = $_SESSION['user']['id'];
         $documentModel = $this->model('Document');
+        $documentSignerModel = $this->model('DocumentSigner');
         $doc = $documentModel->getDocumentByIdAndUser($id, $userId);
 
         $redirectUrl = '/Tandain/document';
@@ -455,9 +456,23 @@ class DocumentController extends Controller
             } elseif (!$documentModel->updateSignerPositions($doc['id'], $positions, $isSequential, $userId, 'DRAFT')) {
                 $this->setFlash('error', 'Gagal menyimpan posisi tanda tangan.');
             } else {
-                $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');
+                $currentTurnSigner = null;
 
-                $redirectUrl = '/Tandain/document';
+                foreach ($documentSignerModel->getSignerByDocumentId($doc['id']) as $signer) {
+                    if (($signer['status'] ?? '') === 'CURRENT_TURN') {
+                        $currentTurnSigner = $signer;
+                        break;
+                    }
+                }
+
+                if ($currentTurnSigner && (string) ($currentTurnSigner['signer_id'] ?? '') === (string) $userId) {
+                    $redirectUrl = '/Tandain/inbox/detail?document_id=' . rawurlencode((string) $doc['id']);
+                    $this->setFlash('success', 'Silakan tandatangani Dokumen Anda.');
+                } else {
+                    $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');
+
+                    $redirectUrl = '/Tandain/document';
+                }
             }
         }
 
@@ -491,6 +506,7 @@ class DocumentController extends Controller
                 $percent = (int) (($signedCount / $totalSigners) * 100);
             }
 
+            
             $data['title'] = 'Detail Dokumen - Tandain';
             $data['active_menu'] = 'uploaded';
             $data['user'] = $_SESSION['user'];
