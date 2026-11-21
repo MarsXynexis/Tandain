@@ -17,45 +17,58 @@
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #eaf0f6;
+      background-color: #ebf1f8;
     }
   </style>
 </head>
 
 <body class="relative min-h-screen flex items-center justify-center overflow-x-hidden p-4 md:p-8 text-slate-800 antialiased selection:bg-secondary selection:text-on-secondary">
-  <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-    <div class="absolute inset-0 opacity-[0.28]">
-      <img src="/Tandain/assets/img/login-background.png" alt="" class="absolute left-[-32.98%] top-[-18.91%] h-[141.86%] w-[132.98%] max-w-none">
-    </div>
+  <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+    <svg class="h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <path d="M 0,0 L 640,0 C 560,260 760,540 520,900 L 0,900 Z" fill="#e1eaf5"/>
+      <path d="M 1040,900 C 1130,720 1290,620 1440,560 L 1440,900 Z" fill="#dbe5f2"/>
+      <circle cx="1310" cy="110" r="220" fill="none" stroke="#d5e1ef" stroke-width="1.5"/>
+      <circle cx="1310" cy="110" r="168" fill="none" stroke="#d5e1ef" stroke-width="1" stroke-dasharray="6 8"/>
+      <circle cx="120" cy="790" r="190" fill="none" stroke="#d3dfee" stroke-width="1.5"/>
+    </svg>
   </div>
 
-  <main class="relative z-10 flex min-h-[580px] w-full max-w-[900px] flex-col overflow-hidden rounded-[32px] bg-white shadow-2xl md:flex-row">
+  <main class="relative z-10 flex min-h-[580px] w-full max-w-[920px] flex-col overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-[0_20px_50px_-14px_rgba(0,56,101,0.14)] md:flex-row">
 
-    <section class="relative flex w-full flex-col items-center justify-between bg-[#003865] p-6 text-white sm:p-9 md:min-h-[580px] md:w-[46.67%] md:max-w-[420px]">
+    <div class="flex items-center gap-3.5 bg-[#003865] px-6 py-5 text-white md:hidden">
+      <img src="/Tandain/assets/img/app-icon.png" alt="Logo Tandain" class="h-10 w-10 shrink-0 rounded-xl object-contain">
+      <div class="min-w-0">
+        <p class="text-lg font-bold leading-tight text-white">Tandain eSign</p>
+        <p class="text-xs text-slate-200">Digital Signature Platform</p>
+      </div>
+    </div>
 
-      <div class="flex w-full items-center gap-4">
-        <img src="/Tandain/assets/img/app-icon.png" alt="Logo Tandain" class="h-12 w-12 shrink-0 rounded-xl object-contain drop-shadow-md">
+    <section class="hidden md:flex md:flex-col md:w-[47.5%] md:max-w-[436px] md:shrink-0 md:p-3.5 md:pr-0">
+      <div class="relative flex-1 min-h-[552px] w-full overflow-hidden rounded-[20px] bg-[#dfebf7]">
+        <img src="/Tandain/assets/img/tandain-login-art.jpg" alt="Ilustrasi tanda tangan digital Tandain eSign" class="absolute inset-0 h-full w-full object-cover object-center select-none">
 
-        <div class="min-w-0">
-          <p class="text-2xl font-bold leading-tight tracking-tight text-white">Tandain eSign</p>
-          <p class="text-xs font-normal text-slate-300">
-            Digital Signature Platform <span class="text-slate-400 mx-0.5">•</span> Powered By <span class="font-semibold text-white">Tandain</span>
-          </p>
+        <div class="absolute inset-x-0 top-0 z-10 p-6 pr-16">
+          <div class="flex items-center gap-3.5">
+            <img src="/Tandain/assets/img/app-icon.png" alt="Logo Tandain" class="h-11 w-11 shrink-0 rounded-xl object-contain shadow-sm">
+            <div class="min-w-0">
+              <p class="text-xl font-bold leading-tight tracking-tight text-[#003865]">Tandain eSign</p>
+              <p class="text-xs font-medium text-slate-700">
+                Digital Signature Platform <span class="mx-0.5 text-slate-500">·</span> Powered By <span class="font-semibold text-[#003865]">Tandain</span>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="w-full text-center md:text-left">
-        <p class="text-xs font-normal tracking-wide text-slate-300">
-          &copy; 2026 <span class="text-white font-semibold">Tandain</span>
-        </p>
+        <svg class="pointer-events-none absolute -bottom-px -right-px -top-px z-20 h-[calc(100%+2px)] w-[76px]" viewBox="0 0 100 580" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M 64,0 C 4,132 94,272 34,410 C -4,498 46,554 74,580 L 100,580 L 100,0 Z" fill="#ffffff"/>
+        </svg>
       </div>
-
     </section>
 
-    <section class="flex w-full min-w-0 flex-col justify-center bg-white p-6 sm:p-8 md:w-[53.33%] md:p-10 lg:p-12">
+    <section class="flex w-full min-w-0 flex-1 flex-col justify-center bg-white p-6 sm:p-8 md:py-10 md:pl-6 md:pr-10 lg:pr-12">
       <div class="mb-6">
         <h1 class="font-headline-lg text-headline-lg font-bold text-primary">Selamat datang</h1>
-        <p class="mt-1 text-sm leading-relaxed text-slate-500">Silahkan masuk menggunakan akun resmi PNJ Anda.</p>
+        <p class="mt-1 text-sm leading-relaxed text-slate-600">Silakan masuk menggunakan akun resmi PNJ Anda.</p>
       </div>
 
       <div class="space-y-3 [&:has([data-notice]:not([hidden]))]:mb-4">
@@ -86,14 +99,14 @@
               <span class="material-symbols-outlined text-[20px]" aria-hidden="true">lock</span>
             </div>
             <input class="w-full rounded-xl border border-slate-300 bg-white py-3 pl-[45px] pr-12 text-sm text-slate-900 placeholder:text-slate-400 transition duration-150 focus:border-[#004B87] focus:outline-none focus:ring-2 focus:ring-[#004B87]/20" id="password" name="password" placeholder="Masukkan password" required="" type="password">
-            <button aria-label="Tampilkan password" aria-pressed="false" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#004B87]/20" id="togglePassword" type="button">
+            <button aria-label="Tampilkan password" aria-pressed="false" class="absolute inset-y-0 right-0 flex items-center rounded-r-xl pr-3.5 text-slate-500 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#004B87]/20" id="togglePassword" type="button">
               <span class="material-symbols-outlined text-[20px]" id="eyeIcon" aria-hidden="true">visibility</span>
             </button>
           </div>
         </div>
 
         <div class="pt-1.5">
-          <button class="btn-lg flex w-full bg-brand text-white shadow-md shadow-brand/20 transition hover:bg-brand-hover" type="submit">
+          <button class="btn-lg flex w-full bg-brand text-white transition hover:bg-brand-hover active:bg-[#002b4d]" type="submit">
             <span>Masuk</span>
           </button>
         </div>
@@ -102,7 +115,7 @@
 
       <div class="relative my-4 flex items-center justify-center">
         <div class="border-t border-slate-200 w-full"></div>
-        <span class="bg-white px-3 text-xs text-slate-400 absolute font-normal">atau</span>
+        <span class="bg-white px-3 text-xs text-slate-500 absolute font-normal">atau</span>
       </div>
 
       <div>
@@ -123,9 +136,13 @@
         </p>
       </div>
 
-      <p class="mt-5 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
+      <p class="mt-5 border-t border-slate-200 pt-4 text-center text-xs text-slate-600">
         <a href="/Tandain/verification" aria-label="Klik di sini untuk verifikasi dokumen" class="rounded-sm font-semibold text-brand underline underline-offset-2 hover:text-brand-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">Klik di sini</a>
         untuk verifikasi dokumen.
+      </p>
+
+      <p class="mt-2.5 text-center text-[11px] text-slate-500">
+        &copy; 2026 Tandain
       </p>
     </section>
 
