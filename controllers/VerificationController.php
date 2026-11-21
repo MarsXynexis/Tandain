@@ -29,17 +29,23 @@ class VerificationController extends Controller
                 $document = $documentModel->verifyDocument($documentId);
 
                 if ($document && $this->isCompletedWithAllSignatures($document)) {
-                    $isExpired = false;
+                    if (empty($document['final_sha256_hash'])) {
+                        $data['status']     = 'error';
+                        $data['file_name']  = 'Dokumen sudah selesai tapi hash final tidak tersedia.';
+                        $data['file_hash']  = '-';
+                    } else {
+                        $isExpired = false;
 
-                    if (!empty($document['expires_at'])) {
-                        $isExpired = (strtotime($document['expires_at']) < time());
+                        if (!empty($document['expires_at'])) {
+                            $isExpired = (strtotime($document['expires_at']) < time());
+                        }
+
+                        $data['status'] = $isExpired ? 'expired' : 'success';
+                        $data['document'] = $document;
+                        $data['is_expired'] = $isExpired;
+                        $data['file_hash'] = !empty($document['final_sha256_hash']) ? $document['final_sha256_hash'] : ($document['final_sha256_hash'] ?? '');
+                        $data['file_name'] = basename($document['final_file_path'] ?: ($document['original_file_path'] ?? ''));
                     }
-
-                    $data['status'] = $isExpired ? 'expired' : 'success';
-                    $data['document'] = $document;
-                    $data['is_expired'] = $isExpired;
-                    $data['file_hash'] = !empty($document['final_sha256_hash']) ? $document['final_sha256_hash'] : ($document['initial_sha256_hash'] ?? '');
-                    $data['file_name'] = basename($document['final_file_path'] ?: ($document['original_file_path'] ?? ''));
                 } else {
                     $data['status'] = 'error';
                     $data['file_name'] = 'Dokumen ID: ' . $documentId;
@@ -93,10 +99,19 @@ class VerificationController extends Controller
                 $expectedHash = '';
 
                 if ($document) {
-                    $expectedHash = !empty($document['final_sha256_hash']) ? (string) $document['final_sha256_hash'] : (string) ($document['initial_sha256_hash'] ?? '');
+                    if (!empty($document['final_sha256_hash'])) {
+                        $expectedHash = (string) $document['final_sha256_hash'];
+                    } elseif (!empty($document['initial_sha256_hash'])) {
+                        $expectedHash = (string) $document['initial_sha256_hash'];
+                    }
                 }
 
-                if ($document && $this->isCompletedWithAllSignatures($document) && $expectedHash !== '' && hash_equals($expectedHash, $uploadedHash)) {
+                $isValid = $document
+                    && $this->isCompletedWithAllSignatures($document)
+                    && $expectedHash !== ''
+                    && hash_equals($expectedHash, $uploadedHash);
+
+                if ($isValid) {
                     $isExpired = false;
 
                     if (!empty($document['expires_at'])) {
@@ -108,6 +123,7 @@ class VerificationController extends Controller
                     $data['is_expired'] = $isExpired;
                 } else {
                     $data['status'] = 'error';
+                    $data['upload_error'] = 'Hash dokumen tidak cocok atau dokumen belum ditandatangani';
                 }
             }
         }

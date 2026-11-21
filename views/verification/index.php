@@ -9,6 +9,7 @@ $filePath = $hasResult ? (($document['final_file_path'] ?? '') ?: ($document['or
 $fileUrl = ($hasResult && $filePath !== '' && !empty($document['id'])) ? '/Tandain/verification/file/' . rawurlencode($document['id']) : '';
 $fileHash = $data['file_hash'] ?? '';
 $hasFileHash = preg_match('/\A[0-9a-f]{64}\z/i', $fileHash) === 1;
+$hashLabel = $hasFileHash && $document && !empty($document['final_sha256_hash']) ? 'Final SHA-256 (signed)' : 'Inital SHA-256 (unsigned)';
 $signerCertificates = array_filter($signers, static fn ($signer) => !empty($signer['certificate_serial']));
 
 require_once 'views/layouts/header.php';
@@ -269,6 +270,7 @@ require_once 'views/layouts/header.php';
         <?php if ($hasFileHash): ?>
           <div>
             <dt class="text-on-surface-variant">Hash SHA-256</dt>
+            <dd class="break-all font-mono"><?= htmlspecialchars($hashLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
             <dd class="break-all font-mono"><?= htmlspecialchars($fileHash, ENT_QUOTES, 'UTF-8'); ?></dd>
           </div>
         <?php endif; ?>
