@@ -50,14 +50,13 @@ class InboxController extends Controller
             if (
                 $data['document']['status'] !== 'COMPLETED'
                 || !is_string($finalFilePath)
-                || !preg_match('/\Auploads\/documents\/[A-Za-z0-9._-]+\.pdf\z/i', $finalFilePath)
+                || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $finalFilePath)
             ) {
                 $this->setFlash('error', 'Berkas Signed belum tersedia.');
                 $this->redirect('/Tandain/inbox/detail?document_id=' . rawurlencode($documentId));
             }
 
-            $finalFile = dirname(__DIR__) . DIRECTORY_SEPARATOR
-                . str_replace('/', DIRECTORY_SEPARATOR, $finalFilePath);
+            $finalFile = $finalFilePath;
             if (!is_file($finalFile) || !is_readable($finalFile)) {
                 error_log('Signed document file is missing or unreadable for document ' . $documentId);
                 $this->setFlash('error', 'Berkas Signed tidak dapat diunduh saat ini.');
@@ -139,7 +138,7 @@ class InboxController extends Controller
         if (
             $_SERVER['REQUEST_METHOD'] !== 'POST'
             || $documentId === ''
-            || !in_array($stampType, ['SIGNATURE_ONLY', 'DUAL_DISPLAY'], true)
+            || !in_array($stampType, ['SIGNATURE_ONLY', 'DUAL_DISPLAY', 'QR_ONLY'], true)
             || !is_string($csrfToken)
             || !is_string($sessionToken)
             || $sessionToken === ''
@@ -260,6 +259,52 @@ class InboxController extends Controller
 
         $this->setFlash('success', 'Dokumen berhasil ditolak dan alasan telah dicatat.');
         $this->redirect('/Tandain/inbox/detail?document_id=' . rawurlencode($documentId));
+    }
+
+    public function file($documentId = null)
+    {
+        $this->authCheck();
+
+        $documentId = trim((string) ($documentId ?? ''));
+        $userId = $_SESSION['user']['id'];
+        $documentSignerModel = $this->model('DocumentSigner');
+        $document = ($documentId !== '') ? $documentSignerModel->getDetailDocumentById($documentId, $userId) : null;
+        $version = $_GET['version'] ?? 'latest';
+        $relativePath = '';
+
+        if ($document) {
+            if ($version === 'original') {
+                if (($document['requester_id'] ?? null) === $userId || empty($_GET['download'])) {
+                    $relativePath = ltrim((string) ($document['original_file_path'] ?? ''), '/');
+                }
+            } elseif (!empty($document['final_file_path'])) {
+                $relativePath = ltrim((string) $document['final_file_path'], '/');
+            } else {
+                $relativePath = ltrim((string) ($document['original_file_path'] ?? ''), '/');
+            }
+        }
+
+        if (
+            !$document
+            || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath)
+            || !is_file($relativePath)
+            || !is_readable($relativePath)
+        ) {
+            http_response_code(404);
+        } else {
+            header('Content-Type: application/pdf');
+            header('Content-Length: ' . filesize($relativePath));
+            header('X-Content-Type-Options: nosniff');
+
+            if (!empty($_GET['download'])) {
+                $prefix = ($version === 'original') ? 'original-' : 'signed-document-';
+                header('Content-Disposition: attachment; filename="' . $prefix . rawurlencode($document['id']) . '.pdf"');
+            }
+
+            readfile($relativePath);
+        }
+
+        exit;
     }
 
 }

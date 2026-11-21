@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">Tera Tandain</title>
+
+  <g fill="#1B352B" transform="translate(0 -4)">
+    <path d="M28 107 C28 96 32 86 40 78 L74 44 C82 36 92 32 103 32 H147 Q155 32 158 40 Q161 47 155 53 L123 85 Q110 98 123 111 L149 137 Q162 150 175 137 L207 105 Q213 99 220 102 Q228 105 228 113 V157 C228 168 224 178 216 186 L182 220 C174 228 164 232 153 232 H72 C48 232 28 212 28 188 Z"/>
+    <path d="M178 43 Q190 31 202 43 L220 61 Q232 73 220 85 L192 113 Q180 125 168 113 L150 95 Q138 83 150 71 Z"/>
+  </g>
+</svg>

@@ -6,7 +6,7 @@ $document = $data['document'] ?? null;
 $hasResult = in_array($status, ['success', 'expired'], true) && !empty($document);
 $signers = $hasResult && is_array($document['signers'] ?? null) ? $document['signers'] : [];
 $filePath = $hasResult ? (($document['final_file_path'] ?? '') ?: ($document['original_file_path'] ?? '')) : '';
-$fileUrl = $filePath !== '' ? '/Tandain/' . ltrim($filePath, '/') : '';
+$fileUrl = ($hasResult && $filePath !== '' && !empty($document['id'])) ? '/Tandain/verification/file/' . rawurlencode($document['id']) : '';
 $fileHash = $data['file_hash'] ?? '';
 $hasFileHash = preg_match('/\A[0-9a-f]{64}\z/i', $fileHash) === 1;
 $signerCertificates = array_filter($signers, static fn ($signer) => !empty($signer['certificate_serial']));
@@ -166,7 +166,7 @@ require_once 'views/layouts/header.php';
     <div class="pt-1">
       <div class="flex flex-col sm:flex-row items-center gap-3 w-full">
         <?php if ($fileUrl !== ''): ?>
-          <a href="<?= htmlspecialchars($fileUrl, ENT_QUOTES, 'UTF-8'); ?>" download class="btn-md flex-1 w-full bg-brand hover:bg-brand-hover active:scale-[0.99] text-white flex items-center justify-center gap-2.5 shadow-sm transition-all duration-150">
+          <a href="<?= htmlspecialchars($fileUrl . '?download=1', ENT_QUOTES, 'UTF-8'); ?>" class="btn-md flex-1 w-full bg-brand hover:bg-brand-hover active:scale-[0.99] text-white flex items-center justify-center gap-2.5 shadow-sm transition-all duration-150">
             <span class="material-symbols-outlined text-[20px]">download</span>
             <span>Unduh Salinan PDF</span>
           </a>

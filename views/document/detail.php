@@ -98,8 +98,7 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
 
           <div class="flex flex-wrap items-center gap-2 mt-6">
             <a
-              href="<?= htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8'); ?>"
-              download="<?= htmlspecialchars(basename($document['original_file_path'] ?? 'dokumen.pdf'), ENT_QUOTES, 'UTF-8'); ?>"
+              href="<?= htmlspecialchars($previewUrl . '?version=original&download=1', ENT_QUOTES, 'UTF-8'); ?>"
               class="btn-md inline-flex flex-1 items-center justify-center gap-2 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low">
               <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
               <span>Unduh PDF Asli</span>
@@ -107,8 +106,7 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
 
             <?php if (($document['status'] ?? '') === 'COMPLETED' && !empty($document['final_file_path'])): ?>
               <a
-                href="/Tandain/<?= htmlspecialchars(ltrim($document['final_file_path'], '/'), ENT_QUOTES, 'UTF-8'); ?>"
-                download
+                href="<?= htmlspecialchars($previewUrl . '?version=signed&download=1', ENT_QUOTES, 'UTF-8'); ?>"
                 class="btn-md inline-flex flex-1 items-center justify-center gap-2 bg-[#15803d] font-semibold text-white shadow-sm transition-colors hover:bg-[#166534]">
                 <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
                 <span>Unduh PDF Bertanda Tangan</span>
@@ -126,11 +124,11 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
             <div class="mt-4 space-y-3">
               <?php foreach ($signers as $signer): ?>
                 <?php $signedTimestamp = !empty($signer['signed_at']) ? strtotime($signer['signed_at']) : false; ?>
-                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
-                  <div class="min-w-0">
-                    <p class="truncate font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['full_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                <div class="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
+                  <div class="min-w-0 flex-1">
+                    <p class="whitespace-normal break-words font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['full_name'], ENT_QUOTES, 'UTF-8'); ?></p>
                     <p class="font-body-sm text-body-sm text-on-surface-variant"><?= htmlspecialchars($signer['position'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
-                    <p class="font-body-sm text-body-sm text-on-surface-variant"><?= htmlspecialchars($signer['email'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant break-all"><?= htmlspecialchars($signer['email'], ENT_QUOTES, 'UTF-8'); ?></p>
 
                     <?php if ($signer['status'] === 'SIGNED' && $signedTimestamp !== false): ?>
                       <p class="mt-1 inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
@@ -144,7 +142,9 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
                     <?php endif; ?>
                   </div>
 
-                  <?php renderStatusBadge($signer['status']); ?>
+                  <div class="shrink-0">
+                    <?php renderStatusBadge($signer['status']); ?>
+                  </div>
                 </div>
               <?php endforeach; ?>
             </div>

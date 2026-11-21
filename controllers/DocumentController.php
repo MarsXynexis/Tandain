@@ -375,23 +375,64 @@ class DocumentController extends Controller
         $userId = $_SESSION['user']['id'];
         $documentModel = $this->model('Document');
         $doc = $documentModel->getDocumentByIdAndUser($id, $userId);
+        $version = $_GET['version'] ?? 'latest';
+        $relativePath = '';
 
-        if (!$doc) {
-            $this->redirect('/Tandain/document');
+        if ($doc) {
+            if ($version === 'original') {
+                $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
+            } elseif (($version === 'signed' || $doc['status'] === 'COMPLETED') && !empty($doc['final_file_path'])) {
+                $relativePath = ltrim((string) $doc['final_file_path'], '/');
+            } else {
+                $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
+            }
         }
 
-        $path = dirname(__DIR__) . '/' . $doc['original_file_path'];
-
-        if (!is_file($path)) {
+        if (
+            !$doc
+            || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath)
+            || !is_file($relativePath)
+            || !is_readable($relativePath)
+        ) {
             $this->redirect('/Tandain/document');
+        } else {
+            header('Content-Type: application/pdf');
+            header('Content-Length: ' . filesize($relativePath));
+            header('X-Content-Type-Options: nosniff');
+
+            if (!empty($_GET['download'])) {
+                $prefix = ($version === 'signed') ? 'signed-document-' : 'original-';
+                header('Content-Disposition: attachment; filename="' . $prefix . rawurlencode($doc['id']) . '.pdf"');
+            }
+
+            readfile($relativePath);
+
+            exit;
+        }
+    }
+
+    public function delete($id = null)
+    {
+        $this->authCheck();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($id)) {
+            $documentModel = $this->model('Document');
+            $deletedFilePath = $documentModel->deleteDraft($id, $_SESSION['user']['id']);
+
+            if ($deletedFilePath !== false) {
+                $relativePath = ltrim((string) $deletedFilePath, '/');
+
+                if (preg_match('/\Auploads\/documents\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath) && is_file($relativePath)) {
+                    @unlink($relativePath);
+                }
+
+                $this->setFlash('success', 'Draf dokumen berhasil dihapus.');
+            } else {
+                $this->setFlash('error', 'Draf dokumen tidak ditemukan atau tidak dapat dihapus.');
+            }
         }
 
-        header('Content-Type: application/pdf');
-        header('Content-Length: ' . filesize($path));
-
-        readfile($path);
-
-        exit;
+        $this->redirect('/Tandain/document');
     }
 
     public function savePositions($id = null)

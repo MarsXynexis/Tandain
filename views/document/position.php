@@ -39,6 +39,7 @@
               <button type="button"
                 class="btn-md inline-flex add-box flex-1 bg-brand hover:bg-brand-hover text-white font-semibold transition"
                 data-signer="<?= htmlspecialchars($s['id']) ?>"
+                data-stamp-type="<?= htmlspecialchars($s['stamp_type'] ?? 'DUAL_DISPLAY') ?>"
                 data-label="<?= $i + 1 ?>. <?= htmlspecialchars($s['name']) ?>">
                 Tempatkan kotak
               </button>
@@ -75,21 +76,35 @@
 
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="/Tandain/assets/js/pdf.min.js"></script>
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/Tandain/assets/js/pdf.worker.min.js';
 
     const PDF_URL = <?= json_encode($pdfUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const SIGNER_IDS = <?= json_encode(array_column($signers, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-
-    const BOX_W = 160;
-    const BOX_H = 60;
+    const PT_PER_MM = 72 / 25.4;
 
     const container = document.getElementById('pdf-container');
     const loading = document.getElementById('pdf-loading');
     const clientError = document.getElementById('client-error');
     const boxes = {};
+
+    function getStampDimensionsPx(stampType, scale) {
+      const pxPerMm = scale * PT_PER_MM;
+      let widthMm = 58;
+      let heightMm = 18;
+
+      if (stampType === 'QR_ONLY') {
+        widthMm = 18;
+      } else if (stampType === 'SIGNATURE_ONLY') {
+        widthMm = 46;
+      }
+
+      return {
+        width: Math.round(widthMm * pxPerMm),
+        height: Math.round(heightMm * pxPerMm),
+      };
+    }
 
     function showError(msg) {
       showNotice(clientError, msg);
@@ -103,16 +118,18 @@
     pdfjsLib.getDocument(PDF_URL).promise
       .then(async (pdf) => {
         loading.remove();
+
         for (let n = 1; n <= pdf.numPages; n++) {
           const page = await pdf.getPage(n);
           const baseViewport = page.getViewport({ scale: 1 });
           const availableWidth = container.clientWidth;
-          const scale = Math.min(1.3, availableWidth / baseViewport.width);
+          const scale = Math.max(0.1, Math.min(1.3, availableWidth / baseViewport.width));
           const viewport = page.getViewport({ scale });
 
           const wrap = document.createElement('div');
           wrap.className = 'pdf-page relative mx-auto shadow border bg-white';
           wrap.dataset.page = n;
+          wrap.dataset.scale = String(scale);
           wrap.style.width = viewport.width + 'px';
           wrap.style.height = viewport.height + 'px';
 
@@ -135,64 +152,79 @@
       const pages = Array.from(container.querySelectorAll('.pdf-page'));
       let best = null;
       let bestVisible = -1;
+
       pages.forEach((p) => {
         const r = p.getBoundingClientRect();
         const visible = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
+
         if (visible > bestVisible) {
           bestVisible = visible;
           best = p;
         }
       });
+
       return best;
     }
 
     function setStatus(signerId, placed) {
       const card = document.querySelector('[data-signer-card="' + signerId + '"]');
-      if (!card) return;
-      card.querySelector('[data-status]').textContent = placed ? 'Sudah ditempatkan' : 'Belum ditempatkan';
-      card.querySelector('[data-status]').classList.toggle('text-green-700', placed);
-      card.querySelector('.add-box').classList.toggle('hidden', placed);
-      card.querySelector('.remove-box').classList.toggle('hidden', !placed);
-      card.querySelector('.remove-box').classList.toggle('flex-1', placed);
+
+      if (card) {
+        card.querySelector('[data-status]').textContent = placed ? 'Sudah ditempatkan' : 'Belum ditempatkan';
+        card.querySelector('[data-status]').classList.toggle('text-green-700', placed);
+        card.querySelector('.add-box').classList.toggle('hidden', placed);
+        card.querySelector('.remove-box').classList.toggle('hidden', !placed);
+        card.querySelector('.remove-box').classList.toggle('flex-1', placed);
+      }
     }
 
     document.querySelectorAll('.add-box').forEach((btn) => {
       btn.addEventListener('click', () => {
         clearError();
         const id = btn.dataset.signer;
-        if (boxes[id]) return;
 
-        const wrap = mostVisiblePage();
-        if (!wrap) {
-          showError('Dokumen belum selesai dimuat.');
-          return;
+        if (!boxes[id]) {
+          const wrap = mostVisiblePage();
+
+          if (!wrap) {
+            showError('Dokumen belum selesai dimuat.');
+          } else {
+            const pageScale = Number(wrap.dataset.scale || 1.3);
+            const stampType = btn.dataset.stampType || 'DUAL_DISPLAY';
+            const dims = getStampDimensionsPx(stampType, pageScale);
+            const boxW = Math.min(dims.width, wrap.clientWidth);
+            const boxH = Math.min(dims.height, wrap.clientHeight);
+
+            const box = document.createElement('div');
+            box.className = 'absolute border-2 border-blue-600 bg-blue-100/70 text-xs font-semibold text-blue-900 flex items-center justify-center text-center px-1 cursor-move select-none z-10';
+            box.dataset.stampType = stampType;
+            box.style.width = boxW + 'px';
+            box.style.height = boxH + 'px';
+            box.style.left = Math.max(0, (wrap.clientWidth - boxW) / 2) + 'px';
+
+            const r = wrap.getBoundingClientRect();
+            const visibleTop = Math.max(0, -r.top) + 40;
+            box.style.top = Math.min(visibleTop, Math.max(0, wrap.clientHeight - boxH)) + 'px';
+
+            box.textContent = btn.dataset.label;
+            wrap.appendChild(box);
+            boxes[id] = box;
+            makeDraggable(box);
+            setStatus(id, true);
+          }
         }
-
-        const box = document.createElement('div');
-        box.className = 'absolute border-2 border-blue-600 bg-blue-100/70 text-xs font-semibold text-blue-900 flex items-center justify-center text-center px-1 cursor-move select-none z-10';
-        box.style.width = BOX_W + 'px';
-        box.style.height = BOX_H + 'px';
-        box.style.left = Math.max(0, (wrap.clientWidth - BOX_W) / 2) + 'px';
-
-        const r = wrap.getBoundingClientRect();
-        const visibleTop = Math.max(0, -r.top) + 40;
-        box.style.top = Math.min(visibleTop, wrap.clientHeight - BOX_H) + 'px';
-
-        box.textContent = btn.dataset.label;
-        wrap.appendChild(box);
-        boxes[id] = box;
-        makeDraggable(box);
-        setStatus(id, true);
       });
     });
 
     document.querySelectorAll('.remove-box').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.signer;
+
         if (boxes[id]) {
           boxes[id].remove();
           delete boxes[id];
         }
+
         setStatus(id, false);
       });
     });
@@ -212,12 +244,18 @@
 
           for (const p of pages) {
             const r = p.getBoundingClientRect();
+
             if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
               target = p;
               break;
             }
           }
+
           if (target !== el.parentElement) {
+            const targetScale = Number(target.dataset.scale || 1.3);
+            const dims = getStampDimensionsPx(el.dataset.stampType || 'DUAL_DISPLAY', targetScale);
+            el.style.width = Math.min(dims.width, target.clientWidth) + 'px';
+            el.style.height = Math.min(dims.height, target.clientHeight) + 'px';
             target.appendChild(el);
           }
 
@@ -246,24 +284,25 @@
       clearError();
 
       const missing = SIGNER_IDS.filter((id) => !boxes[id]);
+
       if (missing.length > 0) {
         e.preventDefault();
         showError('Masih ada penandatangan yang belum ditempatkan kotak TTE-nya.');
-        return;
+      } else {
+        const data = SIGNER_IDS.map((signerId) => {
+          const el = boxes[signerId];
+          const p = el.parentElement;
+
+          return {
+            signer_id: signerId,
+            page: parseInt(p.dataset.page, 10),
+            x: el.offsetLeft / p.clientWidth,
+            y: el.offsetTop / p.clientHeight,
+          };
+        });
+
+        document.getElementById('positions').value = JSON.stringify(data);
       }
-
-      const data = SIGNER_IDS.map((signerId) => {
-        const el = boxes[signerId];
-        const p = el.parentElement;
-        return {
-          signer_id: signerId,
-          page: parseInt(p.dataset.page, 10),
-          x: el.offsetLeft / p.clientWidth,
-          y: el.offsetTop / p.clientHeight,
-        };
-      });
-
-      document.getElementById('positions').value = JSON.stringify(data);
     });
   </script>
 

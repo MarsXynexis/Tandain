@@ -33,9 +33,11 @@ if ($currentStatus === 'PENDING_TRIAGE') {
     $backUrl = '/Tandain/dashboard';
 }
 
-$filePath = $document['original_file_path'] ?? '';
+$isCompletedSigned = ($currentStatus === 'COMPLETED' && !empty($document['final_file_path']));
+$filePath = $isCompletedSigned ? $document['final_file_path'] : ($document['original_file_path'] ?? '');
 $fileExists = !empty($filePath) && file_exists($filePath);
 $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
+$fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elektronik' : 'Berkas permohonan surat digital';
 ?>
 
   <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
@@ -112,12 +114,12 @@ $fileName = !empty($filePath) ? basename($filePath) : 'Berkas tidak tersedia';
 
             <div class="min-w-0">
               <p class="font-label-md text-label-md font-semibold text-primary truncate"><?= htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8'); ?></p>
-              <p class="font-body-sm text-xs text-on-surface-variant">Berkas permohonan surat digital</p>
+              <p class="font-body-sm text-xs text-on-surface-variant"><?= htmlspecialchars($fileDescription, ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
           </div>
 
           <?php if ($fileExists): ?>
-            <a href="/Tandain/<?= htmlspecialchars($filePath, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener" class="btn-md inline-flex items-center gap-2 border border-outline text-primary bg-white hover:bg-surface-container transition-all shrink-0">
+            <a href="/Tandain/triage/file/<?= rawurlencode($document['id']); ?>" target="_blank" rel="noopener" class="btn-md inline-flex items-center gap-2 border border-outline text-primary bg-white hover:bg-surface-container transition-all shrink-0">
               <span class="material-symbols-outlined text-[18px]">visibility</span>
               <span>Lihat Berkas</span>
             </a>

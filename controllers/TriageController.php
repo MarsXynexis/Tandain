@@ -57,13 +57,23 @@ class TriageController extends Controller
 
         $docModel = $this->model('Document');
         $doc = !empty($id) ? $docModel->findById($id) : null;
-        $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
+        $version = $_GET['version'] ?? 'latest';
+        $relativePath = '';
 
-        if (empty($doc) || !preg_match('/\Auploads\/documents\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath) || !is_file($relativePath)) {
+        if ($doc) {
+            if ($version !== 'original' && $doc['status'] === 'COMPLETED' && !empty($doc['final_file_path'])) {
+                $relativePath = ltrim((string) $doc['final_file_path'], '/');
+            } else {
+                $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
+            }
+        }
+
+        if (empty($doc) || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath) || !is_file($relativePath)) {
             http_response_code(404);
         } else {
             header('Content-Type: application/pdf');
             header('Content-Length: ' . filesize($relativePath));
+            header('X-Content-Type-Options: nosniff');
 
             readfile($relativePath);
         }

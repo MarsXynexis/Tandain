@@ -40,6 +40,7 @@
               <button type="button"
                 class="btn-md inline-flex add-box flex-1 bg-brand hover:bg-brand-hover text-white font-semibold transition"
                 data-signer="<?= htmlspecialchars($s['id']) ?>"
+                data-stamp-type="<?= htmlspecialchars($s['stamp_type'] ?? 'DUAL_DISPLAY') ?>"
                 data-label="<?= $i + 1 ?>. <?= htmlspecialchars($s['name']) ?>">
                 Tempatkan kotak
               </button>
@@ -75,21 +76,36 @@
 
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="/Tandain/assets/js/pdf.min.js"></script>
 
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/Tandain/assets/js/pdf.worker.min.js';
 
     const PDF_URL = <?= json_encode($pdfUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const SIGNER_IDS = <?= json_encode(array_column($signers, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-
-    const BOX_W = 160;
-    const BOX_H = 60;
+    const PT_PER_MM = 72 / 25.4;
 
     const container = document.getElementById('pdf-container');
     const loading = document.getElementById('pdf-loading');
     const clientError = document.getElementById('client-error');
     const boxes = {};
+
+    function getStampDimensionsPx(stampType, scale) {
+      const pxPerMm = scale * PT_PER_MM;
+      let widthMm = 58;
+      let heightMm = 18;
+
+      if (stampType === 'QR_ONLY') {
+        widthMm = 18;
+      } else if (stampType === 'SIGNATURE_ONLY') {
+        widthMm = 46;
+      }
+
+      return {
+        width: Math.round(widthMm * pxPerMm),
+        height: Math.round(heightMm * pxPerMm),
+      };
+    }
 
     function showError(msg) {
       showNotice(clientError, msg);
@@ -108,12 +124,13 @@
           const page = await pdf.getPage(n);
           const baseViewport = page.getViewport({ scale: 1 });
           const availableWidth = container.clientWidth;
-          const scale = Math.min(1.3, availableWidth / baseViewport.width);
+          const scale = Math.max(0.1, Math.min(1.3, availableWidth / baseViewport.width));
           const viewport = page.getViewport({ scale });
 
           const wrap = document.createElement('div');
           wrap.className = 'pdf-page relative mx-auto shadow border bg-white';
           wrap.dataset.page = n;
+          wrap.dataset.scale = String(scale);
           wrap.style.width = viewport.width + 'px';
           wrap.style.height = viewport.height + 'px';
 
@@ -173,15 +190,22 @@
           if (!wrap) {
             showError('Dokumen belum selesai dimuat.');
           } else {
+            const pageScale = Number(wrap.dataset.scale || 1.3);
+            const stampType = btn.dataset.stampType || 'DUAL_DISPLAY';
+            const dims = getStampDimensionsPx(stampType, pageScale);
+            const boxW = Math.min(dims.width, wrap.clientWidth);
+            const boxH = Math.min(dims.height, wrap.clientHeight);
+
             const box = document.createElement('div');
             box.className = 'absolute border-2 border-blue-600 bg-blue-100/70 text-xs font-semibold text-blue-900 flex items-center justify-center text-center px-1 cursor-move select-none z-10';
-            box.style.width = BOX_W + 'px';
-            box.style.height = BOX_H + 'px';
-            box.style.left = Math.max(0, (wrap.clientWidth - BOX_W) / 2) + 'px';
+            box.dataset.stampType = stampType;
+            box.style.width = boxW + 'px';
+            box.style.height = boxH + 'px';
+            box.style.left = Math.max(0, (wrap.clientWidth - boxW) / 2) + 'px';
 
             const r = wrap.getBoundingClientRect();
             const visibleTop = Math.max(0, -r.top) + 40;
-            box.style.top = Math.min(visibleTop, wrap.clientHeight - BOX_H) + 'px';
+            box.style.top = Math.min(visibleTop, Math.max(0, wrap.clientHeight - boxH)) + 'px';
 
             box.textContent = btn.dataset.label;
             wrap.appendChild(box);
@@ -229,6 +253,10 @@
           }
 
           if (target !== el.parentElement) {
+            const targetScale = Number(target.dataset.scale || 1.3);
+            const dims = getStampDimensionsPx(el.dataset.stampType || 'DUAL_DISPLAY', targetScale);
+            el.style.width = Math.min(dims.width, target.clientWidth) + 'px';
+            el.style.height = Math.min(dims.height, target.clientHeight) + 'px';
             target.appendChild(el);
           }
 

@@ -5,16 +5,18 @@
 <?php
 $document = $data['document'];
 
-$documentFile = $document['original_file_path'] ?? '';
+$hasStampedPdf = !empty($document['final_file_path']);
+$documentFile = $hasStampedPdf ? $document['final_file_path'] : ($document['original_file_path'] ?? '');
 $canDecide = ($document['signer_status'] ?? '') === 'CURRENT_TURN'
     && ($document['status'] ?? '') === 'IN_PROGRESS';
 $currentSigner = null;
+
 foreach ($data['signers'] as $signer) {
     if ($signer['signer_id'] === $data['user']['id']) {
         $currentSigner = $signer;
-        break;
     }
 }
+
 $hasActiveCertificate = $currentSigner !== null && (int) ($currentSigner['has_active_cert'] ?? 0) === 1;
 $hasActiveSignature = $currentSigner !== null && !empty($currentSigner['has_active_signature']);
 $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
@@ -23,7 +25,12 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
 <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
     <div class="mx-auto w-full">
         <div class="mb-6">
-            <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight font-bold">Persetujuan Dokumen</h1>
+            <a href="/Tandain/inbox" class="inline-flex items-center gap-1 text-secondary font-label-md text-label-md hover:underline">
+                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_back</span>
+                <span>Kembali ke daftar</span>
+            </a>
+
+            <h1 class="mt-2 font-headline-lg text-headline-lg text-primary tracking-tight font-bold">Persetujuan Dokumen</h1>
             <p class="mt-1 font-body-md text-body-md text-on-surface-variant">Tinjau isi berkas dan tentukan keputusan persetujuan</p>
         </div>
 
@@ -35,6 +42,10 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                 <?php require 'views/layouts/notice.php'; ?>
             <?php endif; ?>
 
+            <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
+                <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
+                <?php require 'views/layouts/notice.php'; ?>
+            <?php endif; ?>
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.8fr)]">
@@ -235,8 +246,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                         <div class="flex flex-wrap items-center gap-2 mt-6">
                             <?php if ($canDownloadOriginal): ?>
                                 <a
-                                    href="/Tandain/<?= htmlspecialchars(ltrim($document['original_file_path'], '/'), ENT_QUOTES, 'UTF-8'); ?>"
-                                    download
+                                    href="/Tandain/inbox/file/<?= rawurlencode($document['id']); ?>?version=original&amp;download=1"
                                     class="btn-md inline-flex flex-1 items-center justify-center gap-2 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low">
                                     <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
                                     <span>Original</span>
@@ -245,8 +255,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
 
                             <?php if ($canDownloadSigned): ?>
                                 <a
-                                    href="/Tandain/<?= htmlspecialchars(ltrim($document['final_file_path'], '/'), ENT_QUOTES, 'UTF-8'); ?>"
-                                    download
+                                    href="/Tandain/inbox/detail?document_id=<?= rawurlencode($document['id']); ?>&amp;download=signed"
                                     class="btn-md inline-flex flex-1 items-center justify-center gap-2 bg-[#15803d] font-semibold text-white shadow-sm transition-colors hover:bg-[#166534]">
                                     <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
                                     <span>Signed</span>
@@ -262,7 +271,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                         <?php foreach ($data['signers'] as $index => $signer): ?>
                             <?php $signedTimestamp = !empty($signer['signed_at']) ? strtotime($signer['signed_at']) : false; ?>
                             <div class="flex flex-wrap items-start gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
-                                <div class="flex w-full items-center justify-between gap-3">
+                                <div class="flex w-full items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
                                         <p class="whitespace-normal break-words font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['signer_name'], ENT_QUOTES, 'UTF-8'); ?></p>
                                         <p class="font-body-sm text-body-sm text-on-surface-variant">Halaman <?= (int) $signer['page_number']; ?></p>
@@ -273,16 +282,19 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                             </p>
                                         <?php endif; ?>
                                     </div>
-                                    <div class="shrink-0">
+                                    <div class="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                                        <?php if ((string) $signer['signer_id'] === (string) $data['user']['id']): ?>
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-2 py-0.5 text-label-sm font-label-sm text-[#15803d]">
+                                                <span class="material-symbols-outlined text-[13px]" aria-hidden="true">person</span>
+                                                <span>Anda</span>
+                                            </span>
+                                        <?php endif; ?>
                                         <?php renderStatusBadge($signer['status']); ?>
                                     </div>
                                 </div>
 
-                                <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
-                                    <span class="w-full inline-flex items-center gap-2 rounded bg-[#fee2e2] px-2 py-2 text-[#b91c1c] font-body-sm text-body-sm" role="alert">
-                                        <span class="material-symbols-outlined text-[24px]" aria-hidden="true">error</span>
-                                        <span><strong>Alasan penolakan:</strong> <br> <?= htmlspecialchars($document['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?></span>
-                                    </span>
+                                <?php if ($signer['status'] === 'REJECTED' && !empty($signer['rejection_reason'])): ?>
+                                    <p class="w-full font-body-sm text-body-sm text-error">Alasan: <?= htmlspecialchars($signer['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?></p>
                                 <?php endif; ?>
 
                                 <?php if ((string) $signer['signer_id'] === (string) $data['user']['id'] && $signer['status'] === 'CURRENT_TURN'): ?>
@@ -294,18 +306,27 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                             name="stamp_type"
                                             value="SIGNATURE_ONLY"
                                             aria-pressed="<?= $signer['stamp_type'] === 'SIGNATURE_ONLY' ? 'true' : 'false'; ?>"
-                                            class="btn-md inline-flex flex-1 items-center justify-center gap-1.5 border font-semibold transition-colors <?= $signer['stamp_type'] === 'SIGNATURE_ONLY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
+                                            class="btn-sm inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border font-semibold transition-colors <?= $signer['stamp_type'] === 'SIGNATURE_ONLY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
                                             <span class="material-symbols-outlined text-[16px]" aria-hidden="true">draw</span>
-                                            TTD Polos
+                                            <span>TTD Polos</span>
                                         </button>
                                         <button
                                             type="submit"
                                             name="stamp_type"
                                             value="DUAL_DISPLAY"
                                             aria-pressed="<?= $signer['stamp_type'] === 'DUAL_DISPLAY' ? 'true' : 'false'; ?>"
-                                            class="btn-md inline-flex flex-1 items-center justify-center gap-1.5 border font-semibold transition-colors <?= $signer['stamp_type'] === 'DUAL_DISPLAY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
+                                            class="btn-sm inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border font-semibold transition-colors <?= $signer['stamp_type'] === 'DUAL_DISPLAY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
                                             <span class="material-symbols-outlined text-[16px]" aria-hidden="true">qr_code_2</span>
-                                            TTD + QR
+                                            <span>TTD + QR</span>
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            name="stamp_type"
+                                            value="QR_ONLY"
+                                            aria-pressed="<?= $signer['stamp_type'] === 'QR_ONLY' ? 'true' : 'false'; ?>"
+                                            class="btn-sm inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap border font-semibold transition-colors <?= $signer['stamp_type'] === 'QR_ONLY' ? 'border-secondary bg-secondary text-white' : 'border-outline-variant bg-white text-primary hover:bg-surface-container-high'; ?>">
+                                            <span class="material-symbols-outlined text-[16px]" aria-hidden="true">qr_code</span>
+                                            <span>QR Saja</span>
                                         </button>
                                         <?php if (!$hasActiveCertificate || !$hasActiveSignature): ?>
                                             <div class="flex justify-between w-full mt-2 flex-wrap gap-2 text-[11px] font-semibold">
@@ -364,11 +385,13 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
 </main>
 
 <?php if ($documentFile !== ''): ?>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="/Tandain/assets/js/pdf.min.js"></script>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/Tandain/assets/js/pdf.worker.min.js';
 
-        const pdfUrl = <?= json_encode('/Tandain/' . ltrim($documentFile, '/'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        const PT_PER_MM = 72 / 25.4;
+        const pdfUrl = <?= json_encode('/Tandain/inbox/file/' . rawurlencode($document['id']), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        const hasStampedPdf = <?= json_encode($hasStampedPdf) ?>;
         const signerPositions = <?= json_encode(array_map(static function ($signer) {
                                     $signaturePath = $signer['signer_signature_image_path'] ?? '';
                                     $signatureUrl = '';
@@ -376,14 +399,14 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                         is_string($signaturePath)
                                         && preg_match('/\Auploads\/signatures\/[A-Za-z0-9._-]+\.png\z/D', $signaturePath)
                                     ) {
-                                        $signatureFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $signaturePath);
-                                        if (is_file($signatureFile)) {
-                                            $signatureUrl = '/Tandain/' . $signaturePath . '?v=' . filemtime($signatureFile);
+                                        if (is_file($signaturePath)) {
+                                            $signatureUrl = '/Tandain/' . $signaturePath . '?v=' . filemtime($signaturePath);
                                         }
                                     }
 
                                     return [
                                         'name' => $signer['signer_name'],
+                                        'status' => $signer['status'],
                                         'page' => (int) $signer['page_number'],
                                         'x' => (float) $signer['coord_x'],
                                         'y' => (float) $signer['coord_y'],
@@ -409,6 +432,8 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                     const viewport = page.getViewport({
                         scale: Math.max(scale, 0.1)
                     });
+                    const pxPerMm = viewport.scale * PT_PER_MM;
+                    const scaleFactor = viewport.scale / 1.3;
                     const pageWrapper = document.createElement('div');
                     pageWrapper.className = 'pdf-page relative mx-auto overflow-hidden border border-outline-variant bg-white shadow-sm';
                     pageWrapper.style.width = `${viewport.width}px`;
@@ -429,26 +454,29 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                     }).promise;
 
                     signerPositions
-                        .filter((signer) => signer.page === pageNumber)
+                        .filter((signer) => signer.page === pageNumber && (!hasStampedPdf || signer.status !== 'SIGNED'))
                         .forEach((signer) => {
                             const marker = document.createElement('div');
                             const qrOnly = signer.stampType === 'QR_ONLY';
                             const signatureOnly = signer.stampType === 'SIGNATURE_ONLY';
-                            const scaleFactor = viewport.scale / 1.3;
-                            const markerHeight = 65;
-                            let markerWidth = 215;
+                            const heightPx = 18 * pxPerMm;
+                            let widthPx = 58 * pxPerMm;
 
                             if (qrOnly) {
-                                markerWidth = 65;
+                                widthPx = 18 * pxPerMm;
                             } else if (signatureOnly) {
-                                markerWidth = 175;
+                                widthPx = 46 * pxPerMm;
                             }
 
-                            marker.className = 'absolute z-10 flex items-stretch gap-1 overflow-hidden bg-white p-0.5 shadow-sm';
-                            marker.style.width = `${markerWidth * scaleFactor}px`;
-                            marker.style.height = `${markerHeight * scaleFactor}px`;
-                            marker.style.left = `${Math.max(0, Math.min(1, signer.x)) * viewport.width}px`;
-                            marker.style.top = `${Math.max(0, Math.min(1, signer.y)) * viewport.height}px`;
+                            const clampedLeft = Math.max(0, Math.min(Math.max(0, Math.min(1, signer.x)) * viewport.width, viewport.width - widthPx));
+                            const clampedTop = Math.max(0, Math.min(Math.max(0, Math.min(1, signer.y)) * viewport.height, viewport.height - heightPx));
+
+                            marker.className = 'absolute z-10 flex items-center overflow-hidden bg-white shadow-sm';
+                            marker.style.width = `${widthPx}px`;
+                            marker.style.height = `${heightPx}px`;
+                            marker.style.left = `${clampedLeft}px`;
+                            marker.style.top = `${clampedTop}px`;
+                            marker.style.gap = qrOnly || signatureOnly ? '0px' : `${2 * pxPerMm}px`;
                             marker.title = `${signer.name} (Halaman ${pageNumber})`;
 
                             const makeIpbBox = (topText, bottomText, sigUrl, signerName, isFlex1) => {
@@ -458,13 +486,13 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                 box.style.justifyContent = 'space-between';
                                 box.style.backgroundColor = '#ffffff';
                                 box.style.boxSizing = 'border-box';
+                                box.style.height = '100%';
 
                                 if (isFlex1) {
                                     box.style.flex = '1';
                                     box.style.minWidth = '0';
                                 } else {
                                     box.style.width = '100%';
-                                    box.style.height = '100%';
                                 }
 
                                 const topRow = document.createElement('div');
@@ -573,14 +601,14 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                 qrImage.className = 'h-full w-full object-contain';
                                 marker.appendChild(qrImage);
                             } else if (signatureOnly) {
-                                const box = makeIpbBox('digitally signed @ tandain.pnj.ac.id', 'tandain.pnj.ac.id', signer.signatureUrl, signer.name, false);
+                                const box = makeIpbBox('digitally signed', 'tandain.pnj.ac.id', signer.signatureUrl, signer.name, false);
                                 marker.appendChild(box);
                             } else {
                                 const qrImage = document.createElement('img');
                                 qrImage.src = qrUrl;
                                 qrImage.alt = `Kode QR dokumen untuk ${signer.name}`;
-                                qrImage.style.width = `${(markerHeight - 4) * scaleFactor}px`;
-                                qrImage.style.height = `${(markerHeight - 4) * scaleFactor}px`;
+                                qrImage.style.width = `${16 * pxPerMm}px`;
+                                qrImage.style.height = `${16 * pxPerMm}px`;
                                 qrImage.style.objectFit = 'contain';
                                 qrImage.style.flexShrink = '0';
                                 marker.appendChild(qrImage);

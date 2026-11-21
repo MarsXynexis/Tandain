@@ -516,12 +516,47 @@ class Document
 
     public function getSignersForPositioning($documentId)
     {
-        $sql = "SELECT ds.signer_id AS id, ds.signing_order, u.full_name AS name FROM document_signers ds JOIN users u ON u.id = ds.signer_id WHERE ds.document_id = :doc_id ORDER BY ds.signing_order ASC";
+        $sql = "SELECT ds.signer_id AS id, ds.signing_order, ds.stamp_type, u.full_name AS name FROM document_signers ds JOIN users u ON u.id = ds.signer_id WHERE ds.document_id = :doc_id ORDER BY ds.signing_order ASC";
 
         $this->db->query($sql);
         $this->db->bind('doc_id', $documentId);
 
         return $this->db->resultSet();
+    }
+
+    public function deleteDraft($id, $userId)
+    {
+        $deletedFilePath = false;
+
+        if (preg_match('/\A[0-9a-f-]{36}\z/i', (string) $id)) {
+            try {
+                $this->db->beginTransaction();
+
+                $this->db->query("SELECT original_file_path FROM " . $this->table . " WHERE id = :id AND requester_id = :user_id AND status = 'DRAFT' FOR UPDATE");
+                $this->db->bind('id', $id);
+                $this->db->bind('user_id', $userId);
+                $doc = $this->db->single();
+
+                if ($doc) {
+                    $this->db->query("DELETE FROM " . $this->table . " WHERE id = :id AND requester_id = :user_id AND status = 'DRAFT'");
+                    $this->db->bind('id', $id);
+                    $this->db->bind('user_id', $userId);
+                    $this->db->execute();
+
+                    if ($this->db->rowCount() === 1) {
+                        $deletedFilePath = $doc['original_file_path'] ?? '';
+                    }
+                }
+
+                $this->db->commit();
+            } catch (Exception $e) {
+                $this->db->rollBack();
+
+                $deletedFilePath = false;
+            }
+        }
+
+        return $deletedFilePath;
     }
 
     public function updateSignerPositions($documentId, $positions, $isSequential, $userId, $expectedStatus)

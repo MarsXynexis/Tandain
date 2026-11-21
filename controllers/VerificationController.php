@@ -115,6 +115,44 @@ class VerificationController extends Controller
         $this->view('verification/index', $data);
     }
 
+    public function file($documentId = null)
+    {
+        $documentId = trim((string) ($documentId ?? ''));
+        $document = null;
+        $relativePath = '';
+
+        if ($documentId !== '' && preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $documentId)) {
+            $documentModel = $this->model('Document');
+            $candidate = $documentModel->verifyDocument($documentId);
+
+            if ($candidate && $this->isCompletedWithAllSignatures($candidate)) {
+                $document = $candidate;
+                $relativePath = ltrim((string) ($document['final_file_path'] ?: ($document['original_file_path'] ?? '')), '/');
+            }
+        }
+
+        if (
+            !$document
+            || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath)
+            || !is_file($relativePath)
+            || !is_readable($relativePath)
+        ) {
+            http_response_code(404);
+        } else {
+            header('Content-Type: application/pdf');
+            header('Content-Length: ' . filesize($relativePath));
+            header('X-Content-Type-Options: nosniff');
+
+            if (!empty($_GET['download'])) {
+                header('Content-Disposition: attachment; filename="verified-document-' . rawurlencode($document['id']) . '.pdf"');
+            }
+
+            readfile($relativePath);
+        }
+
+        exit;
+    }
+
     private function isCompletedWithAllSignatures($document)
     {
         $valid = false;

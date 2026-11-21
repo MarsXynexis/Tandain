@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'PDFStamper.php';
+require_once 'core/PDFStamper.php';
 
 class DocumentSigner
 {
@@ -217,6 +217,12 @@ class DocumentSigner
             $hasFinalFile = is_string($document['final_file_path']) && $document['final_file_path'] !== '';
             $relativePath = $hasFinalFile ? $document['final_file_path'] : $document['original_file_path'];
             $sourceHash = $hasFinalFile ? $document['final_sha256_hash'] : $document['initial_sha256_hash'];
+            $previousSignedPath = null;
+
+            if ($hasFinalFile && preg_match('/\Auploads\/signed\/[A-Za-z0-9._-]+\.pdf\z/i', $document['final_file_path'])) {
+                $previousSignedPath = dirname(__DIR__) . DIRECTORY_SEPARATOR
+                    . str_replace('/', DIRECTORY_SEPARATOR, $document['final_file_path']);
+            }
 
             if (
                 !is_string($relativePath)
@@ -424,6 +430,10 @@ class DocumentSigner
 
             $pdo->commit();
 
+            if ($previousSignedPath !== null && $previousSignedPath !== $newPdfAbsolutePath && is_file($previousSignedPath)) {
+                @unlink($previousSignedPath);
+            }
+
             return ['ok' => true, 'completed' => $completed];
         } catch (Throwable $exception) {
             try {
@@ -462,7 +472,7 @@ class DocumentSigner
             $pdo->beginTransaction();
 
             $documentQuery = $pdo->prepare(
-                "SELECT id, status
+                "SELECT id, status, final_file_path
                  FROM documents
                  WHERE id = ?
                  FOR UPDATE"
@@ -473,6 +483,13 @@ class DocumentSigner
             if (!$document || $document['status'] !== 'IN_PROGRESS') {
                 $pdo->rollBack();
                 return ['ok' => false, 'message' => 'Dokumen tidak sedang menunggu keputusan.'];
+            }
+
+            $partialSignedPath = null;
+
+            if (is_string($document['final_file_path'] ?? null) && preg_match('/\Auploads\/signed\/[A-Za-z0-9._-]+\.pdf\z/i', $document['final_file_path'])) {
+                $partialSignedPath = dirname(__DIR__) . DIRECTORY_SEPARATOR
+                    . str_replace('/', DIRECTORY_SEPARATOR, $document['final_file_path']);
             }
 
             $signerQuery = $pdo->prepare(
@@ -510,7 +527,7 @@ class DocumentSigner
 
             $rejectDocument = $pdo->prepare(
                 "UPDATE documents
-                 SET status = 'REJECTED', rejection_reason = ?
+                 SET status = 'REJECTED', rejection_reason = ?, final_file_path = NULL, final_sha256_hash = NULL
                  WHERE id = ? AND status = 'IN_PROGRESS'"
             );
             $rejectDocument->execute([$reason, $documentId]);
@@ -525,6 +542,10 @@ class DocumentSigner
             )->execute([$documentId, $signerId, 'Dokumen ditolak oleh penandatangan. Alasan: ' . $reason]);
 
             $pdo->commit();
+
+            if ($partialSignedPath !== null && is_file($partialSignedPath)) {
+                @unlink($partialSignedPath);
+            }
 
             return ['ok' => true];
         } catch (Throwable $exception) {

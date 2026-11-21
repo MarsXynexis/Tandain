@@ -4,11 +4,14 @@ use setasign\Fpdi\Tcpdf\Fpdi;
 
 class PDFStamper
 {
-    private const QR_SIZE_MM = 22.0;
-    private const DUAL_WIDTH_MM = 68.0;
-    private const DUAL_HEIGHT_MM = 22.0;
-    private const SIGNATURE_WIDTH_MM = 45.0;
-    private const SIGNATURE_HEIGHT_MM = 22.5;
+    private const QR_SIZE_MM = 18.0;
+    private const DUAL_QR_SIZE_MM = 16.0;
+    private const DUAL_GAP_MM = 2.0;
+    private const DUAL_BOX_WIDTH_MM = 40.0;
+    private const DUAL_WIDTH_MM = 58.0;
+    private const DUAL_HEIGHT_MM = 18.0;
+    private const SIGNATURE_WIDTH_MM = 46.0;
+    private const SIGNATURE_HEIGHT_MM = 18.0;
     private const VIEWER_SCALE = 1.3;
 
     public static function stamp(
@@ -30,6 +33,7 @@ class PDFStamper
         }
 
         $signatureInfo = @getimagesize($signatureAbsolutePath);
+
         if (!$signatureInfo || $signatureInfo[2] !== IMAGETYPE_PNG) {
             throw new RuntimeException('Berkas tanda tangan harus berupa gambar PNG yang valid.');
         }
@@ -48,8 +52,8 @@ class PDFStamper
             throw new InvalidArgumentException('Identitas penandatanganan, halaman, atau koordinat stempel tidak valid.');
         }
 
-        $outputDirectory = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads'
-            . DIRECTORY_SEPARATOR . 'signed';
+        $outputDirectory = 'uploads/signed';
+
         if (!is_dir($outputDirectory) && !mkdir($outputDirectory, 0775, true) && !is_dir($outputDirectory)) {
             throw new RuntimeException('Folder penyimpanan PDF bertanda tangan tidak dapat dibuat.');
         }
@@ -61,16 +65,18 @@ class PDFStamper
             date('YmdHis'),
             bin2hex(random_bytes(4))
         );
-        $outputPath = $outputDirectory . DIRECTORY_SEPARATOR . $fileName;
+        $outputPath = $outputDirectory . '/' . $fileName;
 
         $pdf = new Fpdi();
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(0, 0, 0);
         $pdf->SetAutoPageBreak(false, 0);
+        $pdf->SetCellPadding(0);
 
         try {
             $pageCount = $pdf->setSourceFile($sourcePdfPath);
+
             if ($pageNumber > $pageCount) {
                 throw new InvalidArgumentException('Halaman penempatan stempel tidak tersedia pada PDF.');
             }
@@ -78,6 +84,7 @@ class PDFStamper
             for ($page = 1; $page <= $pageCount; $page++) {
                 $templateId = $pdf->importPage($page);
                 $pageSize = $pdf->getTemplateSize($templateId);
+
                 $pdf->AddPage($pageSize['orientation'], [$pageSize['width'], $pageSize['height']]);
                 $pdf->useTemplate($templateId);
 
@@ -95,7 +102,8 @@ class PDFStamper
                 }
             }
 
-            $pdf->Output($outputPath, 'F');
+            $pdf->Output(realpath($outputDirectory) . DIRECTORY_SEPARATOR . $fileName, 'F');
+
             if (!is_file($outputPath) || filesize($outputPath) === 0) {
                 throw new RuntimeException('PDF hasil stempel gagal disimpan.');
             }
@@ -107,7 +115,7 @@ class PDFStamper
             throw $exception;
         }
 
-        return 'uploads/signed/' . $fileName;
+        return $outputPath;
     }
 
     private static function drawStamp(
@@ -140,13 +148,13 @@ class PDFStamper
         $x = max(0.0, min($x, $pageWidth - $stampWidth));
         $y = max(0.0, min($y, $pageHeight - $stampHeight));
 
-        if ($stampType === 'QR_ONLY') {
-            self::drawQrCode($pdf, $verificationUrl, $x, $y);
-            return;
-        }
+        $pdf->SetFillColor(255, 255, 255);
+        $pdf->Rect($x, $y, $stampWidth, $stampHeight, 'F');
 
-        if ($stampType === 'SIGNATURE_ONLY') {
-            self::drawSignatureImage(
+        if ($stampType === 'QR_ONLY') {
+            self::drawQrCode($pdf, $verificationUrl, $x, $y, self::QR_SIZE_MM);
+        } elseif ($stampType === 'SIGNATURE_ONLY') {
+            self::drawIpbBox(
                 $pdf,
                 $signaturePath,
                 $x,
@@ -154,25 +162,76 @@ class PDFStamper
                 self::SIGNATURE_WIDTH_MM,
                 self::SIGNATURE_HEIGHT_MM
             );
-            return;
+        } else {
+            $qrY = $y + (self::DUAL_HEIGHT_MM - self::DUAL_QR_SIZE_MM) / 2.0;
+
+            self::drawQrCode($pdf, $verificationUrl, $x, $qrY, self::DUAL_QR_SIZE_MM);
+
+            self::drawIpbBox(
+                $pdf,
+                $signaturePath,
+                $x + self::DUAL_QR_SIZE_MM + self::DUAL_GAP_MM,
+                $y,
+                self::DUAL_BOX_WIDTH_MM,
+                self::DUAL_HEIGHT_MM
+            );
         }
-
-        self::drawQrCode($pdf, $verificationUrl, $x, $y);
-
-        $boxX = $x + self::QR_SIZE_MM + 2.0;
-        $pdf->SetDrawColor(0, 0, 0);
-        $pdf->SetLineWidth(0.25);
-        $pdf->Rect($boxX, $y, 44.0, self::DUAL_HEIGHT_MM);
-
-        self::drawSignatureImage($pdf, $signaturePath, $boxX + 2.0, $y + 1.0, 40.0, 14.0);
-
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont('helvetica', '', 6.5);
-        $pdf->SetXY($boxX + 2.0, $y + 18.0);
-        $pdf->Cell(40.0, 3.0, 'Digitally Signed | Tandain.pnj.ac.id', 0, 0, 'L');
     }
 
-    private static function drawQrCode(Fpdi $pdf, string $url, float $x, float $y): void
+    private static function drawIpbBox(
+        Fpdi $pdf,
+        string $signaturePath,
+        float $boxX,
+        float $boxY,
+        float $boxWidth,
+        float $boxHeight
+    ): void {
+        $topText = 'digitally signed';
+        $bottomText = 'tandain.pnj.ac.id';
+        $topLineY = $boxY + 1.4;
+        $botLineY = $boxY + $boxHeight - 1.4;
+        $leftSegment = 2.0;
+        $textPadding = 0.7;
+
+        $pdf->SetDrawColor(15, 23, 42);
+        $pdf->SetLineWidth(0.25);
+
+        $pdf->Line($boxX, $topLineY, $boxX, $botLineY);
+        $pdf->Line($boxX + $boxWidth, $topLineY, $boxX + $boxWidth, $botLineY);
+
+        $pdf->SetFont('courier', '', 6.0);
+        $pdf->SetTextColor(15, 23, 42);
+        $topTextWidth = $pdf->GetStringWidth($topText);
+        $topTextX = $boxX + $leftSegment + $textPadding;
+        $topRightStart = $topTextX + $topTextWidth + $textPadding;
+
+        $pdf->Line($boxX, $topLineY, $boxX + $leftSegment, $topLineY);
+        $pdf->Line($topRightStart, $topLineY, $boxX + $boxWidth, $topLineY);
+        $pdf->SetXY($topTextX, $topLineY - 1.3);
+        $pdf->Cell($topTextWidth, 2.6, $topText, 0, 0, 'L', false);
+
+        $pdf->SetFont('courier', '', 5.8);
+        $pdf->SetTextColor(71, 85, 105);
+        $botTextWidth = $pdf->GetStringWidth($bottomText);
+        $botTextX = $boxX + $leftSegment + $textPadding;
+        $botRightStart = $botTextX + $botTextWidth + $textPadding;
+
+        $pdf->Line($boxX, $botLineY, $boxX + $leftSegment, $botLineY);
+        $pdf->Line($botRightStart, $botLineY, $boxX + $boxWidth, $botLineY);
+        $pdf->SetXY($botTextX, $botLineY - 1.3);
+        $pdf->Cell($botTextWidth, 2.6, $bottomText, 0, 0, 'L', false);
+
+        self::drawSignatureImage(
+            $pdf,
+            $signaturePath,
+            $boxX + 1.5,
+            $topLineY + 1.4,
+            $boxWidth - 3.0,
+            ($botLineY - $topLineY) - 2.8
+        );
+    }
+
+    private static function drawQrCode(Fpdi $pdf, string $url, float $x, float $y, float $size): void
     {
         $style = [
             'border' => false,
@@ -181,7 +240,7 @@ class PDFStamper
             'bgcolor' => false,
         ];
 
-        $pdf->write2DBarcode($url, 'QRCODE,M', $x, $y, self::QR_SIZE_MM, self::QR_SIZE_MM, $style, 'N');
+        $pdf->write2DBarcode($url, 'QRCODE,M', $x, $y, $size, $size, $style, 'N');
     }
 
     private static function drawSignatureImage(
@@ -193,6 +252,7 @@ class PDFStamper
         float $maxHeight
     ): void {
         $imageInfo = getimagesize($signaturePath);
+
         if (!$imageInfo || $imageInfo[0] < 1 || $imageInfo[1] < 1) {
             throw new RuntimeException('Berkas gambar tanda tangan tidak valid.');
         }
@@ -209,21 +269,25 @@ class PDFStamper
     private static function coordinateToMillimeters(float $coordinate, float $pageDimension): float
     {
         if ($coordinate <= 1.0) {
-            return $coordinate * $pageDimension;
+            $millimeters = $coordinate * $pageDimension;
+        } else {
+            $millimeters = $coordinate * 25.4 / (96.0 * self::VIEWER_SCALE);
         }
 
-        return $coordinate * 25.4 / (96.0 * self::VIEWER_SCALE);
+        return $millimeters;
     }
 
     private static function verificationUrl(string $documentId): string
     {
-        $environmentPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+        $environmentPath = '.env';
         $environment = is_file($environmentPath) ? parse_ini_file($environmentPath) : [];
+
         if ($environment === false) {
             throw new RuntimeException('Konfigurasi aplikasi tidak dapat dibaca.');
         }
 
         $appUrl = trim((string) ($environment['APP_URL'] ?? ''));
+
         if ($appUrl === '') {
             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';

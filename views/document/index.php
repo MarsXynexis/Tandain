@@ -139,11 +139,22 @@ if ($filter !== 'all') {
                 <?php renderStatusBadge($doc['status']); ?>
               </td>
               <td class="text-right whitespace-nowrap">
-                <?php if ($doc['status'] === 'DRAFT' && $totalSigner > 0): ?>
-                  <a href="/Tandain/document/position/<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex gap-1.5 bg-brand text-white transition-colors hover:bg-brand-hover">
-                    <span class="material-symbols-outlined text-[15px]" aria-hidden="true">draw</span>
-                    <span>Atur Posisi TTE</span>
-                  </a>
+                <?php if ($doc['status'] === 'DRAFT'): ?>
+                  <div class="inline-flex items-center justify-end gap-1.5">
+                    <?php if ($totalSigner > 0): ?>
+                      <a href="/Tandain/document/position/<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex gap-1.5 bg-brand text-white transition-colors hover:bg-brand-hover">
+                        <span class="material-symbols-outlined text-[15px]" aria-hidden="true">draw</span>
+                        <span>Atur Posisi TTE</span>
+                      </a>
+                    <?php endif; ?>
+
+                    <form method="POST" action="/Tandain/document/delete/<?= rawurlencode($doc['id']); ?>" class="inline" data-confirm-form>
+                      <button type="submit" class="btn-sm inline-flex items-center gap-1 border border-outline-variant text-[#b91c1c] hover:bg-red-50 transition-colors" title="Hapus Draf">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">delete</span>
+                        <span>Hapus</span>
+                      </button>
+                    </form>
+                  </div>
                 <?php else: ?>
                   <a href="<?= $detailUrl; ?>" class="btn-sm inline-flex gap-1.5 border border-outline-variant font-medium text-on-surface transition-colors hover:bg-surface-container-low">
                     <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
@@ -210,5 +221,8 @@ if ($filter !== 'all') {
     </div>
 
   </main>
+
+<?php $confirmation = ['title' => 'Hapus Draf Dokumen', 'message' => 'Hapus draf dokumen ini secara permanen?', 'action' => 'Hapus Draf']; ?>
+<?php require 'views/layouts/confirm.php'; ?>
 
 <?php require_once 'views/layouts/footer.php'; ?>
