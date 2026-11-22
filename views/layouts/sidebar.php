@@ -118,10 +118,14 @@ $isAccountsActive = in_array($activeMenu, ['accounts', 'accounts_create', 'accou
     </div>
 
     <div class="border-t border-outline-variant pt-3 flex flex-col gap-1">
-      <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b91c1c] font-medium hover:bg-[#fee2e2] transition-colors" href="/Tandain/logout">
-        <span class="material-symbols-outlined text-[19px]">logout</span>
-        <span class="font-label-md text-label-md">Keluar</span>
-      </a>
+      <form method="POST" action="/Tandain/logout">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8'); ?>">
+
+        <button type="submit" class="flex w-full items-center gap-3 px-3 py-2 rounded-lg text-[#b91c1c] font-medium hover:bg-[#fee2e2] transition-colors text-left">
+          <span class="material-symbols-outlined text-[19px]">logout</span>
+          <span class="font-label-md text-label-md">Keluar</span>
+        </button>
+      </form>
     </div>
 
   </div>

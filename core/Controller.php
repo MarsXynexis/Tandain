@@ -49,4 +49,21 @@ class Controller
             'message' => $message,
         ];
     }
+
+    protected function getCsrfToken()
+    {
+        return csrfToken();
+    }
+
+    protected function verifyCsrfToken($token)
+    {
+        $sessionToken = $_SESSION['csrf_token'] ?? '';
+
+        $isValid = is_string($token)
+            && is_string($sessionToken)
+            && $sessionToken !== ''
+            && hash_equals($sessionToken, $token);
+
+        return $isValid;
+    }
 }

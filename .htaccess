@@ -1,6 +1,12 @@
-Options -Multiviews
+Options -Multiviews -Indexes
 RewriteEngine On
 RewriteBase /Tandain/
+
+RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(database|core|controllers|models|views|vendor)/ - [F,L]
+RewriteRule ^uploads/(documents|signed)/ - [F,L]
+RewriteRule ^(composer\.(json|lock)|AGENTS\.md|DESIGN\.md)$ - [F,L]
+
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.+)$ index.php?url=$1 [QSA,L]

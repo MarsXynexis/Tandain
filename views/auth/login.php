@@ -82,6 +82,8 @@
 
       <form action="/Tandain/login" class="space-y-3.5" method="POST">
 
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($data['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+
         <div class="space-y-1.5">
           <label class="block text-xs font-bold text-slate-700" for="username">Username</label>
           <div class="relative">

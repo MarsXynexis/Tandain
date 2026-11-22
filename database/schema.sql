@@ -47,6 +47,7 @@ CREATE TABLE users (
     full_name VARCHAR(150) NOT NULL,
     identity_number VARCHAR(50) NOT NULL UNIQUE,
     position VARCHAR(100),
+    study_program VARCHAR(100),
     email VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255),
     signature_image_path VARCHAR(255),
@@ -165,11 +166,11 @@ INSERT INTO roles (id, name, display_name, created_at) VALUES
 ('33333333-3333-4333-a333-333333333333', 'mahasiswa', 'Mahasiswa', NOW());
 
 -- 2.2 Seed Data: users (Password Hash = password)
-INSERT INTO users (id, role_id, full_name, identity_number, position, email, password_hash, signature_image_path, status, created_at, updated_at) VALUES
-('a0000000-0000-4000-a000-000000000001', '11111111-1111-4111-a111-111111111111', 'Staf Administrasi Akademik TIK', 'ADMIN001', 'Administrator Tata Usaha TIK', 'admin@pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_admin_tu.png', 'ACTIVE', NOW(), NOW()),
-('a0000000-0000-4000-a000-000000000002', '22222222-2222-4222-a222-222222222222', 'Ir. Iwan Sonjaya, M.T.', '196803121994031002', 'Dosen Senior & Pengarah Arsitektur', 'iwan.sonjaya@tik.pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_iwan_sonjaya.png', 'ACTIVE', NOW(), NOW()),
-('a0000000-0000-4000-a000-000000000003', '22222222-2222-4222-a222-222222222222', 'Anita Hidayati, S.Kom., M.Kom.', '197908242008122001', 'Dosen Senior & Koorprodi TI', 'anita.hidayati@tik.pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_anita_hidayati.png', 'ACTIVE', NOW(), NOW()),
-('a0000000-0000-4000-a000-000000000004', '33333333-3333-4333-a333-333333333333', 'M. Abdul Raziq Siddiq', '2507411052', 'Mahasiswa Prodi Teknik Informatika (TI-2C)', 'm.abdulraziqsiddiq.tik25@mhsw.pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_raziq_siddiq.png', 'ACTIVE', NOW(), NOW()),
-('a0000000-0000-4000-a000-000000000005', '33333333-3333-4333-a333-333333333333', 'Farhan Hariri', '2507411050', 'Mahasiswa / Ketua Himpunan Mahasiswa TIK', 'farhan.hariri.tik25@mhsw.pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_farhan_hariri.png', 'ACTIVE', NOW(), NOW());
+INSERT INTO users (id, role_id, full_name, identity_number, position, study_program, email, password_hash, signature_image_path, status, created_at, updated_at) VALUES
+('a0000000-0000-4000-a000-000000000001', '11111111-1111-4111-a111-111111111111', 'Staf Administrasi Akademik TIK', 'ADMIN001', NULL, NULL, 'admin@pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_admin_tu.png', 'ACTIVE', NOW(), NOW()),
+('a0000000-0000-4000-a000-000000000002', '22222222-2222-4222-a222-222222222222', 'Ir. Iwan Sonjaya, M.T.', '196803121994031002', NULL, 'D4 Teknik Multimedia Digital', 'iwan.sonjaya@pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_iwan_sonjaya.png', 'ACTIVE', NOW(), NOW()),
+('a0000000-0000-4000-a000-000000000003', '22222222-2222-4222-a222-222222222222', 'Dr. Anita Hidayati, S.Kom., M.Kom.', '197908242008122001', 'Ketua Jurusan Teknik Informatika dan Komputer', NULL, 'anita.hidayati@pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_anita_hidayati.png', 'ACTIVE', NOW(), NOW()),
+('a0000000-0000-4000-a000-000000000004', '33333333-3333-4333-a333-333333333333', 'M. Abdul Raziq Siddiq', '2507411052', NULL, 'D4 Teknik Informatika', 'raziq.siddiq.tik25@stu.pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_raziq_siddiq.png', 'ACTIVE', NOW(), NOW()),
+('a0000000-0000-4000-a000-000000000005', '33333333-3333-4333-a333-333333333333', 'Farhan Hariri', '2507411050', NULL, 'D4 Teknik Informatika', 'farhan.hariri.tik25@stu.pnj.ac.id', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'uploads/signatures/sign_farhan_hariri.png', 'ACTIVE', NOW(), NOW());
 
 COMMIT;

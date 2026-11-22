@@ -29,25 +29,38 @@
 
       <form method="POST" action="/Tandain/accounts/create" class="flex flex-col gap-5" autocomplete="off">
 
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($data['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+
         <div class="flex flex-col gap-1.5">
           <label for="full_name" class="font-label-md text-label-md font-semibold text-primary">Nama Lengkap &amp; Gelar <span class="text-[#b91c1c]">*</span></label>
-          <input type="text" id="full_name" name="full_name" required value="<?= htmlspecialchars($data['form']['full_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Contoh: Dr. Bambang W., M.T. atau Farhan Maulana" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
+          <input type="text" id="full_name" name="full_name" required maxlength="150" value="<?= htmlspecialchars($data['form']['full_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Contoh: Dr. Bambang W., M.T. atau Farhan Maulana" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label for="identity_number" class="font-label-md text-label-md font-semibold text-primary">Nomor Induk (NIM / NIP) <span class="text-[#b91c1c]">*</span></label>
-          <input type="text" id="identity_number" name="identity_number" required value="<?= htmlspecialchars($data['form']['identity_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Contoh: 198003152005011002 atau 2207411032" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
+          <input type="text" id="identity_number" name="identity_number" required maxlength="50" value="<?= htmlspecialchars($data['form']['identity_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Contoh: 198003152005011002 atau 2207411032" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label for="email" class="font-label-md text-label-md font-semibold text-primary">Alamat Email Resmi Kampus <span class="text-[#b91c1c]">*</span></label>
-          <input type="email" id="email" name="email" required value="<?= htmlspecialchars($data['form']['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="nama@pnj.ac.id atau nama@stu.pnj.ac.id" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
-          <p class="font-body-sm text-xs text-on-surface-variant">Gunakan domain kampus agar akun dapat masuk ke sistem.</p>
+          <label for="email" class="font-label-md text-label-md font-semibold text-primary">Alamat Email <span class="text-[#b91c1c]">*</span></label>
+          <input type="email" id="email" name="email" required maxlength="150" value="<?= htmlspecialchars($data['form']['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="nama@email.com" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
+          <p class="font-body-sm text-xs text-on-surface-variant">Masukkan alamat email aktif yang digunakan untuk masuk ke sistem.</p>
         </div>
 
-        <div class="flex flex-col gap-1.5">
-          <label for="position" class="font-label-md text-label-md font-semibold text-primary">Jabatan Struktural / Unit Kerja</label>
-          <input type="text" id="position" name="position" value="<?= htmlspecialchars($data['form']['position'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Contoh: Ketua Jurusan TIK, Dosen Pembimbing, atau Mahasiswa TI" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div class="flex flex-col gap-1.5">
+            <label for="position" class="font-label-md text-label-md font-semibold text-primary">Jabatan Struktural <span class="font-normal text-on-surface-variant">(Opsional)</span></label>
+            <input type="text" id="position" name="position" maxlength="100" value="<?= htmlspecialchars($data['form']['position'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Contoh: Ketua Jurusan TIK" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
+            <p class="font-body-sm text-xs text-on-surface-variant">Diisi untuk pejabat seperti Kajur atau Kaprodi.</p>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="study_program" class="font-label-md text-label-md font-semibold text-primary">Program Studi <span class="font-normal text-on-surface-variant">(Opsional)</span></label>
+            <input type="text" id="study_program" name="study_program" maxlength="100" value="<?= htmlspecialchars($data['form']['study_program'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Contoh: D4 Teknik Informatika" class="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant/60 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all">
+            <p class="font-body-sm text-xs text-on-surface-variant">Diisi untuk dosen pengajar atau mahasiswa.</p>
+          </div>
+
         </div>
 
         <div class="flex flex-col gap-1.5">

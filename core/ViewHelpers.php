@@ -60,3 +60,37 @@ function renderStatusBadge($status, $size = 'normal')
     </span>
     <?php
 }
+
+function formatUserAffiliation($position = null, $studyProgram = null, $fallback = '')
+{
+    $cleanPosition = trim((string) $position);
+    $cleanStudyProgram = trim((string) $studyProgram);
+    $cleanFallback = trim((string) $fallback);
+    $result = $cleanFallback;
+
+    if ($cleanPosition !== '' && $cleanStudyProgram !== '') {
+        $result = stripos($cleanPosition, $cleanStudyProgram) !== false
+            ? $cleanPosition
+            : $cleanPosition . ' • ' . $cleanStudyProgram;
+    } elseif ($cleanPosition !== '') {
+        $result = $cleanPosition;
+    } elseif ($cleanStudyProgram !== '') {
+        $result = $cleanStudyProgram;
+    }
+
+    return $result;
+}
+
+function isValidUuid($id)
+{
+    return is_string($id) && (bool) preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $id);
+}
+
+function csrfToken()
+{
+    if (!isset($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || $_SESSION['csrf_token'] === '') {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+}

@@ -39,11 +39,17 @@ class User
 
     public function findById($id)
     {
-        $this->db->query("SELECT users.*, roles.name AS role_name, roles.display_name AS role_display_name FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id WHERE users.id = :id LIMIT 1");
+        $user = false;
 
-        $this->db->bind('id', $id);
+        if (isValidUuid($id)) {
+            $this->db->query("SELECT users.*, roles.name AS role_name, roles.display_name AS role_display_name FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id WHERE users.id = :id LIMIT 1");
 
-        return $this->db->single();
+            $this->db->bind('id', $id);
+
+            $user = $this->db->single();
+        }
+
+        return $user;
     }
 
     public function findRoleByName($name)
@@ -64,14 +70,18 @@ class User
 
     public function create($data)
     {
-        $position = $data['position'] ?? null;
+        $rawPosition = trim((string) ($data['position'] ?? ''));
+        $position = $rawPosition !== '' ? $rawPosition : null;
+        $rawStudyProgram = trim((string) ($data['study_program'] ?? ''));
+        $studyProgram = $rawStudyProgram !== '' ? $rawStudyProgram : null;
 
-        $this->db->query("INSERT INTO " . $this->table . " (role_id, full_name, identity_number, position, email, password_hash) VALUES (:role_id, :full_name, :identity_number, :position, :email, :password_hash)");
+        $this->db->query("INSERT INTO " . $this->table . " (role_id, full_name, identity_number, position, study_program, email, password_hash) VALUES (:role_id, :full_name, :identity_number, :position, :study_program, :email, :password_hash)");
 
         $this->db->bind('role_id', $data['role_id']);
         $this->db->bind('full_name', $data['full_name']);
         $this->db->bind('identity_number', $data['identity_number']);
         $this->db->bind('position', $position);
+        $this->db->bind('study_program', $studyProgram);
         $this->db->bind('email', $data['email']);
         $this->db->bind('password_hash', $data['password_hash']);
 
@@ -80,17 +90,29 @@ class User
 
     public function updateUser($id, $data)
     {
-        $this->db->query("UPDATE " . $this->table . " SET full_name = :full_name, identity_number = :identity_number, position = :position, email = :email, role_id = :role_id, status = :status, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updated = false;
 
-        $this->db->bind('id', $id);
-        $this->db->bind('full_name', $data['full_name']);
-        $this->db->bind('identity_number', $data['identity_number']);
-        $this->db->bind('position', $data['position'] ?? null);
-        $this->db->bind('email', $data['email']);
-        $this->db->bind('role_id', $data['role_id']);
-        $this->db->bind('status', $data['status']);
+        if (isValidUuid($id) && isValidUuid($data['role_id'] ?? '')) {
+            $rawPosition = trim((string) ($data['position'] ?? ''));
+            $position = $rawPosition !== '' ? $rawPosition : null;
+            $rawStudyProgram = trim((string) ($data['study_program'] ?? ''));
+            $studyProgram = $rawStudyProgram !== '' ? $rawStudyProgram : null;
 
-        return $this->db->execute();
+            $this->db->query("UPDATE " . $this->table . " SET full_name = :full_name, identity_number = :identity_number, position = :position, study_program = :study_program, email = :email, role_id = :role_id, status = :status, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+
+            $this->db->bind('id', $id);
+            $this->db->bind('full_name', $data['full_name']);
+            $this->db->bind('identity_number', $data['identity_number']);
+            $this->db->bind('position', $position);
+            $this->db->bind('study_program', $studyProgram);
+            $this->db->bind('email', $data['email']);
+            $this->db->bind('role_id', $data['role_id']);
+            $this->db->bind('status', $data['status']);
+
+            $updated = $this->db->execute();
+        }
+
+        return $updated;
     }
 
     public function toggleStatus($id)
@@ -115,28 +137,41 @@ class User
 
     public function resetPassword($id, $passwordHash)
     {
-        $this->db->query("UPDATE " . $this->table . " SET password_hash = :password_hash, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $updated = false;
 
-        $this->db->bind('id', $id);
-        $this->db->bind('password_hash', $passwordHash);
+        if (isValidUuid($id)) {
+            $this->db->query("UPDATE " . $this->table . " SET password_hash = :password_hash, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
 
-        return $this->db->execute();
+            $this->db->bind('id', $id);
+            $this->db->bind('password_hash', $passwordHash);
+
+            $updated = $this->db->execute();
+        }
+
+        return $updated;
     }
 
     public function updateSignatureImagePath($id, $path)
     {
-        $this->db->query("UPDATE " . $this->table . " SET signature_image_path = :path, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
-        $this->db->bind('id', $id);
-        $this->db->bind('path', $path);
+        $updated = false;
 
-        return $this->db->execute();
+        if (isValidUuid($id)) {
+            $this->db->query("UPDATE " . $this->table . " SET signature_image_path = :path, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+
+            $this->db->bind('id', $id);
+            $this->db->bind('path', $path);
+
+            $updated = $this->db->execute();
+        }
+
+        return $updated;
     }
 
     public function getAssignableSignersByIds($ids)
     {
         $rows = [];
         $validIds = array_filter($ids, static function ($id) {
-            return is_string($id) && preg_match('/\A[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\z/i', $id);
+            return isValidUuid($id);
         });
 
         if ($ids && $validIds === $ids) {
@@ -170,7 +205,7 @@ class User
 
     public function searchSignerCandidates($keyword)
     {
-        $sql = "SELECT DISTINCT users.id, users.full_name, users.identity_number, users.email, users.position,
+        $sql = "SELECT DISTINCT users.id, users.full_name, users.identity_number, users.email, users.position, users.study_program,
                     roles.display_name AS role_display_name,
                     CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert
                 FROM " . $this->table . " AS users
@@ -182,7 +217,9 @@ class User
                     AND roles.name <> 'admin_tu'
                     AND (users.full_name ILIKE :name ESCAPE '!'
                          OR users.identity_number ILIKE :identity ESCAPE '!'
-                         OR users.email ILIKE :email ESCAPE '!')
+                         OR users.email ILIKE :email ESCAPE '!'
+                         OR COALESCE(users.position, '') ILIKE :position ESCAPE '!'
+                         OR COALESCE(users.study_program, '') ILIKE :study_program ESCAPE '!')
                 ORDER BY has_active_cert DESC, users.full_name ASC, users.id ASC LIMIT 8";
 
         $this->db->query($sql);
@@ -191,16 +228,18 @@ class User
         $this->db->bind('name', $pattern);
         $this->db->bind('identity', $pattern);
         $this->db->bind('email', $pattern);
+        $this->db->bind('position', $pattern);
+        $this->db->bind('study_program', $pattern);
 
         return $this->db->resultSet();
     }
 
     public function getFilteredUsers($search = '', $roleName = '', $status = '')
     {
-        $sql = "SELECT users.id, users.full_name, users.identity_number, users.email, users.position, users.status, users.created_at, roles.name AS role_name, roles.display_name AS role_display_name, CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id LEFT JOIN signer_certificates sc ON sc.user_id = users.id AND sc.status = 'ACTIVE' WHERE 1=1";
+        $sql = "SELECT users.id, users.full_name, users.identity_number, users.email, users.position, users.study_program, users.status, users.created_at, roles.name AS role_name, roles.display_name AS role_display_name, CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id LEFT JOIN signer_certificates sc ON sc.user_id = users.id AND sc.status = 'ACTIVE' WHERE 1=1";
 
         if (!empty($search)) {
-            $sql .= " AND (users.full_name ILIKE :search OR users.identity_number ILIKE :search OR users.email ILIKE :search)";
+            $sql .= " AND (users.full_name ILIKE :search OR users.identity_number ILIKE :search OR users.email ILIKE :search OR COALESCE(users.position, '') ILIKE :search OR COALESCE(users.study_program, '') ILIKE :search)";
         }
 
         if (!empty($roleName)) {

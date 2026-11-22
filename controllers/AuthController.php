@@ -13,20 +13,24 @@ class AuthController extends Controller
         $data['title'] = 'Login - Tandain';
         $data['error'] = '';
         $data['username'] = '';
+        $data['csrf_token'] = $this->getCsrfToken();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? $_POST['email'] ?? '');
             $password = trim($_POST['password'] ?? '');
+            $csrfToken = $_POST['csrf_token'] ?? '';
             $data['username'] = $username;
 
-            if (empty($username) || empty($password)) {
+            if (!$this->verifyCsrfToken($csrfToken)) {
+                $data['error'] = 'Sesi formulir tidak valid. Silakan muat ulang halaman.';
+            } elseif (empty($username) || empty($password)) {
                 $data['error'] = 'Data tidak boleh kosong.';
             } else {
                 $userModel = $this->model('User');
 
                 $user = $userModel->findByUsername($username);
 
-                if ($user && password_verify($password, $user['password_hash'])) {
+                if ($user && !empty($user['password_hash']) && password_verify($password, $user['password_hash'])) {
                     if ($user['status'] !== 'ACTIVE') {
                         $data['error'] = 'Akun Anda ditangguhkan. Hubungi Administrator Tata Usaha.';
                     } else {
@@ -41,19 +45,6 @@ class AuthController extends Controller
         }
 
         $this->view('auth/login', $data);
-    }
-
-    public function register()
-    {
-        if (isset($_SESSION['user'])) {
-            $redirectUrl = '/Tandain/dashboard';
-        } else {
-            $this->setFlash('info', 'Pendaftaran akun hanya dapat dilakukan oleh Administrator Tata Usaha.');
-
-            $redirectUrl = '/Tandain/login';
-        }
-
-        $this->redirect($redirectUrl);
     }
 
     public function google()
@@ -116,18 +107,24 @@ class AuthController extends Controller
 
     public function logout()
     {
-        unset($_SESSION['user']);
+        $redirectUrl = isset($_SESSION['user']) ? '/Tandain/dashboard' : '/Tandain/login';
 
-        session_destroy();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+            unset($_SESSION['user']);
 
-        $this->redirect('/Tandain/login');
+            session_destroy();
+
+            $redirectUrl = '/Tandain/login';
+        }
+
+        $this->redirect($redirectUrl);
     }
 
     private function establishUserSession($user)
     {
-        unset($_SESSION['captcha_code']);
-
         session_regenerate_id(true);
+
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
         $_SESSION['user'] = [
             'id' => $user['id'],
@@ -136,6 +133,7 @@ class AuthController extends Controller
             'role_id' => $user['role_id'],
             'role_name' => $user['role_name'],
             'position' => $user['position'],
+            'study_program' => $user['study_program'] ?? null,
             'role_display_name' => $user['role_display_name'],
         ];
     }

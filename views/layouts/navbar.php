@@ -108,7 +108,13 @@
         <?= htmlspecialchars($data['user']['full_name'] ?? 'Pengguna', ENT_QUOTES, 'UTF-8'); ?>
       </span>
 
-      <?php $userRoleLabel = $data['user']['position'] ?? $data['user']['role_display_name'] ?? ''; ?>
+      <?php
+      $userRoleLabel = formatUserAffiliation(
+        $data['user']['position'] ?? null,
+        $data['user']['study_program'] ?? null,
+        $data['user']['role_display_name'] ?? ''
+      );
+      ?>
       <?php if ($userRoleLabel !== ''): ?>
         <span class="truncate text-[11px] leading-4 text-on-surface-variant">
           <?= htmlspecialchars($userRoleLabel, ENT_QUOTES, 'UTF-8'); ?>

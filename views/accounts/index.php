@@ -71,8 +71,8 @@
             <tr class="bg-surface-container-low border-b border-outline-variant h-11 text-[13px] font-semibold uppercase tracking-wide text-on-surface-variant">
               <th scope="col">Nama Civitas</th>
               <th scope="col">Nomor Induk</th>
-              <th scope="col">Email Resmi</th>
-              <th scope="col">Jabatan / Unit</th>
+              <th scope="col">Alamat Email</th>
+              <th scope="col">Jabatan / Program Studi</th>
               <th scope="col">Peran</th>
               <th scope="col" class="text-center">Sertifikat TTE</th>
               <th scope="col" class="text-center">Status Akun</th>
@@ -116,7 +116,7 @@
                   </td>
 
                   <td class="text-on-surface-variant">
-                    <?= htmlspecialchars($u['position'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
+                    <?= htmlspecialchars(formatUserAffiliation($u['position'] ?? null, $u['study_program'] ?? null, '-'), ENT_QUOTES, 'UTF-8'); ?>
                   </td>
 
                   <td class="whitespace-nowrap">
@@ -148,6 +148,7 @@
                         </span>
                       <?php else: ?>
                         <form method="POST" action="/Tandain/accounts/toggle/<?= $u['id']; ?>" class="inline" data-confirm-form>
+                          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($data['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                           <button type="submit" class="btn-sm inline-flex items-center gap-1 border border-outline-variant <?= ($u['status'] === 'ACTIVE') ? 'text-[#b91c1c] hover:bg-red-50' : 'text-[#15803d] hover:bg-green-50'; ?> transition-colors" title="Ubah Status Akun">
                             <span class="material-symbols-outlined text-[16px]"><?= ($u['status'] === 'ACTIVE') ? 'block' : 'check_circle'; ?></span>
                             <span><?= ($u['status'] === 'ACTIVE') ? 'Tangguhkan' : 'Aktifkan'; ?></span>
