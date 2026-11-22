@@ -18,7 +18,20 @@
 
     <div class="flex flex-col lg:flex-row gap-4 items-start">
 
-      <div class="flex-1 min-w-0 w-full max-w-none lg:sticky lg:top-20 lg:h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+      <div id="pdf-scroll" class="flex-1 min-w-0 w-full max-w-none lg:sticky lg:top-20 lg:h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+        <div class="sticky top-0 z-20 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 shadow-sm">
+          <span class="text-sm font-semibold text-primary">Pratinjau Dokumen</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="pdf-zoom-out" type="button" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Perkecil PDF">
+              <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">zoom_out</span>
+            </button>
+            <input id="pdf-zoom-range" type="range" min="50" max="200" step="10" value="100" class="w-24 accent-brand" aria-label="Skala tampilan PDF">
+            <span id="pdf-zoom-value" class="min-w-[42px] text-center font-code-tabular text-[11px] text-on-surface-variant">100%</span>
+            <button id="pdf-zoom-in" type="button" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Perbesar PDF">
+              <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">zoom_in</span>
+            </button>
+          </div>
+        </div>
         <div class="text-sm text-on-surface-variant py-6 text-center" id="pdf-loading">Memuat dokumen...</div>
         <div id="pdf-container" class="space-y-4 overflow-x-auto pb-4"></div>
       </div>
@@ -116,16 +129,170 @@
       hideNotice(clientError);
     }
 
+    const ZOOM_MIN = 50;
+    const ZOOM_MAX = 200;
+    const ZOOM_STEP = 10;
+
+    const scroller = document.getElementById('pdf-scroll');
+    const zoomRange = document.getElementById('pdf-zoom-range');
+    const zoomValue = document.getElementById('pdf-zoom-value');
+    const zoomInButton = document.getElementById('pdf-zoom-in');
+    const zoomOutButton = document.getElementById('pdf-zoom-out');
+
+    const pageInfos = [];
+    let zoomPercent = 100;
+    let renderToken = 0;
+    let renderTimer = null;
+
+    function updateZoomControls() {
+      zoomRange.value = String(zoomPercent);
+      zoomValue.textContent = zoomPercent + '%';
+      zoomOutButton.disabled = zoomPercent <= ZOOM_MIN;
+      zoomInButton.disabled = zoomPercent >= ZOOM_MAX;
+    }
+
+    async function renderPageCanvas(info, token) {
+      const viewport = info.page.getViewport({
+        scale: info.fitScale * (zoomPercent / 100)
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.display = 'block';
+      canvas.style.width = info.wrap.style.width;
+      canvas.style.height = info.wrap.style.height;
+
+      if (info.renderTask) {
+        info.renderTask.cancel();
+      }
+
+      const task = info.page.render({
+        canvasContext: canvas.getContext('2d'),
+        viewport
+      });
+      info.renderTask = task;
+
+      try {
+        await task.promise;
+      } catch (error) {
+        return false;
+      }
+
+      if (info.canvas && token !== renderToken) {
+        return false;
+      }
+
+      if (info.canvas) {
+        info.canvas.replaceWith(canvas);
+      } else {
+        info.wrap.prepend(canvas);
+      }
+
+      info.canvas = canvas;
+      return true;
+    }
+
+    function resizePage(info) {
+      const wrap = info.wrap;
+      const oldW = wrap.clientWidth;
+      const oldH = wrap.clientHeight;
+      const scale = info.fitScale * (zoomPercent / 100);
+      const viewport = info.page.getViewport({ scale });
+
+      // Simpan posisi kotak TTE sebagai pecahan halaman agar tetap pas setelah ukuran berubah.
+      const placed = Array.from(wrap.querySelectorAll(':scope > [data-stamp-type]')).map((el) => ({
+        el,
+        fx: oldW > 0 ? el.offsetLeft / oldW : 0,
+        fy: oldH > 0 ? el.offsetTop / oldH : 0
+      }));
+
+      wrap.dataset.scale = String(scale);
+      wrap.style.width = viewport.width + 'px';
+      wrap.style.height = viewport.height + 'px';
+
+      if (info.canvas) {
+        // Kanvas lama diregangkan sementara, resolusi tajam dirender ulang setelah jeda singkat.
+        info.canvas.style.width = viewport.width + 'px';
+        info.canvas.style.height = viewport.height + 'px';
+      }
+
+      const newW = wrap.clientWidth;
+      const newH = wrap.clientHeight;
+
+      placed.forEach(({ el, fx, fy }) => {
+        const dims = getStampDimensionsPx(el.dataset.stampType || 'DUAL_DISPLAY', scale);
+        const w = Math.min(dims.width, newW);
+        const h = Math.min(dims.height, newH);
+
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+        el.style.left = Math.max(0, Math.min(fx * newW, newW - w)) + 'px';
+        el.style.top = Math.max(0, Math.min(fy * newH, newH - h)) + 'px';
+      });
+    }
+
+    async function rerenderAll() {
+      const token = renderToken;
+      const middle = window.innerHeight / 2;
+      const distance = (info) => {
+        const r = info.wrap.getBoundingClientRect();
+        return Math.abs(r.top + r.height / 2 - middle);
+      };
+      const ordered = pageInfos.slice().sort((a, b) => distance(a) - distance(b));
+
+      for (const info of ordered) {
+        if (token !== renderToken) {
+          return;
+        }
+
+        await renderPageCanvas(info, token);
+      }
+    }
+
+    function setPdfZoom(value) {
+      const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(Number(value) || 100)));
+
+      if (next === zoomPercent) {
+        updateZoomControls();
+        return;
+      }
+
+      const scrollRatio = scroller && scroller.scrollHeight > 0 ? scroller.scrollTop / scroller.scrollHeight : 0;
+
+      zoomPercent = next;
+      updateZoomControls();
+      pageInfos.forEach(resizePage);
+
+      if (scroller) {
+        scroller.scrollTop = scrollRatio * scroller.scrollHeight;
+      }
+
+      renderToken++;
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(rerenderAll, 150);
+    }
+
+    zoomRange.addEventListener('input', (event) => setPdfZoom(event.target.value));
+    zoomOutButton.addEventListener('click', () => setPdfZoom(zoomPercent - ZOOM_STEP));
+    zoomInButton.addEventListener('click', () => setPdfZoom(zoomPercent + ZOOM_STEP));
+    updateZoomControls();
+
     pdfjsLib.getDocument(PDF_URL).promise
       .then(async (pdf) => {
         loading.remove();
 
         for (let n = 1; n <= pdf.numPages; n++) {
           const page = await pdf.getPage(n);
-          const baseViewport = page.getViewport({ scale: 1 });
+          const baseViewport = page.getViewport({
+            scale: 1
+          });
           const availableWidth = container.clientWidth;
-          const scale = Math.max(0.1, Math.min(1.3, availableWidth / baseViewport.width));
-          const viewport = page.getViewport({ scale });
+          const fitScale = Math.max(0.1, Math.min(1.3, availableWidth / baseViewport.width));
+          const scale = fitScale * (zoomPercent / 100);
+          const viewport = page.getViewport({
+            scale
+          });
 
           const wrap = document.createElement('div');
           wrap.className = 'pdf-page relative mx-auto shadow border bg-white';
@@ -133,22 +300,24 @@
           wrap.dataset.scale = String(scale);
           wrap.style.width = viewport.width + 'px';
           wrap.style.height = viewport.height + 'px';
-
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          canvas.style.display = 'block';
-          wrap.appendChild(canvas);
           container.appendChild(wrap);
 
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const info = {
+            page,
+            wrap,
+            fitScale,
+            canvas: null,
+            renderTask: null
+          };
+          pageInfos.push(info);
+
+          await renderPageCanvas(info, renderToken);
         }
       })
       .catch(() => {
         loading.textContent = 'Gagal memuat dokumen. Pastikan berkas PDF valid.';
         loading.classList.add('text-error');
       });
-
     function mostVisiblePage() {
       const pages = Array.from(container.querySelectorAll('.pdf-page'));
       let best = null;
