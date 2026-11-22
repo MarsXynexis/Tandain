@@ -5,11 +5,11 @@ $status = $data['status'] ?? 'upload';
 $document = $data['document'] ?? null;
 $hasResult = in_array($status, ['success', 'expired'], true) && !empty($document);
 $signers = $hasResult && is_array($document['signers'] ?? null) ? $document['signers'] : [];
-$filePath = $hasResult ? (($document['final_file_path'] ?? '') ?: ($document['original_file_path'] ?? '')) : '';
+$filePath = $hasResult ? ($document['final_file_path'] ?? '') : '';
 $fileUrl = ($hasResult && $filePath !== '' && !empty($document['id'])) ? '/Tandain/verification/file/' . rawurlencode($document['id']) : '';
 $fileHash = $data['file_hash'] ?? '';
 $hasFileHash = preg_match('/\A[0-9a-f]{64}\z/i', $fileHash) === 1;
-$hashLabel = $hasFileHash && $document && !empty($document['final_sha256_hash']) ? 'Final SHA-256 (signed)' : 'Inital SHA-256 (unsigned)';
+$hashLabel = $hasResult ? 'Hash SHA-256 (Dokumen Final Bertanda Tangan)' : 'Hash SHA-256 (Berkas Diunggah)';
 $signerCertificates = array_filter($signers, static fn ($signer) => !empty($signer['certificate_serial']));
 
 require_once 'views/layouts/header.php';
@@ -98,6 +98,10 @@ require_once 'views/layouts/header.php';
               <div class="text-right">
                 <span class="font-headline-sm text-[13px] font-bold text-primary block"><?= htmlspecialchars($document['requester_name'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></span>
                 <span class="font-code-tabular text-[11px] text-slate-500 block"><?= htmlspecialchars(($document['requester_nim'] ?? '') ?: '-', ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php $requesterAffiliation = formatUserAffiliation($document['requester_position'] ?? null, $document['requester_study_program'] ?? null, $document['requester_role_display_name'] ?? ''); ?>
+                <?php if ($requesterAffiliation !== ''): ?>
+                  <span class="font-body-sm text-[11px] text-on-surface-variant block"><?= htmlspecialchars($requesterAffiliation, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
               </div>
             </div>
 
@@ -141,7 +145,7 @@ require_once 'views/layouts/header.php';
                       </div>
                       <div class="min-w-0">
                         <h3 class="font-headline-sm text-[13px] font-bold text-primary truncate"><?= htmlspecialchars($signer['full_name'] ?? 'Penandatangan', ENT_QUOTES, 'UTF-8'); ?></h3>
-                        <p class="font-body-sm text-[11px] text-on-surface-variant truncate"><?= htmlspecialchars($signer['position'] ?? 'Civitas Akademika', ENT_QUOTES, 'UTF-8'); ?></p>
+                        <p class="font-body-sm text-[11px] text-on-surface-variant truncate"><?= htmlspecialchars(formatUserAffiliation($signer['position'] ?? null, $signer['study_program'] ?? null, $signer['role_display_name'] ?? 'Civitas Akademika'), ENT_QUOTES, 'UTF-8'); ?></p>
                       </div>
                     </div>
                     <?php renderStatusBadge($signer['status']); ?>
@@ -195,7 +199,7 @@ require_once 'views/layouts/header.php';
           </div>
           <div class="flex-1 space-y-1">
             <h2 class="text-lg font-bold text-red-800 font-headline-sm">Dokumen Tidak Terdaftar</h2>
-            <p class="text-sm text-red-700 font-body-sm leading-relaxed">Dokumen tidak ditemukan pada daftar berkas terverifikasi Tandain.</p>
+            <p class="text-sm text-red-700 font-body-sm leading-relaxed">Berkas tidak cocok dengan dokumen final bertanda tangan yang terdaftar di Tandain, atau proses tanda tangan belum selesai.</p>
           </div>
         </div>
 
@@ -240,7 +244,7 @@ require_once 'views/layouts/header.php';
             </div>
 
             <h2 id="drop-zone-text" class="mb-1.5 max-w-full break-words font-headline-sm text-headline-sm font-semibold text-primary">Tarik PDF ke sini atau pilih file</h2>
-            <p id="drop-zone-subtext" class="font-body-sm text-body-sm text-on-surface-variant mb-6">Format PDF (Maks. 2 MB)</p>
+            <p id="drop-zone-subtext" class="font-body-sm text-body-sm text-on-surface-variant mb-6">Format PDF (Maks. 5 MB)</p>
 
             <input type="file" name="document_file" accept="application/pdf,.pdf" class="hidden" id="file-upload" aria-describedby="verification-error" <?= !empty($data['upload_error']) ? 'aria-invalid="true"' : ''; ?> required>
             <button type="button" id="browse-btn" class="btn-md inline-flex gap-2 border border-outline-variant bg-surface-container-lowest text-primary transition-colors hover:bg-surface-container-low">
@@ -269,8 +273,7 @@ require_once 'views/layouts/header.php';
       <dl class="mt-4 space-y-3 text-sm">
         <?php if ($hasFileHash): ?>
           <div>
-            <dt class="text-on-surface-variant">Hash SHA-256</dt>
-            <dd class="break-all font-mono"><?= htmlspecialchars($hashLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+            <dt class="text-on-surface-variant"><?= htmlspecialchars($hashLabel, ENT_QUOTES, 'UTF-8'); ?></dt>
             <dd class="break-all font-mono"><?= htmlspecialchars($fileHash, ENT_QUOTES, 'UTF-8'); ?></dd>
           </div>
         <?php endif; ?>
@@ -323,7 +326,7 @@ require_once 'views/layouts/header.php';
 
     const defaultText = dropZoneText.textContent;
     const defaultSubtext = dropZoneSubtext.textContent;
-    const MAX_SIZE = 2 * 1024 * 1024;
+    const MAX_SIZE = 5 * 1024 * 1024;
 
     function enableSubmit() {
       if (!submitBtn) return;
@@ -352,7 +355,7 @@ require_once 'views/layouts/header.php';
         showUploadError('Berkas harus berformat PDF.');
       } else if (file.size > MAX_SIZE) {
         resetDropZone();
-        showUploadError('Ukuran berkas maksimal 2 MB.');
+        showUploadError('Ukuran berkas maksimal 5 MB.');
       } else {
         dropZoneText.textContent = file.name;
         dropZoneSubtext.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';

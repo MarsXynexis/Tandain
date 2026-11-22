@@ -2,16 +2,14 @@
 
 class VerificationController extends Controller
 {
-    private const MAX_SIZE = 2097152;
+    private const MAX_SIZE = 5242880;
 
     public function index($documentId = null)
     {
-        $status = $_GET['status'] ?? 'upload';
-
         $data['title'] = 'Verifikasi Dokumen - Tandain';
         $data['active_menu'] = 'verification';
         $data['user'] = $_SESSION['user'] ?? null;
-        $data['status'] = $status;
+        $data['status'] = 'upload';
         $data['document'] = null;
         $data['file_name'] = '';
         $data['file_size'] = 0;
@@ -21,7 +19,7 @@ class VerificationController extends Controller
         if ($documentId !== null) {
             $documentId = trim((string) $documentId);
 
-            if ($documentId === '' || !preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $documentId)) {
+            if (!isValidUuid($documentId)) {
                 $data['status'] = 'error';
                 $data['file_name'] = 'ID QR Dokumen Tidak Valid';
             } else {
@@ -29,23 +27,18 @@ class VerificationController extends Controller
                 $document = $documentModel->verifyDocument($documentId);
 
                 if ($document && $this->isCompletedWithAllSignatures($document)) {
-                    if (empty($document['final_sha256_hash'])) {
-                        $data['status']     = 'error';
-                        $data['file_name']  = 'Dokumen sudah selesai tapi hash final tidak tersedia.';
-                        $data['file_hash']  = '-';
-                    } else {
-                        $isExpired = false;
+                    $isExpired = false;
 
-                        if (!empty($document['expires_at'])) {
-                            $isExpired = (strtotime($document['expires_at']) < time());
-                        }
-
-                        $data['status'] = $isExpired ? 'expired' : 'success';
-                        $data['document'] = $document;
-                        $data['is_expired'] = $isExpired;
-                        $data['file_hash'] = !empty($document['final_sha256_hash']) ? $document['final_sha256_hash'] : ($document['final_sha256_hash'] ?? '');
-                        $data['file_name'] = basename($document['final_file_path'] ?: ($document['original_file_path'] ?? ''));
+                    if (!empty($document['expires_at'])) {
+                        $expiryTimestamp = strtotime($document['expires_at']);
+                        $isExpired = $expiryTimestamp !== false && date('Y-m-d', $expiryTimestamp) < date('Y-m-d');
                     }
+
+                    $data['status'] = $isExpired ? 'expired' : 'success';
+                    $data['document'] = $document;
+                    $data['is_expired'] = $isExpired;
+                    $data['file_hash'] = (string) $document['final_sha256_hash'];
+                    $data['file_name'] = basename((string) $document['final_file_path']);
                 } else {
                     $data['status'] = 'error';
                     $data['file_name'] = 'Dokumen ID: ' . $documentId;
@@ -77,7 +70,7 @@ class VerificationController extends Controller
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $uploadStatus === UPLOAD_ERR_NO_FILE) {
             $data['upload_error'] = 'Pilih berkas PDF terlebih dahulu.';
         } elseif (in_array($uploadStatus, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || $fileSize > self::MAX_SIZE) {
-            $data['upload_error'] = 'Ukuran berkas maksimal 2 MB.';
+            $data['upload_error'] = 'Ukuran berkas maksimal 5 MB.';
         } elseif ($uploadStatus !== UPLOAD_ERR_OK || !is_string($tmpPath) || !is_uploaded_file($tmpPath)) {
             $data['upload_error'] = 'Berkas gagal diunggah. Coba lagi.';
         } elseif ((new finfo(FILEINFO_MIME_TYPE))->file($tmpPath) !== 'application/pdf') {
@@ -95,16 +88,7 @@ class VerificationController extends Controller
             } else {
                 $documentModel = $this->model('Document');
                 $document = $documentModel->verifyDocument($uploadedHash);
-
-                $expectedHash = '';
-
-                if ($document) {
-                    if (!empty($document['final_sha256_hash'])) {
-                        $expectedHash = (string) $document['final_sha256_hash'];
-                    } elseif (!empty($document['initial_sha256_hash'])) {
-                        $expectedHash = (string) $document['initial_sha256_hash'];
-                    }
-                }
+                $expectedHash = !empty($document['final_sha256_hash']) ? (string) $document['final_sha256_hash'] : '';
 
                 $isValid = $document
                     && $this->isCompletedWithAllSignatures($document)
@@ -115,7 +99,8 @@ class VerificationController extends Controller
                     $isExpired = false;
 
                     if (!empty($document['expires_at'])) {
-                        $isExpired = (strtotime($document['expires_at']) < time());
+                        $expiryTimestamp = strtotime($document['expires_at']);
+                        $isExpired = $expiryTimestamp !== false && date('Y-m-d', $expiryTimestamp) < date('Y-m-d');
                     }
 
                     $data['status'] = $isExpired ? 'expired' : 'success';
@@ -123,7 +108,6 @@ class VerificationController extends Controller
                     $data['is_expired'] = $isExpired;
                 } else {
                     $data['status'] = 'error';
-                    $data['upload_error'] = 'Hash dokumen tidak cocok atau dokumen belum ditandatangani';
                 }
             }
         }
@@ -137,13 +121,13 @@ class VerificationController extends Controller
         $document = null;
         $relativePath = '';
 
-        if ($documentId !== '' && preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $documentId)) {
+        if (isValidUuid($documentId)) {
             $documentModel = $this->model('Document');
             $candidate = $documentModel->verifyDocument($documentId);
 
             if ($candidate && $this->isCompletedWithAllSignatures($candidate)) {
                 $document = $candidate;
-                $relativePath = ltrim((string) ($document['final_file_path'] ?: ($document['original_file_path'] ?? '')), '/');
+                $relativePath = ltrim((string) $candidate['final_file_path'], '/');
             }
         }
 
@@ -173,7 +157,12 @@ class VerificationController extends Controller
     {
         $valid = false;
 
-        if (is_array($document) && ($document['status'] ?? '') === 'COMPLETED') {
+        if (
+            is_array($document)
+            && ($document['status'] ?? '') === 'COMPLETED'
+            && !empty($document['final_sha256_hash'])
+            && !empty($document['final_file_path'])
+        ) {
             $signers = is_array($document['signers'] ?? null) ? $document['signers'] : [];
 
             if (count($signers) > 0) {

@@ -18,7 +18,6 @@ class AuditController extends Controller
         $data['selected_action'] = $action;
         $data['logs'] = $auditModel->getFilteredLogs($search, $action, 100);
         $data['actions'] = $auditModel->getDistinctActions();
-        $data['stats'] = $auditModel->getAuditStatistics();
 
         $this->view('audit/index', $data);
     }

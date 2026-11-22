@@ -56,15 +56,6 @@ class DocumentAuditLog
         return $this->db->resultSet();
     }
 
-    public function getAuditStatistics()
-    {
-        $sql = "SELECT COUNT(*) AS total_logs, COUNT(CASE WHEN action = 'DOCUMENT_SIGNED' THEN 1 END) AS total_signed, COUNT(CASE WHEN action = 'TRIAGE_ASSIGNED' THEN 1 END) AS total_triage, COUNT(CASE WHEN action IN ('REJECTED', 'DOCUMENT_CANCELLED', 'CANCELLED') THEN 1 END) AS total_rejected_or_cancelled FROM " . $this->table;
-
-        $this->db->query($sql);
-
-        return $this->db->single();
-    }
-
     public function createLog($documentId, $userId, $action, $notes = '')
     {
         $this->db->query("INSERT INTO " . $this->table . " (document_id, user_id, action, notes) VALUES (:document_id, :user_id, :action, :notes)");

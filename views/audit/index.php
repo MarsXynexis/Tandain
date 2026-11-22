@@ -4,7 +4,10 @@
 
 <?php
 $actionLabels = [
+    'CREATED' => 'Dokumen Diajukan',
     'DOCUMENT_CREATED' => 'Dokumen Diajukan',
+    'DOCUMENT_CREATED_FROM_TEMPLATE' => 'Dibuat dari Template',
+    'POSITIONS_SET' => 'Posisi TTE Ditetapkan',
     'DOCUMENT_SIGNED' => 'Dokumen Ditandatangani',
     'TRIAGE_ASSIGNED' => 'Disposisi Tata Usaha',
     'REJECTED' => 'Pengajuan Ditolak',
@@ -13,7 +16,10 @@ $actionLabels = [
 ];
 
 $badgeClasses = [
+    'CREATED' => 'bg-[#e8e7ff] text-[#5145d8] border-[#c7c5ff]',
     'DOCUMENT_CREATED' => 'bg-[#e8e7ff] text-[#5145d8] border-[#c7c5ff]',
+    'DOCUMENT_CREATED_FROM_TEMPLATE' => 'bg-[#ede9fe] text-[#6d28d9] border-[#ddd6fe]',
+    'POSITIONS_SET' => 'bg-[#e0f2fe] text-[#0369a1] border-[#bae6fd]',
     'DOCUMENT_SIGNED' => 'bg-[#dcfce7] text-[#15803d] border-[#bbf7d0]',
     'TRIAGE_ASSIGNED' => 'bg-[#dceafe] text-[#1d4ed8] border-[#bfdbfe]',
     'REJECTED' => 'bg-[#fee2e2] text-[#b91c1c] border-[#fecaca]',
@@ -161,6 +167,9 @@ $badgeClasses = [
       <div class="table-footer bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
         <span class="text-xs text-on-surface-variant">
           Menampilkan <strong class="text-primary font-semibold"><?= count($data['logs']); ?></strong> peristiwa log audit
+          <?php if (count($data['logs']) >= 100): ?>
+            (menampilkan 100 peristiwa terbaru)
+          <?php endif; ?>
         </span>
       </div>
 
