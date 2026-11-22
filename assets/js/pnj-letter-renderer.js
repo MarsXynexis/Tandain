@@ -130,9 +130,15 @@
     } else if (key === 'nomor_induk' || key === 'nim' || key === 'nip' || key === 'nik') {
       value = pickFirstValue(map, ['nomor_induk', 'nim', 'nip', 'nik', 'identity_number']);
     } else if (key === 'program_studi') {
-      value = pickFirstValue(map, ['program_studi', 'prodi', 'position']);
+      value = pickFirstValue(map, ['program_studi', 'study_program', 'prodi']);
+    } else if (key === 'study_program') {
+      value = pickFirstValue(map, ['study_program', 'program_studi', 'prodi']);
+    } else if (key === 'prodi') {
+      value = pickFirstValue(map, ['prodi', 'program_studi', 'study_program']);
     } else if (key === 'jabatan') {
       value = pickFirstValue(map, ['jabatan', 'position']);
+    } else if (key === 'position') {
+      value = pickFirstValue(map, ['position', 'jabatan']);
     } else if (key === 'email') {
       value = pickFirstValue(map, ['email']);
     } else if (key === 'nomor_surat') {

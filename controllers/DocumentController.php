@@ -83,6 +83,8 @@ class DocumentController extends Controller
         } elseif ($submissionMode === 'upload') {
             if ($title === '') {
                 $errorMessage = 'Judul dokumen wajib diisi.';
+            } elseif (mb_strlen($title) > 255) {
+                $errorMessage = 'Judul dokumen maksimal terdiri dari 255 karakter.';
             }
         } else {
             $templateModel = $this->model('DocumentTemplate');
@@ -105,6 +107,8 @@ class DocumentController extends Controller
 
                     $autoTitle = $userFullName !== '' ? $template['title'] . ' - ' . $userFullName : $template['title'];
                     $finalTitle = mb_substr($autoTitle, 0, 255);
+                } elseif (mb_strlen($finalTitle) > 255) {
+                    $errorMessage = 'Judul dokumen maksimal terdiri dari 255 karakter.';
                 }
             }
         }
@@ -307,6 +311,8 @@ class DocumentController extends Controller
 
                 if ($magicBytes !== '%PDF-') {
                     $errorMessage = 'Berkas harus berformat PDF yang valid.';
+                } else {
+                    $errorMessage = PDFStamper::validateSourcePdf($file['tmp_name']);
                 }
             }
         }
@@ -381,7 +387,11 @@ class DocumentController extends Controller
         if ($doc) {
             if ($version === 'original') {
                 $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
-            } elseif (($version === 'signed' || $doc['status'] === 'COMPLETED') && !empty($doc['final_file_path'])) {
+            } elseif ($version === 'signed') {
+                if ($doc['status'] === 'COMPLETED' && !empty($doc['final_file_path'])) {
+                    $relativePath = ltrim((string) $doc['final_file_path'], '/');
+                }
+            } elseif (!empty($doc['final_file_path'])) {
                 $relativePath = ltrim((string) $doc['final_file_path'], '/');
             } else {
                 $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
@@ -456,17 +466,21 @@ class DocumentController extends Controller
             } elseif (!$documentModel->updateSignerPositions($doc['id'], $positions, $isSequential, $userId, 'DRAFT')) {
                 $this->setFlash('error', 'Gagal menyimpan posisi tanda tangan.');
             } else {
-                $currentTurnSigner = null;
+                $isUserCurrentTurn = false;
 
                 foreach ($documentSignerModel->getSignerByDocumentId($doc['id']) as $signer) {
-                    if (($signer['status'] ?? '') === 'CURRENT_TURN') {
-                        $currentTurnSigner = $signer;
+                    if (
+                        ($signer['status'] ?? '') === 'CURRENT_TURN'
+                        && (string) ($signer['signer_id'] ?? '') === (string) $userId
+                    ) {
+                        $isUserCurrentTurn = true;
                         break;
                     }
                 }
 
-                if ($currentTurnSigner && (string) ($currentTurnSigner['signer_id'] ?? '') === (string) $userId) {
+                if ($isUserCurrentTurn) {
                     $redirectUrl = '/Tandain/inbox/detail?document_id=' . rawurlencode((string) $doc['id']);
+
                     $this->setFlash('success', 'Silakan tandatangani Dokumen Anda.');
                 } else {
                     $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');

@@ -92,6 +92,10 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
             <p class="block font-label-md text-label-md text-primary font-semibold mb-1">Pemohon</p>
             <p class="font-body-md text-body-md text-on-surface font-medium"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></p>
             <p class="font-code-tabular text-body-sm text-on-surface-variant"><?= htmlspecialchars($document['requester_nim'], ENT_QUOTES, 'UTF-8'); ?></p>
+            <?php $requesterAffiliation = formatUserAffiliation($document['requester_position'] ?? null, $document['requester_study_program'] ?? null, $document['requester_role_display_name'] ?? ''); ?>
+            <?php if ($requesterAffiliation !== ''): ?>
+              <p class="font-body-sm text-xs text-on-surface-variant mt-0.5"><?= htmlspecialchars($requesterAffiliation, ENT_QUOTES, 'UTF-8'); ?></p>
+            <?php endif; ?>
           </div>
 
           <div>
@@ -233,7 +237,7 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
                       <p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
                         <?= htmlspecialchars($signer['signer_email'], ENT_QUOTES, 'UTF-8'); ?> &bull; <span class="font-code-tabular"><?= htmlspecialchars($signer['signer_nim_nip'], ENT_QUOTES, 'UTF-8'); ?></span>
                       </p>
-                      <p class="text-[11px] text-on-surface-variant mt-0.5"><?= htmlspecialchars($signer['signer_position'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
+                      <p class="text-[11px] text-on-surface-variant mt-0.5"><?= htmlspecialchars(formatUserAffiliation($signer['signer_position'] ?? null, $signer['signer_study_program'] ?? null, $signer['signer_role_display_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
                     </div>
                   </div>
 
@@ -340,6 +344,9 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
           'name' => $signer['signer_name'],
           'email' => $signer['signer_email'],
           'identity' => $signer['signer_nim_nip'],
+          'position' => $signer['signer_position'] ?? '',
+          'study_program' => $signer['signer_study_program'] ?? '',
+          'role_display_name' => $signer['signer_role_display_name'] ?? '',
       ];
   }
   ?>
@@ -373,7 +380,15 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
     setupSignerPicker(btnShowAddSigner, {
       signerIds: () => Array.from(signersList.querySelectorAll('input[name="signer_ids[]"]'), (input) => input.value),
       onSelect: (user) => {
-        const person = { id: user.id, name: user.full_name, email: user.email, identity: user.identity_number };
+        const person = {
+          id: user.id,
+          name: user.full_name,
+          email: user.email,
+          identity: user.identity_number,
+          position: user.position || '',
+          study_program: user.study_program || '',
+          role_display_name: user.role_display_name || ''
+        };
         signersList.append(createSignerRow(person, 'signer_ids[]'));
         hideDispositionError();
       },

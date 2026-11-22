@@ -6,10 +6,6 @@ class CertificateController extends Controller
     {
         $this->authCheck();
 
-        if (!isset($_SESSION['certificate_csrf_token']) || !is_string($_SESSION['certificate_csrf_token'])) {
-            $_SESSION['certificate_csrf_token'] = bin2hex(random_bytes(32));
-        }
-
         $certificateModel = $this->model('Certificate');
         $userId = $_SESSION['user']['id'];
 
@@ -17,7 +13,7 @@ class CertificateController extends Controller
         $data['title'] = 'Sertifikat Digital - Tandain';
         $data['active_menu'] = 'certificate';
         $data['user'] = $_SESSION['user'];
-        $data['csrf_token'] = $_SESSION['certificate_csrf_token'];
+        $data['csrf_token'] = $this->getCsrfToken();
 
         $this->view('certificate/index', $data);
     }
@@ -26,14 +22,10 @@ class CertificateController extends Controller
     {
         $this->authCheck();
 
-        if (!isset($_SESSION['certificate_csrf_token']) || !is_string($_SESSION['certificate_csrf_token'])) {
-            $_SESSION['certificate_csrf_token'] = bin2hex(random_bytes(32));
-        }
-
         $data['title'] = 'Buat Sertifikat Baru - Tandain';
         $data['active_menu'] = 'certificate_create';
         $data['user'] = $_SESSION['user'];
-        $data['csrf_token'] = $_SESSION['certificate_csrf_token'];
+        $data['csrf_token'] = $this->getCsrfToken();
 
         $this->view('certificate/create', $data);
     }
@@ -42,16 +34,12 @@ class CertificateController extends Controller
     {
         $this->authCheck();
 
-        if (!isset($_SESSION['signature_csrf_token']) || !is_string($_SESSION['signature_csrf_token'])) {
-            $_SESSION['signature_csrf_token'] = bin2hex(random_bytes(32));
-        }
-
         $userModel = $this->model('User');
 
         $data['title'] = 'Gambar Tanda Tangan - Tandain';
         $data['active_menu'] = 'signature_image';
         $data['user'] = $userModel->findById($_SESSION['user']['id']);
-        $data['csrf_token'] = $_SESSION['signature_csrf_token'];
+        $data['csrf_token'] = $this->getCsrfToken();
 
         $this->view('certificate/sign', $data);
     }
@@ -64,11 +52,10 @@ class CertificateController extends Controller
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $csrfToken = $_POST['csrf_token'] ?? '';
-            $sessionToken = $_SESSION['certificate_csrf_token'] ?? '';
             $passphrase = $_POST['passphrase'] ?? '';
             $passphraseConfirmation = $_POST['passphrase_confirmation'] ?? '';
 
-            if (!is_string($csrfToken) || !is_string($sessionToken) || $sessionToken === '' || !hash_equals($sessionToken, $csrfToken)) {
+            if (!$this->verifyCsrfToken($csrfToken)) {
                 $this->setFlash('error', 'Sesi formulir tidak valid. Silakan coba kembali.');
             } elseif (!is_string($passphrase) || !is_string($passphraseConfirmation) || strlen(trim($passphrase)) < 4) {
                 $this->setFlash('error', 'Passphrase minimal terdiri dari 4 karakter.');
@@ -101,7 +88,6 @@ class CertificateController extends Controller
                     );
 
                     if ($created) {
-                        unset($_SESSION['certificate_csrf_token']);
                         $this->setFlash('success', 'Sertifikat digital baru berhasil diterbitkan dan diaktifkan.');
                         $redirectUrl = '/Tandain/certificate';
                     } else {
@@ -121,15 +107,11 @@ class CertificateController extends Controller
         $certificateIdInput = $_POST['certificate_id'] ?? '';
         $certificateId = is_string($certificateIdInput) ? trim($certificateIdInput) : '';
         $csrfToken = $_POST['csrf_token'] ?? '';
-        $sessionToken = $_SESSION['certificate_csrf_token'] ?? '';
 
         if (
             $_SERVER['REQUEST_METHOD'] !== 'POST'
-            || !preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $certificateId)
-            || !is_string($csrfToken)
-            || !is_string($sessionToken)
-            || $sessionToken === ''
-            || !hash_equals($sessionToken, $csrfToken)
+            || !isValidUuid($certificateId)
+            || !$this->verifyCsrfToken($csrfToken)
         ) {
             $this->setFlash('error', 'Permintaan pencabutan sertifikat tidak valid.');
         } else {
@@ -155,21 +137,25 @@ class CertificateController extends Controller
 
     public function updateSignature()
     {
-        $this->authCheck();
         header('Content-Type: application/json; charset=utf-8');
 
         $statusCode = 200;
         $payload = [];
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        if (!isset($_SESSION['user'])) {
+            $statusCode = 401;
+            $payload = [
+                'message' => 'Sesi Anda telah berakhir. Silakan masuk kembali.',
+                'redirect' => '/Tandain/login',
+            ];
+        } elseif ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $statusCode = 405;
             $payload = ['message' => 'Metode permintaan tidak diizinkan.'];
         } else {
             $csrfToken = $_POST['csrf_token'] ?? '';
-            $sessionToken = $_SESSION['signature_csrf_token'] ?? '';
             $file = $_FILES['signature_file'] ?? null;
 
-            if (!is_string($csrfToken) || !is_string($sessionToken) || $sessionToken === '' || !hash_equals($sessionToken, $csrfToken)) {
+            if (!$this->verifyCsrfToken($csrfToken)) {
                 $statusCode = 403;
                 $payload = ['message' => 'Sesi tidak valid. Muat ulang halaman lalu coba lagi.'];
             } elseif (!$file || !isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
@@ -245,7 +231,7 @@ class CertificateController extends Controller
         $documentSignerModel = $this->model('DocumentSigner');
         $document = null;
 
-        if (is_string($documentId) && preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $documentId)) {
+        if (isValidUuid($documentId)) {
             $document = $documentSignerModel->getDetailDocumentById($documentId, $_SESSION['user']['id']);
         }
 

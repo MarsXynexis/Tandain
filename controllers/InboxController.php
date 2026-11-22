@@ -26,10 +26,6 @@ class InboxController extends Controller
         $data['active_menu'] = 'signed';
         $data['user'] = $_SESSION['user'];
 
-        if (!isset($_SESSION['inbox_stamp_csrf_token']) || !is_string($_SESSION['inbox_stamp_csrf_token'])) {
-            $_SESSION['inbox_stamp_csrf_token'] = bin2hex(random_bytes(32));
-        }
-
         $documentSignerModel = $this->model('DocumentSigner');
         $documentId = trim($_GET['document_id'] ?? '');
 
@@ -120,7 +116,7 @@ class InboxController extends Controller
             }
         }
 
-        $data['stamp_csrf_token'] = $_SESSION['inbox_stamp_csrf_token'];
+        $data['stamp_csrf_token'] = $this->getCsrfToken();
 
         $this->view('inbox/detail', $data);
     }
@@ -133,16 +129,12 @@ class InboxController extends Controller
         $documentId = is_string($documentIdInput) ? trim($documentIdInput) : '';
         $stampType = $_POST['stamp_type'] ?? '';
         $csrfToken = $_POST['csrf_token'] ?? '';
-        $sessionToken = $_SESSION['inbox_stamp_csrf_token'] ?? '';
 
         if (
             $_SERVER['REQUEST_METHOD'] !== 'POST'
             || $documentId === ''
             || !in_array($stampType, ['SIGNATURE_ONLY', 'DUAL_DISPLAY', 'QR_ONLY'], true)
-            || !is_string($csrfToken)
-            || !is_string($sessionToken)
-            || $sessionToken === ''
-            || !hash_equals($sessionToken, $csrfToken)
+            || !$this->verifyCsrfToken($csrfToken)
         ) {
             $this->setFlash('error', 'Pilihan tanda tangan tidak valid. Silakan coba lagi.');
             $this->redirect('/Tandain/inbox');
@@ -177,16 +169,12 @@ class InboxController extends Controller
         $documentId = is_string($documentIdInput) ? trim($documentIdInput) : '';
         $passphrase = $_POST['passphrase'] ?? '';
         $csrfToken = $_POST['csrf_token'] ?? '';
-        $sessionToken = $_SESSION['inbox_stamp_csrf_token'] ?? '';
 
         if (
             $_SERVER['REQUEST_METHOD'] !== 'POST'
             || $documentId === ''
             || !is_string($passphrase)
-            || !is_string($csrfToken)
-            || !is_string($sessionToken)
-            || $sessionToken === ''
-            || !hash_equals($sessionToken, $csrfToken)
+            || !$this->verifyCsrfToken($csrfToken)
         ) {
             $this->setFlash('error', 'Permintaan tidak valid. Silakan coba lagi.');
             $this->redirect('/Tandain/inbox');
@@ -197,7 +185,14 @@ class InboxController extends Controller
             $result = $documentSignerModel->agreeDocument($documentId, $_SESSION['user']['id'], $passphrase);
         } catch (Throwable $exception) {
             error_log('Inbox signature failed for document ' . $documentId . ': ' . $exception->getMessage());
-            $this->setFlash('error', 'Terjadi kesalahan saat menyetujui dokumen. Silakan coba lagi.');
+
+            $errorMessage = 'Terjadi kesalahan saat menyetujui dokumen. Silakan coba lagi.';
+
+            if ($exception instanceof \setasign\Fpdi\FpdiException) {
+                $errorMessage = PDFStamper::describePdfException($exception);
+            }
+
+            $this->setFlash('error', $errorMessage);
             $this->redirect('/Tandain/inbox/detail?document_id=' . rawurlencode($documentId));
         }
 
@@ -224,15 +219,11 @@ class InboxController extends Controller
         $reasonInput = $_POST['rejection_reason'] ?? '';
         $reason = is_string($reasonInput) ? trim($reasonInput) : '';
         $csrfToken = $_POST['csrf_token'] ?? '';
-        $sessionToken = $_SESSION['inbox_stamp_csrf_token'] ?? '';
 
         if (
             $_SERVER['REQUEST_METHOD'] !== 'POST'
             || $documentId === ''
-            || !is_string($csrfToken)
-            || !is_string($sessionToken)
-            || $sessionToken === ''
-            || !hash_equals($sessionToken, $csrfToken)
+            || !$this->verifyCsrfToken($csrfToken)
         ) {
             $this->setFlash('error', 'Permintaan tidak valid. Silakan coba lagi.');
             $this->redirect('/Tandain/inbox');

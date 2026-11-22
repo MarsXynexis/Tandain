@@ -259,7 +259,7 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
                     <button type="button" data-insert-tag="{{nomor_induk}}" title="NIM atau NIP pemohon" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{nomor_induk}}</button>
                     <button type="button" data-insert-tag="{{program_studi}}" title="Program studi pemohon" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{program_studi}}</button>
                     <button type="button" data-insert-tag="{{email}}" title="Email resmi kampus" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{email}}</button>
-                    <button type="button" data-insert-tag="{{jabatan}}" title="Jabatan atau status civitas" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{jabatan}}</button>
+                    <button type="button" data-insert-tag="{{jabatan}}" title="Jabatan struktural (Kajur/Kaprodi) atau peran civitas" class="btn-md inline-flex border border-outline-variant bg-white hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#004B87] text-primary font-code-tabular font-medium transition-colors shadow-sm">{{jabatan}}</button>
                   </div>
                 </div>
 
@@ -1596,9 +1596,9 @@ $initialSchemaJson = json_encode(array_values(is_array($schemaList) ? $schemaLis
         const values = {
           nama_lengkap: 'Farhan Hariri',
           nomor_induk: '2507411050',
-          program_studi: 'Teknik Informatika (TI-2C)',
-          email: 'farhan.hariri.tik25@mhsw.pnj.ac.id',
-          jabatan: 'Mahasiswa Teknik Informatika',
+          program_studi: 'D4 Teknik Informatika',
+          email: 'farhan.hariri.tik25@stu.pnj.ac.id',
+          jabatan: 'Mahasiswa',
           nomor_surat: '042/PL3/TIK/PNJ/2026',
           tanggal_surat: window.PnjLetterRenderer ? window.PnjLetterRenderer.formatIndonesianDate() : '15 November 2026'
         };

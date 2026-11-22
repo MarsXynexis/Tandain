@@ -61,7 +61,7 @@ class TriageController extends Controller
         $relativePath = '';
 
         if ($doc) {
-            if ($version !== 'original' && $doc['status'] === 'COMPLETED' && !empty($doc['final_file_path'])) {
+            if ($version !== 'original' && !empty($doc['final_file_path'])) {
                 $relativePath = ltrim((string) $doc['final_file_path'], '/');
             } else {
                 $relativePath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
@@ -83,19 +83,22 @@ class TriageController extends Controller
 
     public function searchSigners()
     {
-        $this->authCheck();
-
-        $keyword = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
-        $length = mb_strlen($keyword);
-        $users = [];
-
-        if ($length >= 2 && $length <= 100) {
-            $userModel = $this->model('User');
-            $users = $userModel->searchSignerCandidates($keyword);
-        }
-
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
+
+        $users = [];
+
+        if (!isset($_SESSION['user'])) {
+            http_response_code(401);
+        } else {
+            $keyword = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
+            $length = mb_strlen($keyword);
+
+            if ($length >= 2 && $length <= 100) {
+                $userModel = $this->model('User');
+                $users = $userModel->searchSignerCandidates($keyword);
+            }
+        }
 
         echo json_encode($users);
     }
@@ -142,6 +145,8 @@ class TriageController extends Controller
                     $this->setFlash('error', 'Batas kedaluwarsa dokumen tidak valid.');
                 } elseif (!empty($expiresAt) && $expiresAt < date('Y-m-d')) {
                     $this->setFlash('error', 'Batas kedaluwarsa dokumen tidak boleh berada di masa lalu.');
+                } elseif (mb_strlen($documentNumber) > 100) {
+                    $this->setFlash('error', 'Nomor naskah kedinasan maksimal terdiri dari 100 karakter.');
                 } elseif (!empty($documentNumber) && !empty($docModel->isDocumentNumberTaken($documentNumber, $documentId))) {
                     $this->setFlash('error', 'Nomor naskah kedinasan sudah digunakan oleh dokumen lain.');
                 } else {

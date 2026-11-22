@@ -586,15 +586,22 @@ if (is_string($storedSignaturePath) && preg_match('/\Auploads\/signatures\/[A-Za
               headers: { 'Accept': 'application/json' }
             });
 
-            const result = await response.json();
+            const contentType = response.headers.get('content-type') || '';
+            const result = contentType.includes('application/json') ? await response.json() : {};
 
-            if (!response.ok) {
+            if (response.status === 401) {
+              showFeedback(result.message || 'Sesi Anda telah berakhir. Silakan masuk kembali.', 'error');
+
+              if (result.redirect) {
+                window.location.href = result.redirect;
+              }
+            } else if (!response.ok) {
               throw new Error(result.message || 'Gagal menyimpan tanda tangan.');
+            } else {
+              setActiveSignature(result.image_url);
+              closeEditor();
+              showSuccessBanner(result.message || 'Tanda tangan berhasil disimpan.');
             }
-
-            setActiveSignature(result.image_url);
-            closeEditor();
-            showSuccessBanner(result.message || 'Tanda tangan berhasil disimpan.');
           } catch (error) {
             showFeedback(error.message || 'Terjadi kesalahan saat menyimpan tanda tangan.', 'error');
           } finally {

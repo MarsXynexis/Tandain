@@ -26,7 +26,11 @@ foreach ($templates ?? [] as $tpl) {
 
 $requesterName = $user['full_name'] ?? ($user['name'] ?? '-');
 $requesterIdentity = $user['identity_number'] ?? '-';
-$requesterPosition = $user['position'] ?? ($user['role_display_name'] ?? '-');
+$requesterPosition = formatUserAffiliation(
+    $user['position'] ?? null,
+    $user['study_program'] ?? null,
+    $user['role_display_name'] ?? '-'
+);
 $requesterEmail = $user['email'] ?? '-';
 ?>
 
@@ -324,6 +328,9 @@ $requesterEmail = $user['email'] ?? '-';
       'name' => $requesterName,
       'identity' => $user['identity_number'] ?? '',
       'email' => $user['email'] ?? '',
+      'position' => $user['position'] ?? '',
+      'study_program' => $user['study_program'] ?? '',
+      'role_display_name' => $user['role_display_name'] ?? '',
       'canSign' => $can_sign
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
@@ -502,8 +509,11 @@ $requesterEmail = $user['email'] ?? '-';
         nomor_surat: buildAutoDocumentNumber(selectedTemplate),
         nama_lengkap: ME.name,
         nomor_induk: ME.identity,
-        program_studi: ME.position,
-        jabatan: ME.position,
+        program_studi: ME.study_program || '',
+        study_program: ME.study_program || '',
+        prodi: ME.study_program || '',
+        jabatan: ME.position || ME.role_display_name || '',
+        position: ME.position || '',
         email: ME.email
       };
 
@@ -948,7 +958,15 @@ $requesterEmail = $user['email'] ?? '-';
 
     const closeSearch = setupSignerPicker(addSignerBtn, {
       signerIds,
-      onSelect: (person) => addSigner({ id: person.id, name: person.full_name, identity: person.identity_number, email: person.email }),
+      onSelect: (person) => addSigner({
+        id: person.id,
+        name: person.full_name,
+        identity: person.identity_number,
+        email: person.email,
+        position: person.position || '',
+        study_program: person.study_program || '',
+        role_display_name: person.role_display_name || ''
+      }),
       onVisibilityChange: renumberSigners
     });
 

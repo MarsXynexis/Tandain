@@ -12,41 +12,54 @@ class Document
 
     public function findById($id)
     {
-        $this->db->query("SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1");
+        $document = false;
 
-        $this->db->bind('id', $id);
+        if (isValidUuid($id)) {
+            $this->db->query("SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1");
 
-        return $this->db->single();
+            $this->db->bind('id', $id);
+
+            $document = $this->db->single();
+        }
+
+        return $document;
     }
 
     public function findByIdWithRequester($id)
     {
-        $sql = "SELECT d.*,
-                       u.full_name AS requester_name,
-                       u.identity_number AS requester_nim,
-                       u.identity_number AS requester_nim_nip,
-                       u.email AS requester_email,
-                       u.position AS requester_position,
-                       requester_role.name AS requester_role_name,
-                       requester_role.display_name AS requester_role_display_name,
-                       t.full_name AS triage_admin_name
-                FROM " . $this->table . " d
-                JOIN users u ON u.id = d.requester_id
-                LEFT JOIN roles requester_role ON requester_role.id = u.role_id
-                LEFT JOIN users t ON t.id = d.triage_handled_by
-                WHERE d.id = :id
-                LIMIT 1";
+        $document = false;
 
-        $this->db->query($sql);
+        if (isValidUuid($id)) {
+            $sql = "SELECT d.*,
+                           u.full_name AS requester_name,
+                           u.identity_number AS requester_nim,
+                           u.identity_number AS requester_nim_nip,
+                           u.email AS requester_email,
+                           u.position AS requester_position,
+                           u.study_program AS requester_study_program,
+                           requester_role.name AS requester_role_name,
+                           requester_role.display_name AS requester_role_display_name,
+                           t.full_name AS triage_admin_name
+                    FROM " . $this->table . " d
+                    JOIN users u ON u.id = d.requester_id
+                    LEFT JOIN roles requester_role ON requester_role.id = u.role_id
+                    LEFT JOIN users t ON t.id = d.triage_handled_by
+                    WHERE d.id = :id
+                    LIMIT 1";
 
-        $this->db->bind('id', $id);
+            $this->db->query($sql);
 
-        return $this->db->single();
+            $this->db->bind('id', $id);
+
+            $document = $this->db->single();
+        }
+
+        return $document;
     }
 
     public function getPendingTriageDocuments($status = 'pending', $search = '')
     {
-        $sql = "SELECT d.id, d.document_number, d.title, d.status, d.routing_type, d.original_file_path, d.created_at, u.full_name AS requester_name, u.identity_number AS requester_nim, u.email AS requester_email, u.position AS requester_position FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id WHERE ";
+        $sql = "SELECT d.id, d.document_number, d.title, d.status, d.routing_type, d.original_file_path, d.created_at, u.full_name AS requester_name, u.identity_number AS requester_nim, u.email AS requester_email, u.position AS requester_position, u.study_program AS requester_study_program, requester_role.display_name AS requester_role_display_name FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id LEFT JOIN roles requester_role ON requester_role.id = u.role_id WHERE ";
 
         if ($status === 'dispatched') {
             $sql .= "(d.status = 'IN_PROGRESS' AND d.triage_handled_by IS NOT NULL)";
@@ -401,63 +414,72 @@ class Document
 
     public function getDocumentByIdAndUser($id, $userId)
     {
-        if (!preg_match('/^[0-9a-f-]{36}$/i', $id)) {
-            return false;
+        $document = false;
+
+        if (isValidUuid($id) && isValidUuid($userId)) {
+            $sql = "SELECT d.*,
+                           req.full_name AS requester_name,
+                           req.identity_number AS requester_nim,
+                           req.identity_number AS requester_nim_nip,
+                           req.email AS requester_email,
+                           req.position AS requester_position,
+                           req.study_program AS requester_study_program,
+                           requester_role.name AS requester_role_name,
+                           requester_role.display_name AS requester_role_display_name
+                    FROM " . $this->table . " d
+                    JOIN users req ON req.id = d.requester_id
+                    LEFT JOIN roles requester_role ON requester_role.id = req.role_id
+                    WHERE d.id = :id
+                      AND d.requester_id = :user_id
+                    LIMIT 1";
+
+            $this->db->query($sql);
+            $this->db->bind('id', $id);
+            $this->db->bind('user_id', $userId);
+
+            $document = $this->db->single();
         }
 
-        $sql = "SELECT d.*,
-                       req.full_name AS requester_name,
-                       req.identity_number AS requester_nim,
-                       req.identity_number AS requester_nim_nip,
-                       req.email AS requester_email,
-                       req.position AS requester_position,
-                       requester_role.name AS requester_role_name,
-                       requester_role.display_name AS requester_role_display_name
-                FROM " . $this->table . " d
-                JOIN users req ON req.id = d.requester_id
-                LEFT JOIN roles requester_role ON requester_role.id = req.role_id
-                WHERE d.id = :id
-                  AND d.requester_id = :user_id
-                LIMIT 1";
-
-        $this->db->query($sql);
-        $this->db->bind('id', $id);
-        $this->db->bind('user_id', $userId);
-
-        return $this->db->single();
+        return $document;
     }
 
     public function getSignersByDocumentId($documentId)
     {
-        $sql = "SELECT u.full_name, u.email, u.position, s.signer_id,s.status, s.signed_at, s.rejection_reason, s.page_number 
-                FROM document_signers s 
-                JOIN users u ON u.id = s.signer_id 
-                WHERE s.document_id = :document_id 
-                ORDER BY s.signing_order ASC";
+        $signers = [];
 
-        $this->db->query($sql);
-        $this->db->bind('document_id', $documentId);
+        if (isValidUuid($documentId)) {
+            $sql = "SELECT u.full_name, u.email, u.position, u.study_program, r.display_name AS role_display_name, s.signer_id, s.status, s.signed_at, s.rejection_reason, s.page_number
+                    FROM document_signers s
+                    JOIN users u ON u.id = s.signer_id
+                    LEFT JOIN roles r ON r.id = u.role_id
+                    WHERE s.document_id = :document_id
+                    ORDER BY s.signing_order ASC";
 
-        return $this->db->resultSet();
+            $this->db->query($sql);
+            $this->db->bind('document_id', $documentId);
+
+            $signers = $this->db->resultSet();
+        }
+
+        return $signers;
     }
 
     public function verifyDocument($search)
     {
-
         $search = trim((string) $search);
         $result = false;
 
         if (!empty($search)) {
-            $isUuid = (bool) preg_match('/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i', $search);
+            $isUuid = isValidUuid($search);
 
-            $sql = "
-                SELECT d.*, u.full_name AS requester_name, u.identity_number AS requester_nim,
-                       u.email AS requester_email, u.position AS requester_position
-                FROM {$this->table} d
-                JOIN users u ON u.id = d.requester_id
-                WHERE d.status = 'COMPLETED'
-                    AND (d.final_sha256_hash = :search
-                        OR d.document_number = :search";
+            $sql = "SELECT d.*, u.full_name AS requester_name, u.identity_number AS requester_nim, u.email AS requester_email, u.position AS requester_position, u.study_program AS requester_study_program, r.display_name AS requester_role_display_name
+                    FROM " . $this->table . " d
+                    JOIN users u ON u.id = d.requester_id
+                    LEFT JOIN roles r ON r.id = u.role_id
+                    WHERE d.status = 'COMPLETED'
+                      AND d.final_sha256_hash IS NOT NULL
+                      AND d.final_sha256_hash <> ''
+                      AND (d.final_sha256_hash = :search";
 
             if ($isUuid) {
                 $sql .= " OR d.id = :search_uuid";
@@ -474,52 +496,24 @@ class Document
 
             $document = $this->db->single();
 
-            if (!$document) {
-                $sql = "
-                    SELECT d.*, u.full_name AS requester_name, u.identity_number AS requester_nim,
-                           u.email AS requester_email, u.position AS requester_position
-                    FROM {$this->table} d
-                    JOIN users u ON u.id = d.requester_id
-                    WHERE (d.final_sha256_hash = :search
-                           OR d.initial_sha256_hash = :search
-                           OR d.document_number = :search";
-
-                if ($isUuid) {
-                    $sql .= " OR d.id = :search_uuid";
-                }
-                $sql .= ") LIMIT 1";
-
-                $this->db->query($sql);
-                $this->db->bind('search', $search);
-                if ($isUuid) {
-                    $this->db->bind('search_uuid', $search);
-                }
-                $document = $this->db->single();
-            }
             if ($document) {
-                if ($document['status'] === 'COMPLETED' && empty($document['final_sha256_hash'])) {
-                    $document = false;
-                } else {
-                    $signersSql = "
-                        SELECT s.*, u.full_name, U.identity_number, u.position,
-                               c.certificate_serial, c.status AS cert_status, 
-                               c.valid_from, c.valid_until
-                        FROM document_signers s
-                        JOIN users u ON u.id = s.signer_id
-                        LEFT JOIN signer_certificates c ON c.id = s.certificate_id
-                        WHERE s.document_id = :doc_id
-                        ORDER BY s.signing_order ASC";
+                $signersSql = "SELECT s.*, u.full_name, u.identity_number, u.position, u.study_program, r.display_name AS role_display_name, c.certificate_serial, c.status AS cert_status, c.valid_from, c.valid_until
+                               FROM document_signers s
+                               JOIN users u ON u.id = s.signer_id
+                               LEFT JOIN roles r ON r.id = u.role_id
+                               LEFT JOIN signer_certificates c ON c.id = s.certificate_id
+                               WHERE s.document_id = :doc_id
+                               ORDER BY s.signing_order ASC";
 
-                    $this->db->query($signersSql);
-                    $this->db->bind('doc_id', $document['id']);
-                    $document['signers'] = $this->db->resultSet();
+                $this->db->query($signersSql);
+                $this->db->bind('doc_id', $document['id']);
 
-                    $result = $document;
-                }
+                $document['signers'] = $this->db->resultSet();
+                $result = $document;
             }
         }
-        return $result;
 
+        return $result;
     }
 
     public function createDocument($data, $signerIds = [])
@@ -583,19 +577,25 @@ class Document
 
     public function getSignersForPositioning($documentId)
     {
-        $sql = "SELECT ds.signer_id AS id, ds.signing_order, ds.stamp_type, u.full_name AS name FROM document_signers ds JOIN users u ON u.id = ds.signer_id WHERE ds.document_id = :doc_id ORDER BY ds.signing_order ASC";
+        $signers = [];
 
-        $this->db->query($sql);
-        $this->db->bind('doc_id', $documentId);
+        if (isValidUuid($documentId)) {
+            $sql = "SELECT ds.signer_id AS id, ds.signing_order, ds.stamp_type, u.full_name AS name FROM document_signers ds JOIN users u ON u.id = ds.signer_id WHERE ds.document_id = :doc_id ORDER BY ds.signing_order ASC";
 
-        return $this->db->resultSet();
+            $this->db->query($sql);
+            $this->db->bind('doc_id', $documentId);
+
+            $signers = $this->db->resultSet();
+        }
+
+        return $signers;
     }
 
     public function deleteDraft($id, $userId)
     {
         $deletedFilePath = false;
 
-        if (preg_match('/\A[0-9a-f-]{36}\z/i', (string) $id)) {
+        if (isValidUuid($id) && isValidUuid($userId)) {
             try {
                 $this->db->beginTransaction();
 

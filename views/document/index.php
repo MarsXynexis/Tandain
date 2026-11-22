@@ -149,7 +149,13 @@ if ($filter !== 'all') {
                         <span class="material-symbols-outlined text-[15px]" aria-hidden="true">draw</span>
                         <span>Atur Posisi TTE</span>
                       </a>
+                    <?php else: ?>
+                      <a href="<?= $detailUrl; ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-outline-variant font-medium text-on-surface transition-colors hover:bg-surface-container-low">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                        <span>Lihat Detail</span>
+                      </a>
                     <?php endif; ?>
+                  </div>
                 <?php else: ?>
                   <a href="<?= $detailUrl; ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-outline-variant font-medium text-on-surface transition-colors hover:bg-surface-container-low">
                     <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
@@ -216,8 +222,5 @@ if ($filter !== 'all') {
     </div>
 
   </main>
-
-<?php $confirmation = ['title' => 'Hapus Draf Dokumen', 'message' => 'Hapus draf dokumen ini secara permanen?', 'action' => 'Hapus Draf']; ?>
-<?php require 'views/layouts/confirm.php'; ?>
 
 <?php require_once 'views/layouts/footer.php'; ?>

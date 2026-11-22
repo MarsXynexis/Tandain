@@ -3,8 +3,20 @@ function createSignerRow(person, fieldName) {
     const order = document.getElementById('signer-order-control').content.firstElementChild.cloneNode(true);
     const input = row.querySelector('[data-signer-id]');
 
+    const pos = typeof person.position === 'string' ? person.position.trim() : '';
+    const prodi = typeof person.study_program === 'string' ? person.study_program.trim() : '';
+    let affiliation = person.role_display_name || '';
+
+    if (pos !== '' && prodi !== '') {
+        affiliation = pos.toLowerCase().includes(prodi.toLowerCase()) ? pos : pos + ' • ' + prodi;
+    } else if (pos !== '') {
+        affiliation = pos;
+    } else if (prodi !== '') {
+        affiliation = prodi;
+    }
+
     row.querySelector('[data-signer-name]').textContent = person.name;
-    row.querySelector('[data-signer-detail]').textContent = [person.email, person.identity ? 'NIP/NIM ' + person.identity : ''].filter(Boolean).join(' • ');
+    row.querySelector('[data-signer-detail]').textContent = [affiliation, person.email, person.identity ? 'NIP/NIM ' + person.identity : ''].filter(Boolean).join(' • ');
     order.querySelector('[data-signer-grip]').setAttribute('aria-label', 'Ubah urutan ' + person.name);
     row.querySelector('[data-signer-info]').prepend(order);
 

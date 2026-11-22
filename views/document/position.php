@@ -68,8 +68,8 @@
             <span>Simpan &amp; Ajukan</span>
             <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
           </button>
+        </form>
       </div>
-      </form>
     </div>
 
 

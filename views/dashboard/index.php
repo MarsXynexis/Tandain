@@ -170,7 +170,7 @@
                         <span>Review & TTD</span>
                       </a>
                     <?php elseif (($doc['status'] ?? null) === 'DRAFT'): ?>
-                      <a href="/Tandain/inbox/detail?document_id=<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-brand text-brand font-bold hover:bg-brand-hover hover:text-white transition-all shadow-sm active:scale-[0.98]">
+                      <a href="/Tandain/document/position/<?= rawurlencode($doc['id']); ?>" class="btn-sm inline-flex w-full items-center justify-center gap-1.5 border border-brand text-brand font-bold hover:bg-brand-hover hover:text-white transition-all shadow-sm active:scale-[0.98]">
                         <span class="material-symbols-outlined text-[16px]" aria-hidden="true">draw</span>
                         <span>Atur Posisi TTE</span>
                       </a>

@@ -58,9 +58,21 @@ function setupSignerPicker(addSignerBtn, { signerIds, onSelect, onVisibilityChan
       name.className = 'block break-words text-sm font-semibold text-primary';
       name.textContent = person.full_name;
 
+      const pos = typeof person.position === 'string' ? person.position.trim() : '';
+      const prodi = typeof person.study_program === 'string' ? person.study_program.trim() : '';
+      let affiliation = person.role_display_name || '';
+
+      if (pos !== '' && prodi !== '') {
+        affiliation = pos.toLowerCase().includes(prodi.toLowerCase()) ? pos : pos + ' • ' + prodi;
+      } else if (pos !== '') {
+        affiliation = pos;
+      } else if (prodi !== '') {
+        affiliation = prodi;
+      }
+
       const detail = document.createElement('span');
       detail.className = 'mt-0.5 block break-words text-xs text-on-surface-variant';
-      detail.textContent = [person.email, person.identity_number ? 'NIP/NIM ' + person.identity_number : ''].filter(Boolean).join(' • ');
+      detail.textContent = [affiliation, person.email, person.identity_number ? 'NIP/NIM ' + person.identity_number : ''].filter(Boolean).join(' • ');
 
       info.append(name, detail);
       const badge = document.getElementById(hasCertificate ? 'active-signer-certificate' : 'inactive-signer-certificate');

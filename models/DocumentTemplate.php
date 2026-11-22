@@ -50,7 +50,7 @@ class DocumentTemplate
     {
         $template = false;
 
-        if ($this->isValidUuid($id)) {
+        if (isValidUuid($id)) {
             $sql = "SELECT t.*, u.full_name AS creator_name FROM " . $this->table . " t LEFT JOIN users u ON u.id = t.created_by WHERE t.id = :id LIMIT 1";
 
             $this->db->query($sql);
@@ -86,7 +86,7 @@ class DocumentTemplate
 
         if ($cleanCode !== '') {
             $sql = "SELECT id FROM " . $this->table . " WHERE UPPER(template_code) = :template_code";
-            $hasExclude = !empty($excludeId) && $this->isValidUuid($excludeId);
+            $hasExclude = !empty($excludeId) && isValidUuid($excludeId);
 
             if ($hasExclude) {
                 $sql .= " AND id <> :exclude_id";
@@ -137,7 +137,7 @@ class DocumentTemplate
     {
         $updated = false;
 
-        if ($this->isValidUuid($id)) {
+        if (isValidUuid($id)) {
             $schemaJson = is_string($data['placeholders_schema'] ?? null)
                 ? $data['placeholders_schema']
                 : json_encode($data['placeholders_schema'] ?? [], JSON_UNESCAPED_UNICODE);
@@ -184,7 +184,7 @@ class DocumentTemplate
     {
         $deleted = false;
 
-        if ($this->isValidUuid($id)) {
+        if (isValidUuid($id)) {
             $this->db->query("DELETE FROM " . $this->table . " WHERE id = :id");
             $this->db->bind('id', $id);
 
@@ -202,10 +202,5 @@ class DocumentTemplate
         $this->db->query($sql);
 
         return $this->db->single();
-    }
-
-    private function isValidUuid($id)
-    {
-        return is_string($id) && (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id);
     }
 }

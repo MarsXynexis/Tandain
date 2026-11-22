@@ -34,6 +34,10 @@ class TemplateController extends Controller
 
         unset($_SESSION['template_old']);
 
+        if (is_array($old) && $this->hasUnsafeHtml((string) ($old['html_content'] ?? ''))) {
+            $old['html_content'] = '';
+        }
+
         $data['title'] = 'Buat Template Surat - Tandain';
         $data['active_menu'] = 'templates';
         $data['user'] = $_SESSION['user'];
@@ -105,7 +109,12 @@ class TemplateController extends Controller
                 $template['title'] = $old['title'];
                 $template['template_code'] = $old['template_code'];
                 $template['description'] = $old['description'];
-                $template['html_content'] = $old['html_content'];
+                $submittedHtml = (string) ($old['html_content'] ?? '');
+
+                if (!$this->hasUnsafeHtml($submittedHtml)) {
+                    $template['html_content'] = $submittedHtml;
+                }
+
                 $template['is_active'] = $old['is_active'];
                 $schemaFields = $old['schema_fields'];
             }
@@ -133,7 +142,7 @@ class TemplateController extends Controller
             if (empty($existing)) {
                 $this->setFlash('error', 'Template surat tidak ditemukan.');
             } else {
-                $parsed = $this->parseAndValidateSubmission($templateModel, $id);
+                $parsed = $this->parseAndValidateSubmission($templateModel, $id, (string) ($existing['html_content'] ?? ''));
 
                 if ($parsed['error'] !== '') {
                     $this->setFlash('error', $parsed['error']);
@@ -223,7 +232,7 @@ class TemplateController extends Controller
         $this->redirect($redirectUrl);
     }
 
-    private function parseAndValidateSubmission($templateModel, $excludeId = null)
+    private function parseAndValidateSubmission($templateModel, $excludeId = null, $fallbackHtml = '')
     {
         $title = trim((string) ($_POST['title'] ?? ''));
         $templateCode = strtoupper(trim((string) ($_POST['template_code'] ?? '')));
@@ -232,6 +241,7 @@ class TemplateController extends Controller
         $isActive = !empty($_POST['is_active']) && $_POST['is_active'] !== '0';
 
         $schemaResult = $this->parseSchemaFieldsFromPost();
+        $hasUnsafeHtml = $this->hasUnsafeHtml($htmlContent);
         $error = '';
 
         if ($title === '') {
@@ -248,8 +258,8 @@ class TemplateController extends Controller
             $error = 'Kode template "' . $templateCode . '" sudah digunakan.';
         } elseif ($htmlContent === '') {
             $error = 'Konten HTML surat wajib diisi.';
-        } elseif (preg_match('/<script\b/i', $htmlContent)) {
-            $error = 'Konten HTML surat tidak boleh mengandung tag script.';
+        } elseif ($hasUnsafeHtml) {
+            $error = 'Konten HTML surat mengandung tag atau atribut berbahaya yang tidak diizinkan.';
         } elseif (!preg_match('/\{\{kolom_ttd_[1-9][0-9]*\}\}/', $htmlContent)) {
             $error = 'Konten HTML surat wajib memuat minimal satu slot tanda tangan seperti {{kolom_ttd_1}} atau {{kolom_ttd_2}}.';
         } elseif ($schemaResult['error'] !== '') {
@@ -257,6 +267,7 @@ class TemplateController extends Controller
         }
 
         $schemaJson = json_encode($schemaResult['fields'], JSON_UNESCAPED_UNICODE);
+        $safeOldHtml = $hasUnsafeHtml ? (string) $fallbackHtml : $htmlContent;
 
         $result = [
             'error' => $error,
@@ -272,7 +283,7 @@ class TemplateController extends Controller
                 'template_code' => $templateCode,
                 'title' => $title,
                 'description' => $description,
-                'html_content' => $htmlContent,
+                'html_content' => $safeOldHtml,
                 'is_active' => $isActive,
                 'schema_fields' => $schemaResult['fields'],
             ],
@@ -359,5 +370,20 @@ class TemplateController extends Controller
         $collapsed = preg_replace('/_+/', '_', (string) $replaced);
 
         return trim((string) $collapsed, '_');
+    }
+
+    private function hasUnsafeHtml($htmlContent)
+    {
+        $unsafe = false;
+
+        if (preg_match('/<\s*(script|iframe|object|embed|applet|base|meta|link|form|svg|math)\b/i', $htmlContent)) {
+            $unsafe = true;
+        } elseif (preg_match('/<[^>]*(?:\s|\/)on[a-z]+\s*=/i', $htmlContent)) {
+            $unsafe = true;
+        } elseif (preg_match('/(?:href|src|action|xlink:href)\s*=\s*(?:["\']\s*)?(?:javascript|vbscript|data\s*:\s*text\/html)\s*:/i', $htmlContent)) {
+            $unsafe = true;
+        }
+
+        return $unsafe;
     }
 }

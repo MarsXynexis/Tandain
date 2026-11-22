@@ -125,6 +125,12 @@ if (!empty($data['search'])) {
                     <div class="table-meta font-code-tabular mt-0.5">
                       <?= htmlspecialchars($doc['requester_nim'], ENT_QUOTES, 'UTF-8'); ?>
                     </div>
+                    <?php $requesterAffiliation = formatUserAffiliation($doc['requester_position'] ?? null, $doc['requester_study_program'] ?? null, ''); ?>
+                    <?php if ($requesterAffiliation !== ''): ?>
+                      <div class="table-meta mt-0.5">
+                        <?= htmlspecialchars($requesterAffiliation, ENT_QUOTES, 'UTF-8'); ?>
+                      </div>
+                    <?php endif; ?>
                   </td>
 
                   <td class="table-date text-on-surface-variant">

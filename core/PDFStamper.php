@@ -1,5 +1,7 @@
 <?php
 
+use setasign\Fpdi\FpdiException;
+use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
 use setasign\Fpdi\Tcpdf\Fpdi;
 
 class PDFStamper
@@ -13,6 +15,45 @@ class PDFStamper
     private const SIGNATURE_WIDTH_MM = 46.0;
     private const SIGNATURE_HEIGHT_MM = 18.0;
     private const VIEWER_SCALE = 1.3;
+
+    public static function describePdfException(Throwable $exception): string
+    {
+        $message = 'Berkas PDF rusak atau tidak dapat diproses oleh mesin stempel.';
+
+        if ($exception instanceof CrossReferenceException) {
+            if ($exception->getCode() === CrossReferenceException::COMPRESSED_XREF) {
+                $message = 'Format PDF ini menggunakan kompresi modern (PDF 1.5+) yang belum didukung mesin stempel. Simpan ulang PDF melalui Print to PDF atau gunakan Template Surat.';
+            } elseif ($exception->getCode() === CrossReferenceException::ENCRYPTED) {
+                $message = 'Berkas PDF terproteksi kata sandi atau terenkripsi tidak dapat diproses.';
+            } else {
+                $message = 'Struktur berkas PDF tidak didukung oleh mesin stempel.';
+            }
+        }
+
+        return $message;
+    }
+
+    public static function validateSourcePdf(string $sourcePdfPath): string
+    {
+        $errorMessage = '';
+
+        if (!is_file($sourcePdfPath) || !is_readable($sourcePdfPath)) {
+            $errorMessage = 'Berkas PDF tidak dapat dibaca.';
+        } else {
+            try {
+                $pdf = new Fpdi();
+                $pageCount = $pdf->setSourceFile($sourcePdfPath);
+
+                if ($pageCount < 1) {
+                    $errorMessage = 'Berkas PDF tidak memiliki halaman yang valid.';
+                }
+            } catch (Throwable $exception) {
+                $errorMessage = self::describePdfException($exception);
+            }
+        }
+
+        return $errorMessage;
+    }
 
     public static function stamp(
         string $sourcePdfPath,
@@ -45,7 +86,7 @@ class PDFStamper
         if (
             $pageNumber < 1
             || $signingOrder < 1
-            || !preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $documentId)
+            || !isValidUuid($documentId)
             || !is_finite($coordX)
             || !is_finite($coordY)
         ) {

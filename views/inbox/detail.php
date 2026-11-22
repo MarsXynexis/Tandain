@@ -43,6 +43,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
             <?php endif; ?>
 
             <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
+                <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
                 <?php require 'views/layouts/notice.php'; ?>
             <?php endif; ?>
         </div>
@@ -186,10 +187,10 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                         <div>
                             <h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Pemohon</h3>
                             <p class="mt-2 font-body-md text-body-md font-semibold text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></p>
-                            <?php $requesterIdentityNumber = $document['requester_nim_nip'] ?? $document['requester_nim_nip'] ?? ''; ?>
+                            <?php $requesterIdentityNumber = trim((string) ($document['requester_nim_nip'] ?? '')); ?>
                             <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($requesterIdentityNumber !== '' ? $requesterIdentityNumber : 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></p>
-                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $document['requester_position'] ?? ''; ?></p>
-                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $document['requester_email'] ?? 'Email Tidak tersedia'; ?></p>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= htmlspecialchars(formatUserAffiliation($document['requester_position'] ?? null, $document['requester_study_program'] ?? null, $document['requester_role_display_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= htmlspecialchars($document['requester_email'] ?? 'Email Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></p>
                         </div>
                     </div>
 
@@ -285,6 +286,10 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                 <div class="flex w-full items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
                                         <p class="whitespace-normal break-words font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['signer_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <?php $signerAffiliation = formatUserAffiliation($signer['signer_position'] ?? null, $signer['signer_study_program'] ?? null, $signer['signer_role_display_name'] ?? ''); ?>
+                                        <?php if ($signerAffiliation !== ''): ?>
+                                            <p class="font-body-sm text-xs text-on-surface-variant"><?= htmlspecialchars($signerAffiliation, ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <?php endif; ?>
                                         <div class="mt-1 flex items-center gap-2">
                                             <p class="font-body-sm text-body-sm text-on-surface-variant">Halaman <?= (int) $signer['page_number']; ?></p>
                                             <?php if ((string) $signer['signer_id'] === (string) $data['user']['id']): ?>

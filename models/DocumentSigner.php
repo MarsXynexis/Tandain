@@ -32,8 +32,10 @@ class DocumentSigner
             req.full_name AS requester_name,
             req.identity_number AS requester_nim_nip,
             requester_role.name AS requester_role_name,
+            requester_role.display_name AS requester_role_display_name,
             req.email AS requester_email,
             req.position AS requester_position,
+            req.study_program AS requester_study_program,
             CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert
         FROM " . $this->table . " ds
         JOIN documents d ON d.id = ds.document_id
@@ -54,84 +56,102 @@ class DocumentSigner
 
     public function getSignerByDocumentId($documentId)
     {
-        $sql = "SELECT
-            ds.*,
-            u.full_name AS signer_name,
-            u.signature_image_path AS signer_signature_image_path,
-            d.original_file_path AS original_file_path,
-            u.identity_number AS signer_nim_nip,
-            u.email AS signer_email,
-            u.position AS signer_position,
-            CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert
-        FROM " . $this->table . " ds
-        JOIN users u ON u.id = ds.signer_id
-        JOIN documents d ON d.id = ds.document_id
-        LEFT JOIN signer_certificates sc
-            ON sc.user_id = u.id
-           AND sc.status = 'ACTIVE'
-           AND sc.valid_from <= CURRENT_TIMESTAMP
-           AND sc.valid_until >= CURRENT_TIMESTAMP
-        WHERE ds.document_id = :document_id
-        ORDER BY ds.signing_order ASC";
+        $signers = [];
 
-        $this->db->query($sql);
-        $this->db->bind('document_id', $documentId);
+        if (isValidUuid($documentId)) {
+            $sql = "SELECT
+                ds.*,
+                u.full_name AS signer_name,
+                u.signature_image_path AS signer_signature_image_path,
+                d.original_file_path AS original_file_path,
+                u.identity_number AS signer_nim_nip,
+                u.email AS signer_email,
+                u.position AS signer_position,
+                u.study_program AS signer_study_program,
+                r.display_name AS signer_role_display_name,
+                CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert
+            FROM " . $this->table . " ds
+            JOIN users u ON u.id = ds.signer_id
+            LEFT JOIN roles r ON r.id = u.role_id
+            JOIN documents d ON d.id = ds.document_id
+            LEFT JOIN signer_certificates sc
+                ON sc.user_id = u.id
+               AND sc.status = 'ACTIVE'
+               AND sc.valid_from <= CURRENT_TIMESTAMP
+               AND sc.valid_until >= CURRENT_TIMESTAMP
+            WHERE ds.document_id = :document_id
+            ORDER BY ds.signing_order ASC";
 
-        return $this->db->resultSet();
+            $this->db->query($sql);
+            $this->db->bind('document_id', $documentId);
+
+            $signers = $this->db->resultSet();
+        }
+
+        return $signers;
     }
 
 
     public function getDetailDocumentById($documentId, $signerId)
     {
-        $sql = "SELECT
-            d.*,
-            d.created_at AS submitted_at,
-            req.full_name AS requester_name,
-            req.identity_number AS requester_nim_nip,
-            req.email AS requester_email,
-            req.position AS requester_position,
-            requester_role.name AS requester_role_name,
-            ds.status AS signer_status,
-            ds.stamp_type AS signer_stamp_type
-        FROM documents d
-        JOIN document_signers ds ON ds.document_id = d.id
-        JOIN users req ON req.id = d.requester_id
-        LEFT JOIN roles requester_role ON requester_role.id = req.role_id
-        WHERE d.id = :document_id
-          AND ds.signer_id = :signer_id
-        LIMIT 1";
+        $document = false;
 
-        $this->db->query($sql);
-        $this->db->bind('document_id', $documentId);
-        $this->db->bind('signer_id', $signerId);
+        if (isValidUuid($documentId) && isValidUuid($signerId)) {
+            $sql = "SELECT
+                d.*,
+                d.created_at AS submitted_at,
+                req.full_name AS requester_name,
+                req.identity_number AS requester_nim_nip,
+                req.email AS requester_email,
+                req.position AS requester_position,
+                req.study_program AS requester_study_program,
+                requester_role.name AS requester_role_name,
+                requester_role.display_name AS requester_role_display_name,
+                ds.status AS signer_status,
+                ds.stamp_type AS signer_stamp_type
+            FROM documents d
+            JOIN document_signers ds ON ds.document_id = d.id
+            JOIN users req ON req.id = d.requester_id
+            LEFT JOIN roles requester_role ON requester_role.id = req.role_id
+            WHERE d.id = :document_id
+              AND ds.signer_id = :signer_id
+            LIMIT 1";
 
-        return $this->db->single();
+            $this->db->query($sql);
+            $this->db->bind('document_id', $documentId);
+            $this->db->bind('signer_id', $signerId);
+
+            $document = $this->db->single();
+        }
+
+        return $document;
     }
 
     public function updateStampType($documentId, $signerId, $stampType)
     {
-        $this->db->query(
-            "UPDATE " . $this->table . "
-             SET stamp_type = :stamp_type
-             WHERE document_id = :document_id
-               AND signer_id = :signer_id
-               AND status = 'CURRENT_TURN'"
-        );
-        $this->db->bind('stamp_type', $stampType);
-        $this->db->bind('document_id', $documentId);
-        $this->db->bind('signer_id', $signerId);
+        $updated = false;
 
-        return $this->db->execute() && $this->db->rowCount() > 0;
+        if (isValidUuid($documentId) && isValidUuid($signerId)) {
+            $this->db->query(
+                "UPDATE " . $this->table . "
+                 SET stamp_type = :stamp_type
+                 WHERE document_id = :document_id
+                   AND signer_id = :signer_id
+                   AND status = 'CURRENT_TURN'"
+            );
+            $this->db->bind('stamp_type', $stampType);
+            $this->db->bind('document_id', $documentId);
+            $this->db->bind('signer_id', $signerId);
+
+            $updated = $this->db->execute() && $this->db->rowCount() > 0;
+        }
+
+        return $updated;
     }
 
     public function agreeDocument($documentId, $signerId, $passphrase)
     {
-        if (
-            !is_string($documentId)
-            || !preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $documentId)
-            || !is_string($signerId)
-            || !preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $signerId)
-        ) {
+        if (!isValidUuid($documentId) || !isValidUuid($signerId)) {
             return ['ok' => false, 'message' => 'Identitas dokumen atau penandatangan tidak valid.'];
         }
 
@@ -450,12 +470,7 @@ class DocumentSigner
 
     public function rejectDocument($documentId, $signerId, $reason)
     {
-        if (
-            !is_string($documentId)
-            || !preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $documentId)
-            || !is_string($signerId)
-            || !preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $signerId)
-        ) {
+        if (!isValidUuid($documentId) || !isValidUuid($signerId)) {
             return ['ok' => false, 'message' => 'Identitas dokumen atau penandatangan tidak valid.'];
         }
 

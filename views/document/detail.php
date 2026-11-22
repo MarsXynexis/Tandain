@@ -32,6 +32,15 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
       </p>
     </div>
 
+    <div class="space-y-3 [&:has([data-notice]:not([hidden]))]:mb-6">
+      <?php require 'views/layouts/flash.php'; ?>
+
+      <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
+        <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
+        <?php require 'views/layouts/notice.php'; ?>
+      <?php endif; ?>
+    </div>
+
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.8fr)]">
 
       <div class="space-y-6">
@@ -67,8 +76,8 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
               <h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Pemohon</h3>
               <p class="mt-2 font-body-md text-body-md font-semibold text-primary"><?= htmlspecialchars($document['requester_name'], ENT_QUOTES, 'UTF-8'); ?></p>
               <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $identityLabel; ?>: <?= htmlspecialchars($requesterIdentityNumber !== '' ? $requesterIdentityNumber : 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></p>
-              <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $document['requester_position'] ?? 'Tidak tersedia'; ?></p>
-              <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $document['requester_email'] ?? 'Tidak tersedia'; ?></p>
+              <p class="font-body-sm text-body-sm text-on-surface-variant"><?= htmlspecialchars(formatUserAffiliation($document['requester_position'] ?? null, $document['requester_study_program'] ?? null, $document['requester_role_display_name'] ?? 'Tidak tersedia'), ENT_QUOTES, 'UTF-8'); ?></p>
+              <p class="font-body-sm text-body-sm text-on-surface-variant"><?= htmlspecialchars($document['requester_email'] ?? 'Tidak tersedia', ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
           </div>
 
@@ -140,6 +149,10 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
                 <div class="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5">
                   <div class="min-w-0 flex-1">
                     <p class="whitespace-normal break-words font-body-md text-body-md font-medium text-primary"><?= htmlspecialchars($signer['full_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    <?php $signerAffiliation = formatUserAffiliation($signer['position'] ?? null, $signer['study_program'] ?? null, $signer['role_display_name'] ?? ''); ?>
+                    <?php if ($signerAffiliation !== ''): ?>
+                      <p class="font-body-sm text-xs text-on-surface-variant"><?= htmlspecialchars($signerAffiliation, ENT_QUOTES, 'UTF-8'); ?></p>
+                    <?php endif; ?>
                     <div class="mt-1 flex items-center gap-2">
                       <p class="font-body-sm text-body-sm text-on-surface-variant">Halaman <?= (int) $signer['page_number']; ?></p>
                       <?php if ((string) $signer['signer_id'] === (string) $data['user']['id']): ?>
@@ -152,7 +165,7 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
                   </div>
 
                   <?php if ($signer['status'] === 'SIGNED' && $signedTimestamp !== false): ?>
-                    <p class=" inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
+                    <p class="w-full inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
                       <span class="material-symbols-outlined text-[14px]" aria-hidden="true">schedule</span>
                       Ditandatangani <?= formatTanggalIndo($signedTimestamp, 'datetime'); ?>
                     </p>
@@ -168,9 +181,10 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
                       </a>
                     </div>
                   <?php endif; ?>
-                <?php endforeach; ?>
                 </div>
-              <?php endif; ?>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
         </section>
       </aside>
 
