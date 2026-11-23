@@ -36,7 +36,7 @@ foreach ($data['documents'] as $inboxDocument) {
     <div class="flex flex-col items-stretch gap-3 border-b border-outline-variant/30 p-5 md:flex-row md:items-center">
       <label class="relative min-w-0 flex-1">
         <span class="material-symbols-outlined pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[16px] text-on-surface-variant" aria-hidden="true">search</span>
-        <input id="inbox-search" class="h-10 w-full rounded border border-outline-variant/50 bg-surface-container-low/40 pl-10 pr-4 font-body-md text-body-md text-primary placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary" placeholder="Cari judul atau nomor dokumen..." type="search">
+        <input id="inbox-search" class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all" placeholder="Cari judul atau nomor dokumen..." type="search">
       </label>
 
       <div class="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-surface-container-high p-1 md:max-w-[65%]" role="group" aria-label="Filter status dokumen">
