@@ -397,6 +397,20 @@ class Document
 
         return $this->db->resultSet();
     }
+    public function getAllUserDocuments($userId)
+    {
+        $sql = "SELECT d.id, d.title, d.document_number, d.status, d.created_at, d.original_file_path, d.final_file_path,
+                (SELECT COUNT(*) FROM document_signers s WHERE s.document_id = d.id) AS total_signers,
+                (SELECT COUNT(*) FROM document_signers s WHERE s.document_id = d.id AND s.status = 'SIGNED') AS signed_count
+                FROM " . $this->table . " d
+                WHERE d.requester_id = :user_id
+                ORDER BY d.created_at DESC";
+
+        $this->db->query($sql);
+        $this->db->bind('user_id', $userId);
+
+        return $this->db->resultSet();
+    }
 
     public function getUserStatusCounts($userId)
     {

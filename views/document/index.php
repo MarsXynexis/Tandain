@@ -3,22 +3,27 @@
 <?php require_once 'views/layouts/navbar.php'; ?>
 
 <?php
-$activeTab = 'font-semibold bg-surface-container-lowest text-primary shadow-sm';
-$inactiveTab = 'font-medium text-on-surface-variant hover:text-primary';
+$docCounts = ['all' => 0, 'completed' => 0, 'in_progress' => 0, 'draft' => 0];
+$docRows = [];
 
-$first = 0;
+foreach ($documents as $docItem) {
+  if ($docItem['status'] === 'COMPLETED') {
+    $filterStatus = 'completed';
+  } elseif (in_array($docItem['status'], ['PENDING_TRIAGE', 'IN_PROGRESS'], true)) {
+    $filterStatus = 'in_progress';
+  } elseif ($docItem['status'] === 'DRAFT') {
+    $filterStatus = 'draft';
+  } else {
+    $filterStatus = 'other';
+  }
 
-if ($total > 0) {
-    $first = ($page - 1) * $perPage + 1;
-}
+  $docItem['filter_status'] = $filterStatus;
+  $docRows[] = $docItem;
+  $docCounts['all']++;
 
-$last = min($total, $page * $perPage);
-
-$searchUrl = urlencode($search);
-$statusUrl = '';
-
-if ($filter !== 'all') {
-    $statusUrl = '&status=' . urlencode($filter);
+  if (isset($docCounts[$filterStatus])) {
+    $docCounts[$filterStatus]++;
+  }
 }
 ?>
 
@@ -34,30 +39,19 @@ if ($filter !== 'all') {
     <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-none overflow-hidden">
 
       <div class="p-5 border-b border-surface-container-high flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-surface-container-lowest">
-        <form method="get" action="/Tandain/document" class="relative flex-1 max-w-md">
-          <?php if ($filter !== 'all'): ?>
-            <input type="hidden" name="status" value="<?= htmlspecialchars($filter); ?>">
-          <?php endif; ?>
+        <label class="relative flex-1 max-w-md">
           <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
-            <span class="material-symbols-outlined text-[20px]">search</span>
+            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">search</span>
           </span>
-          <input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all" name="q" value="<?= htmlspecialchars($search); ?>" placeholder="Cari judul atau nomor dokumen..." type="text">
-        </form>
+          <input id="doc-search" class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-primary placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all" placeholder="Cari judul atau nomor dokumen..." type="search">
+        </label>
 
         <div class="min-w-0 max-w-full">
-          <div class="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-surface-container p-1">
-            <a href="/Tandain/document?q=<?= $searchUrl; ?>" class="btn-sm inline-flex shrink-0 whitespace-nowrap transition-colors <?= $filter === 'all' ? $activeTab : $inactiveTab; ?>">
-              Semua (<?= $counts['total_all']; ?>)
-            </a>
-            <a href="/Tandain/document?status=completed&q=<?= $searchUrl; ?>" class="btn-sm inline-flex shrink-0 whitespace-nowrap transition-colors <?= $filter === 'completed' ? $activeTab : $inactiveTab; ?>">
-              Selesai (<?= $counts['total_completed']; ?>)
-            </a>
-            <a href="/Tandain/document?status=in_progress&q=<?= $searchUrl; ?>" class="btn-sm inline-flex shrink-0 whitespace-nowrap transition-colors <?= $filter === 'in_progress' ? $activeTab : $inactiveTab; ?>">
-              Sedang Diproses (<?= $counts['total_in_progress']; ?>)
-            </a>
-            <a href="/Tandain/document?status=draft&q=<?= $searchUrl; ?>" class="btn-sm inline-flex shrink-0 whitespace-nowrap transition-colors <?= $filter === 'draft' ? $activeTab : $inactiveTab; ?>">
-              Draft (<?= $counts['total_draft']; ?>)
-            </a>
+          <div class="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-surface-container p-1" role="group" aria-label="Filter status dokumen">
+            <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-semibold bg-surface-container-lowest text-primary shadow-sm" type="button" data-filter="all" aria-pressed="true">Semua (<?= $docCounts['all']; ?>)</button>
+            <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="completed" aria-pressed="false">Selesai (<?= $docCounts['completed']; ?>)</button>
+            <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="in_progress" aria-pressed="false">Sedang Diproses (<?= $docCounts['in_progress']; ?>)</button>
+            <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="draft" aria-pressed="false">Draft (<?= $docCounts['draft']; ?>)</button>
           </div>
         </div>
       </div>
@@ -75,17 +69,9 @@ if ($filter !== 'all') {
             </tr>
           </thead>
 
-          <tbody class="divide-y divide-surface-container">
-
-            <?php if (count($documents) === 0): ?>
-              <tr>
-                <td colspan="6" class="table-empty text-center text-on-surface-variant">
-                  Belum ada dokumen yang cocok. Ubah kata kunci atau pilih filter lain.
-                </td>
-              </tr>
-            <?php endif; ?>
-
-            <?php foreach ($documents as $i => $doc): ?>
+          <tbody id="doc-rows" class="divide-y divide-surface-container">
+            <?php $number = 1; ?>
+            <?php foreach ($docRows as $doc): ?>
               <?php
               $signed = (int) $doc['signed_count'];
               $totalSigner = (int) $doc['total_signers'];
@@ -116,8 +102,8 @@ if ($filter !== 'all') {
 
               $detailUrl = '/Tandain/document/detail?id=' . urlencode($doc['id']);
               ?>
-            <tr class="hover:bg-surface-container-low/50 transition-colors group">
-              <td class="text-center font-code-tabular text-code-tabular text-on-surface-variant"><?= $first + $i; ?></td>
+            <tr class="doc-row hover:bg-surface-container-low/50 transition-colors group" data-status="<?= $doc['filter_status']; ?>" data-search="<?= htmlspecialchars(strtolower($doc['title'] . ' ' . ($doc['document_number'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>">
+              <td class="doc-row-number text-center font-code-tabular text-code-tabular text-on-surface-variant"><?= $number; ?></td>
               <td>
                 <a href="<?= $detailUrl; ?>" class="block table-title text-primary hover:text-secondary transition-colors leading-tight">
                   <?= htmlspecialchars($doc['title']); ?>
@@ -164,63 +150,147 @@ if ($filter !== 'all') {
                 <?php endif; ?>
               </td>
             </tr>
+            <?php $number += 1; ?>
             <?php endforeach; ?>
-
+            <tr id="doc-empty" class="hidden">
+              <td colspan="6" class="table-empty text-center text-on-surface-variant">
+                Belum ada dokumen yang cocok. Ubah kata kunci atau pilih filter lain.
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
 
-      <?php if ($total > 0): ?>
-        <div class="table-footer flex flex-col items-start justify-between gap-3 border-t border-surface-container-high bg-white sm:flex-row sm:items-center">
-          <p class="text-on-surface-variant">
-            <?php if ($totalPages > 1): ?>
-              Menampilkan <strong class="text-primary"><?= $first; ?>-<?= $last; ?></strong> dari
-            <?php endif; ?>
-            <strong class="text-primary"><?= $total; ?></strong> dokumen
-          </p>
-
-          <?php if ($totalPages > 1): ?>
-            <nav class="flex min-w-0 max-w-full items-center gap-2" aria-label="Halaman dokumen">
-              <?php if ($page > 1): ?>
-                <a href="/Tandain/document?page=<?= $page - 1; ?>&q=<?= $searchUrl; ?><?= $statusUrl; ?>" aria-label="Halaman sebelumnya" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low">
-                  <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
-                  <span class="hidden sm:inline">Sebelumnya</span>
-                </a>
-              <?php else: ?>
-                <button type="button" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-white text-outline opacity-50" aria-label="Halaman sebelumnya" disabled>
-                  <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
-                  <span class="hidden sm:inline">Sebelumnya</span>
-                </button>
-              <?php endif; ?>
-
-              <div class="flex min-w-0 items-center gap-1 overflow-x-auto p-1">
-                <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-                  <?php if ($p === $page): ?>
-                    <span aria-current="page" class="btn-sm btn-icon flex shrink-0 bg-primary-container font-semibold text-on-primary"><?= $p; ?></span>
-                  <?php else: ?>
-                    <a href="/Tandain/document?page=<?= $p; ?>&q=<?= $searchUrl; ?><?= $statusUrl; ?>" class="btn-sm btn-icon flex shrink-0 text-on-surface-variant transition-colors hover:bg-surface-container-low"><?= $p; ?></a>
-                  <?php endif; ?>
-                <?php endfor; ?>
-              </div>
-
-              <?php if ($page < $totalPages): ?>
-                <a href="/Tandain/document?page=<?= $page + 1; ?>&q=<?= $searchUrl; ?><?= $statusUrl; ?>" aria-label="Halaman berikutnya" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low">
-                  <span class="hidden sm:inline">Selanjutnya</span>
-                  <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
-                </a>
-              <?php else: ?>
-                <button type="button" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-white text-outline opacity-50" aria-label="Halaman berikutnya" disabled>
-                  <span class="hidden sm:inline">Selanjutnya</span>
-                  <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
-                </button>
-              <?php endif; ?>
-            </nav>
-          <?php endif; ?>
-        </div>
-      <?php endif; ?>
+      <footer class="table-footer flex flex-col items-start justify-between gap-3 border-t border-surface-container-high bg-white sm:flex-row sm:items-center">
+        <p id="doc-count" class="text-on-surface-variant">Menampilkan <strong id="doc-visible-count" class="text-primary">0</strong> dari <strong id="doc-filter-count" class="text-primary"><?= $docCounts['all']; ?></strong> dokumen</p>
+        <nav id="doc-pagination" class="flex min-w-0 max-w-full items-center gap-2" aria-label="Halaman dokumen">
+          <button id="doc-previous" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low" type="button" aria-label="Halaman sebelumnya">
+            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
+            <span class="hidden sm:inline">Sebelumnya</span>
+          </button>
+          <div id="doc-page-numbers" class="flex min-w-0 items-center gap-1 overflow-x-auto p-1" aria-label="Nomor halaman"></div>
+          <button id="doc-next" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low" type="button" aria-label="Halaman berikutnya">
+            <span class="hidden sm:inline">Selanjutnya</span>
+            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
+          </button>
+        </nav>
+      </footer>
 
     </div>
 
   </main>
+
+<script>
+  (() => {
+    const searchInput = document.getElementById('doc-search');
+    const filterButtons = document.querySelectorAll('.doc-filter');
+    const rows = Array.from(document.querySelectorAll('.doc-row'));
+    const emptyRow = document.getElementById('doc-empty');
+    const pagination = document.getElementById('doc-pagination');
+    const previousButton = document.getElementById('doc-previous');
+    const nextButton = document.getElementById('doc-next');
+    const pageNumbers = document.getElementById('doc-page-numbers');
+    const pageSize = 8;
+    let activeFilter = 'all';
+    let currentPage = 1;
+
+    const createPageButton = (page) => {
+      const button = document.createElement('button');
+      const isActive = page === currentPage;
+      button.type = 'button';
+      button.textContent = String(page);
+      button.setAttribute('aria-label', `Halaman ${page}`);
+      button.className = isActive
+        ? 'btn-sm btn-icon flex shrink-0 bg-primary-container font-semibold text-on-primary'
+        : 'btn-sm btn-icon flex shrink-0 font-semibold text-on-surface-variant hover:bg-surface-container-low';
+      if (isActive) button.setAttribute('aria-current', 'page');
+      button.addEventListener('click', () => {
+        currentPage = page;
+        renderRows();
+      });
+      pageNumbers.appendChild(button);
+    };
+
+    const renderRows = () => {
+      const query = searchInput.value.trim().toLocaleLowerCase();
+      const matchedRows = rows.filter((row) => {
+        const matchesFilter = activeFilter === 'all' || row.dataset.status === activeFilter;
+        const matchesSearch = row.dataset.search.includes(query);
+        return matchesFilter && matchesSearch;
+      });
+
+      const totalPages = Math.ceil(matchedRows.length / pageSize);
+      currentPage = Math.min(currentPage, Math.max(totalPages, 1));
+      const startIndex = (currentPage - 1) * pageSize;
+      const pageRows = matchedRows.slice(startIndex, startIndex + pageSize);
+      const pageRowSet = new Set(pageRows);
+
+      rows.forEach((row) => row.classList.toggle('hidden', !pageRowSet.has(row)));
+      pageRows.forEach((row, index) => {
+        row.querySelector('.doc-row-number').textContent = String(startIndex + index + 1);
+      });
+      emptyRow.classList.toggle('hidden', matchedRows.length > 0);
+
+      const endIndex = Math.min(startIndex + pageRows.length, matchedRows.length);
+      document.getElementById('doc-visible-count').textContent = matchedRows.length
+        ? `${startIndex + 1}-${endIndex}`
+        : '0';
+      document.getElementById('doc-filter-count').textContent = String(matchedRows.length);
+
+      pageNumbers.replaceChildren();
+      if (totalPages > 1) {
+        const firstPage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+        const lastPage = Math.min(totalPages, firstPage + 4);
+        for (let page = firstPage; page <= lastPage; page += 1) {
+          createPageButton(page);
+        }
+      }
+
+      previousButton.disabled = currentPage <= 1;
+      nextButton.disabled = currentPage >= totalPages;
+      previousButton.classList.toggle('opacity-40', previousButton.disabled);
+      previousButton.classList.toggle('cursor-not-allowed', previousButton.disabled);
+      nextButton.classList.toggle('opacity-40', nextButton.disabled);
+      nextButton.classList.toggle('cursor-not-allowed', nextButton.disabled);
+      pagination.classList.toggle('hidden', totalPages <= 1);
+    };
+
+    previousButton.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage -= 1;
+        renderRows();
+      }
+    });
+    nextButton.addEventListener('click', () => {
+      currentPage += 1;
+      renderRows();
+    });
+
+    searchInput.addEventListener('input', () => {
+      currentPage = 1;
+      renderRows();
+    });
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeFilter = button.dataset.filter;
+        currentPage = 1;
+        filterButtons.forEach((filterButton) => {
+          const isActive = filterButton === button;
+          filterButton.classList.toggle('bg-surface-container-lowest', isActive);
+          filterButton.classList.toggle('text-primary', isActive);
+          filterButton.classList.toggle('shadow-sm', isActive);
+          filterButton.classList.toggle('font-semibold', isActive);
+          filterButton.classList.toggle('font-medium', !isActive);
+          filterButton.classList.toggle('text-on-surface-variant', !isActive);
+          filterButton.classList.toggle('hover:text-primary', !isActive);
+          filterButton.setAttribute('aria-pressed', String(isActive));
+        });
+        renderRows();
+      });
+    });
+
+    renderRows();
+  })();
+</script>
 
 <?php require_once 'views/layouts/footer.php'; ?>

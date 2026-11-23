@@ -5,37 +5,20 @@ class DocumentController extends Controller
     private const MAX_SIZE = 2097152;
 
     public function index()
-    {
-        $this->authCheck();
+{
+    $this->authCheck();
 
-        $documentModel = $this->model('Document');
-        $userId = $_SESSION['user']['id'];
+    $documentModel = $this->model('Document');
+    $userId = $_SESSION['user']['id'];
 
-        $search = trim($_GET['q'] ?? '');
-        $filter = $_GET['status'] ?? 'all';
-        $page = max(1, (int) ($_GET['page'] ?? 1));
-        $perPage = 8;
+    $data['title'] = 'Dokumen Diunggah - Tandain';
+    $data['active_menu'] = 'uploaded';
+    $data['user'] = $_SESSION['user'];
+    $data['documents'] = $documentModel->getAllUserDocuments($userId);
 
-        $total = $documentModel->countUserDocuments($userId, $search, $filter);
-        $totalPages = max(1, (int) ceil($total / $perPage));
-        $page = min($page, $totalPages);
-        $offset = ($page - 1) * $perPage;
+    $this->view('document/index', $data);
 
-        $data['title'] = 'Dokumen Diunggah - Tandain';
-        $data['active_menu'] = 'uploaded';
-        $data['user'] = $_SESSION['user'];
-        $data['documents'] = $documentModel->getUserDocuments($userId, $search, $filter, $perPage, $offset);
-        $data['counts'] = $documentModel->getUserStatusCounts($userId);
-        $data['search'] = $search;
-        $data['filter'] = $filter;
-        $data['page'] = $page;
-        $data['perPage'] = $perPage;
-        $data['total'] = $total;
-        $data['totalPages'] = $totalPages;
-
-        $this->view('document/index', $data);
-    }
-
+}
     public function create()
     {
         $this->authCheck();
