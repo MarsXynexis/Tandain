@@ -46,6 +46,8 @@ class TriageController extends Controller
             $data['document'] = $doc;
             $data['current_signers'] = $signerModel->getSignerByDocumentId($id);
             $data['can_dispose'] = ($doc['status'] === 'PENDING_TRIAGE');
+            $data['can_cancel'] = ($doc['status'] === 'IN_PROGRESS');
+            $data['csrf_token'] = $this->getCsrfToken();
 
             $this->view('triage/review', $data);
         }
@@ -183,6 +185,7 @@ class TriageController extends Controller
             $data['documentId'] = $doc['id'];
             $data['signers'] = $signers;
             $data['pdfUrl'] = '/Tandain/triage/file/' . rawurlencode($doc['id']);
+            $data['csrf_token'] = $this->getCsrfToken();
 
             $this->view('triage/position', $data);
         }
@@ -198,17 +201,25 @@ class TriageController extends Controller
 
         if (!empty($doc) && $doc['status'] === 'PENDING_TRIAGE') {
             $redirectUrl = '/Tandain/triage/position/' . rawurlencode($doc['id']);
-            $positions = json_decode($_POST['positions'] ?? '[]', true);
-            $isSequential = in_array($doc['is_sequential'], [true, 1, '1', 't', 'true'], true);
 
-            if (!is_array($positions) || count($positions) === 0) {
-                $this->setFlash('error', 'Tempatkan kotak TTE dulu.');
-            } elseif ($docModel->updateSignerPositions($doc['id'], $positions, $isSequential, $_SESSION['user']['id'], 'PENDING_TRIAGE')) {
-                $this->setFlash('success', 'Disposisi dokumen berhasil disimpan dan diteruskan ke penandatangan pertama.');
-
-                $redirectUrl = '/Tandain/triage?status=dispatched';
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$this->verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+                $this->setFlash('error', 'Sesi formulir tidak valid. Silakan muat ulang halaman dan coba lagi.');
             } else {
-                $this->setFlash('error', 'Gagal menyimpan posisi tanda tangan.');
+                $positions = json_decode($_POST['positions'] ?? '[]', true);
+
+                if (!is_array($positions) || count($positions) === 0) {
+                    $this->setFlash('error', 'Tempatkan semua kotak TTE.');
+                } else {
+                    $saveResult = $docModel->updateSignerPositions($doc['id'], $positions, $_SESSION['user']['id'], 'PENDING_TRIAGE');
+
+                    if ($saveResult['ok']) {
+                        $this->setFlash('success', 'Disposisi dokumen berhasil disimpan dan diteruskan ke penandatangan pertama.');
+
+                        $redirectUrl = '/Tandain/triage?status=dispatched';
+                    } else {
+                        $this->setFlash('error', $saveResult['message']);
+                    }
+                }
             }
         }
 
@@ -234,6 +245,8 @@ class TriageController extends Controller
                 $this->setFlash('error', 'Dokumen ini sudah tidak berada pada antrean disposisi.');
             } elseif (empty($reason)) {
                 $this->setFlash('error', 'Alasan penolakan wajib diisi.');
+            } elseif (mb_strlen($reason) > 1000) {
+                $this->setFlash('error', 'Alasan penolakan maksimal terdiri dari 1000 karakter.');
             } else {
                 $success = $docModel->rejectTriageDisposition($documentId, $_SESSION['user']['id'], $reason);
 
@@ -243,6 +256,42 @@ class TriageController extends Controller
                     $redirectUrl = '/Tandain/triage?status=rejected';
                 } else {
                     $this->setFlash('error', 'Penolakan dokumen gagal disimpan.');
+                }
+            }
+        }
+
+        $this->redirect($redirectUrl);
+    }
+
+    public function cancel()
+    {
+        $this->adminCheck();
+
+        $documentId = trim((string) ($_POST['document_id'] ?? ''));
+        $redirectUrl = isValidUuid($documentId)
+            ? '/Tandain/triage/review/' . rawurlencode($documentId)
+            : '/Tandain/triage';
+
+        if (
+            $_SERVER['REQUEST_METHOD'] !== 'POST'
+            || !isValidUuid($documentId)
+            || !$this->verifyCsrfToken($_POST['csrf_token'] ?? '')
+        ) {
+            $this->setFlash('error', 'Permintaan pembatalan dokumen tidak valid.');
+        } else {
+            $reasonInput = $_POST['cancellation_reason'] ?? '';
+            $reason = is_string($reasonInput) ? trim($reasonInput) : '';
+
+            if ($reason === '' || mb_strlen($reason) > 1000) {
+                $this->setFlash('error', 'Alasan pembatalan wajib diisi dan maksimal 1000 karakter.');
+            } else {
+                $docModel = $this->model('Document');
+                $result = $docModel->cancelDocument($documentId, $_SESSION['user']['id'], $reason, true);
+
+                if ($result['ok']) {
+                    $this->setFlash('success', 'Pengajuan dibatalkan.');
+                } else {
+                    $this->setFlash('error', $result['message']);
                 }
             }
         }

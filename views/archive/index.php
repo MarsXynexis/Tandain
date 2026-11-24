@@ -124,6 +124,10 @@ if (!empty($data['search'])) {
                       <div class="text-[11px] text-[#b91c1c] mt-1 max-w-[320px] truncate" title="<?= htmlspecialchars($doc['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?>">
                         Alasan: <?= htmlspecialchars($doc['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?>
                       </div>
+                    <?php elseif ($doc['status'] === 'CANCELLED' && !empty($doc['rejection_reason'])): ?>
+                      <div class="text-[11px] text-on-surface-variant mt-1 max-w-[320px] truncate" title="<?= htmlspecialchars($doc['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?>">
+                        Alasan: <?= htmlspecialchars($doc['rejection_reason'], ENT_QUOTES, 'UTF-8'); ?>
+                      </div>
                     <?php endif; ?>
                   </td>
 

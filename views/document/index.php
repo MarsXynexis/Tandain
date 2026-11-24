@@ -3,7 +3,7 @@
 <?php require_once 'views/layouts/navbar.php'; ?>
 
 <?php
-$docCounts = ['all' => 0, 'completed' => 0, 'in_progress' => 0, 'draft' => 0, 'rejected' => 0];
+$docCounts = ['all' => 0, 'completed' => 0, 'in_progress' => 0, 'draft' => 0, 'rejected' => 0, 'cancelled' => 0];
 $docRows = [];
 
 foreach ($documents as $docItem) {
@@ -15,6 +15,8 @@ foreach ($documents as $docItem) {
     $filterStatus = 'draft';
   } elseif ($docItem['status'] === 'REJECTED') {
     $filterStatus = 'rejected';
+  } elseif ($docItem['status'] === 'CANCELLED') {
+    $filterStatus = 'cancelled';
   } else {
     $filterStatus = 'other';
   }
@@ -55,6 +57,7 @@ foreach ($documents as $docItem) {
             <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="in_progress" aria-pressed="false">Sedang Diproses (<?= $docCounts['in_progress']; ?>)</button>
             <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="draft" aria-pressed="false">Draft (<?= $docCounts['draft']; ?>)</button>
             <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="rejected" aria-pressed="false">Ditolak (<?= $docCounts['rejected']; ?>)</button>
+            <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="cancelled" aria-pressed="false">Dibatalkan (<?= $docCounts['cancelled']; ?>)</button>
           </div>
         </div>
       </div>

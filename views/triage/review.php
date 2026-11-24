@@ -6,6 +6,13 @@
 $document = $data['document'];
 $canDispose = !empty($data['can_dispose']);
 $currentStatus = $document['status'];
+$rejectedBySigner = false;
+
+foreach ($data['current_signers'] as $signer) {
+    if (($signer['status'] ?? '') === 'REJECTED') {
+        $rejectedBySigner = true;
+    }
+}
 
 if ($currentStatus === 'PENDING_TRIAGE') {
     $pageTitle = 'Pemeriksaan & Disposisi Dokumen';
@@ -13,15 +20,23 @@ if ($currentStatus === 'PENDING_TRIAGE') {
     $backUrl = '/Tandain/triage';
 } elseif ($currentStatus === 'IN_PROGRESS') {
     $pageTitle = 'Rincian Dokumen';
-    $pageSubtitle = 'Dokumen telah didisposisikan dan sedang menunggu tanda tangan';
-    $backUrl = '/Tandain/triage?status=dispatched';
+
+    if (!empty($document['triage_handled_by'])) {
+        $pageSubtitle = 'Dokumen telah didisposisikan dan sedang menunggu tanda tangan';
+        $backUrl = '/Tandain/triage?status=dispatched';
+    } else {
+        $pageSubtitle = 'Dokumen sedang menunggu tanda tangan';
+        $backUrl = '/Tandain/dashboard';
+    }
 } elseif ($currentStatus === 'COMPLETED') {
     $pageTitle = 'Rincian Dokumen';
     $pageSubtitle = 'Dokumen telah selesai ditandatangani dan tersimpan dalam arsip';
     $backUrl = '/Tandain/archive?status=COMPLETED';
 } elseif ($currentStatus === 'REJECTED') {
     $pageTitle = 'Rincian Dokumen';
-    $pageSubtitle = 'Pengajuan dokumen ditolak pada meja disposisi Tata Usaha';
+    $pageSubtitle = $rejectedBySigner
+        ? 'Dokumen ditolak oleh penandatangan dalam alur tanda tangan'
+        : 'Pengajuan dokumen ditolak pada meja disposisi Tata Usaha';
     $backUrl = '/Tandain/archive?status=REJECTED';
 } elseif ($currentStatus === 'CANCELLED') {
     $pageTitle = 'Rincian Dokumen';
@@ -48,7 +63,7 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
           <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight font-bold"><?= $pageTitle; ?></h1>
           <?php renderStatusBadge($currentStatus); ?>
         </div>
-        <p class="font-body-md text-body-md text-on-surface-variant mt-1"><?= $pageSubtitle; ?></p>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-1"><?= htmlspecialchars($pageSubtitle, ENT_QUOTES, 'UTF-8'); ?></p>
       </div>
 
       <a class="btn-md inline-flex items-center gap-1.5 border border-outline-variant text-primary hover:bg-surface-container-low transition-colors shrink-0" href="<?= $backUrl; ?>">
@@ -61,6 +76,11 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
 
     <?php if ($currentStatus === 'REJECTED' && !empty($document['rejection_reason'])): ?>
       <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
+      <?php require 'views/layouts/notice.php'; ?>
+    <?php endif; ?>
+
+    <?php if ($currentStatus === 'CANCELLED' && !empty($document['rejection_reason'])): ?>
+      <?php $notice = ['type' => 'warning', 'message' => 'Alasan pembatalan: ' . $document['rejection_reason']]; ?>
       <?php require 'views/layouts/notice.php'; ?>
     <?php endif; ?>
 
@@ -105,8 +125,9 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
         </div>
 
         <?php if (!empty($document['triage_admin_name'])): ?>
+          <?php $triageActionText = ($currentStatus === 'REJECTED' && !$rejectedBySigner) ? 'Ditolak di meja disposisi oleh' : 'Didisposisikan oleh'; ?>
           <div class="mt-4 pt-4 border-t border-surface-container">
-            <p class="font-body-sm text-body-sm text-on-surface-variant">Didisposisikan oleh <span class="font-semibold text-primary"><?= htmlspecialchars($document['triage_admin_name'], ENT_QUOTES, 'UTF-8'); ?></span></p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant"><?= $triageActionText; ?> <span class="font-semibold text-primary"><?= htmlspecialchars($document['triage_admin_name'], ENT_QUOTES, 'UTF-8'); ?></span></p>
           </div>
         <?php endif; ?>
 
@@ -329,6 +350,28 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
           </form>
         </div>
       </div>
+
+    <?php elseif (!empty($data['can_cancel'])): ?>
+
+      <div class="flex flex-wrap items-center justify-end gap-3 pt-5 border-t border-outline-variant">
+        <button type="button" data-modal-open="cancel-triage-modal" class="btn-md border border-red-300 text-red-600 hover:bg-red-50 font-semibold transition inline-flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]" aria-hidden="true">cancel</span>
+          <span>Batalkan Pengajuan</span>
+        </button>
+      </div>
+
+      <?php
+      $cancelModal = [
+        'id' => 'cancel-triage-modal',
+        'action' => '/Tandain/triage/cancel',
+        'title' => 'Batalkan Pengajuan Dokumen',
+        'message' => 'Proses penandatanganan yang sedang berjalan akan dihentikan dan dokumen berstatus Dibatalkan.',
+        'placeholder' => 'Tuliskan alasan pembatalan pengajuan...',
+        'csrf_token' => $data['csrf_token'] ?? csrfToken(),
+        'document_id' => $document['id'],
+      ];
+      ?>
+      <?php require 'views/layouts/cancel_modal.php'; ?>
 
     <?php endif; ?>
 

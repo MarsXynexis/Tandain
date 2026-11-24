@@ -19,6 +19,7 @@ class VerificationController extends Controller
         $data['file_size'] = 0;
         $data['file_hash'] = '';
         $data['is_expired'] = false;
+        $data['server_file_available'] = false;
         $data['warning_title'] = '';
         $data['warning_message'] = '';
         $data['error_title'] = '';
@@ -49,6 +50,7 @@ class VerificationController extends Controller
                         $data['status'] = $verification['status'];
                         $data['document'] = $verification['document'];
                         $data['is_expired'] = $verification['is_expired'];
+                        $data['server_file_available'] = ($verification['status'] !== 'error');
                         $data['warning_title'] = $verification['warning_title'];
                         $data['warning_message'] = $verification['warning_message'];
                         $data['error_title'] = $verification['error_title'];
@@ -82,6 +84,7 @@ class VerificationController extends Controller
         $data['file_size'] = 0;
         $data['file_hash'] = '';
         $data['is_expired'] = false;
+        $data['server_file_available'] = false;
         $data['warning_title'] = '';
         $data['warning_message'] = '';
         $data['error_title'] = '';
@@ -133,10 +136,12 @@ class VerificationController extends Controller
 
                     if ($isValid) {
                         $verification = $this->evaluateDocumentVerification($document);
+                        $serverFileCheck = $this->verifyFinalPdfFile($document);
 
                         $data['status'] = $verification['status'];
                         $data['document'] = $verification['document'];
                         $data['is_expired'] = $verification['is_expired'];
+                        $data['server_file_available'] = ($verification['status'] !== 'error' && $serverFileCheck['ok']);
                         $data['warning_title'] = $verification['warning_title'];
                         $data['warning_message'] = $verification['warning_message'];
                         $data['error_title'] = $verification['error_title'];

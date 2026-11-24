@@ -8,7 +8,9 @@ $inboxRows = [];
 
 foreach ($data['documents'] as $inboxDocument) {
   if ($inboxDocument['signer_status'] !== 'WAITING') {
-    if ($inboxDocument['document_status'] === 'REJECTED' || $inboxDocument['signer_status'] === 'REJECTED') {
+    if ($inboxDocument['signer_status'] === 'SIGNED') {
+      $filterStatus = 'signed';
+    } elseif ($inboxDocument['signer_status'] === 'REJECTED' || $inboxDocument['document_status'] === 'REJECTED') {
       $filterStatus = 'rejected';
     } elseif ($inboxDocument['signer_status'] === 'CURRENT_TURN') {
       $filterStatus = 'waiting';
@@ -80,10 +82,16 @@ foreach ($data['documents'] as $inboxDocument) {
                 <p class="table-meta"><?= formatTanggalIndo($document['submitted_at'], 'time'); ?></p>
               </td>
               <td class="text-center">
-                <?php renderStatusBadge($rowFilterStatus === 'rejected' ? 'REJECTED' : $document['signer_status']); ?>
+                <?php renderStatusBadge($document['signer_status']); ?>
 
                 <?php if ($document['signer_status'] === 'SIGNED' && $document['document_status'] === 'IN_PROGRESS'): ?>
                   <p class="table-meta mt-1 text-[9px]">Menunggu penandatangan berikutnya</p>
+                <?php elseif ($document['signer_status'] === 'SIGNED' && $document['document_status'] === 'REJECTED'): ?>
+                  <p class="table-meta mt-1 text-[9px] text-[#b91c1c]">Dokumen ditolak penandatangan lain</p>
+                <?php elseif ($document['signer_status'] === 'SIGNED' && $document['document_status'] === 'CANCELLED'): ?>
+                  <p class="table-meta mt-1 text-[9px]">Pengajuan dokumen dibatalkan</p>
+                <?php elseif ($document['signer_status'] === 'CANCELLED' && $document['document_status'] === 'REJECTED'): ?>
+                  <p class="table-meta mt-1 text-[9px] text-[#b91c1c]">Dokumen ditolak penandatangan lain</p>
                 <?php endif; ?>
               </td>
               <td class="whitespace-nowrap">

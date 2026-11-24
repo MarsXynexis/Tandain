@@ -39,6 +39,11 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
         <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
         <?php require 'views/layouts/notice.php'; ?>
       <?php endif; ?>
+
+      <?php if ($document['status'] === 'CANCELLED' && !empty($document['rejection_reason'])): ?>
+        <?php $notice = ['type' => 'warning', 'message' => 'Alasan pembatalan: ' . $document['rejection_reason']]; ?>
+        <?php require 'views/layouts/notice.php'; ?>
+      <?php endif; ?>
     </div>
 
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.8fr)]">
@@ -135,6 +140,15 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
               </a>
             <?php endif; ?>
           </div>
+
+          <?php if (!empty($can_cancel)): ?>
+            <div class="mt-3 pt-3 border-t border-outline-variant/70">
+              <button type="button" data-modal-open="cancel-document-modal" class="btn-md inline-flex w-full items-center justify-center gap-2 border border-[#f3b4b4] bg-[#fff0f0] font-semibold text-[#b91c1c] transition-colors hover:bg-[#fde7e7]">
+                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">cancel</span>
+                <span>Batalkan Pengajuan</span>
+              </button>
+            </div>
+          <?php endif; ?>
         </section>
 
         <section class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
@@ -190,6 +204,20 @@ $previewUrl = '/Tandain/document/file/' . rawurlencode($document['id']);
 
     </div>
   </div>
+
+  <?php if (!empty($can_cancel)): ?>
+    <?php
+    $cancelModal = [
+      'id' => 'cancel-document-modal',
+      'action' => '/Tandain/document/cancel/' . rawurlencode($document['id']),
+      'title' => 'Batalkan Pengajuan Dokumen',
+      'message' => 'Pengajuan akan dihentikan dan dipindahkan ke status Dibatalkan. Sertakan alasan pembatalan.',
+      'placeholder' => 'Jelaskan alasan pembatalan pengajuan...',
+      'csrf_token' => $csrf_token ?? csrfToken(),
+    ];
+    ?>
+    <?php require 'views/layouts/cancel_modal.php'; ?>
+  <?php endif; ?>
 </main>
 
 <?php require_once 'views/layouts/footer.php'; ?>

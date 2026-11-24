@@ -44,7 +44,10 @@ class DocumentSigner
         LEFT JOIN signer_certificates sc ON sc.user_id = ds.signer_id AND sc.status = 'ACTIVE' AND CURRENT_TIMESTAMP BETWEEN sc.valid_from AND sc.valid_until
         WHERE ds.signer_id = :signer_id
           AND NOT ds.status = 'WAITING'
-          AND d.status IN ('IN_PROGRESS', 'COMPLETED', 'REJECTED')
+          AND (
+              d.status IN ('IN_PROGRESS', 'COMPLETED', 'REJECTED')
+              OR (d.status = 'CANCELLED' AND ds.status = 'SIGNED')
+          )
         ORDER BY submitted_at DESC";
 
 
@@ -116,7 +119,10 @@ class DocumentSigner
             WHERE d.id = :document_id
               AND ds.signer_id = :signer_id
               AND ds.status <> 'WAITING'
-              AND d.status IN ('IN_PROGRESS', 'COMPLETED', 'REJECTED', 'CANCELLED')
+              AND (
+                  d.status IN ('IN_PROGRESS', 'COMPLETED', 'REJECTED')
+                  OR (d.status = 'CANCELLED' AND ds.status = 'SIGNED')
+              )
             LIMIT 1";
 
             $this->db->query($sql);
@@ -177,7 +183,7 @@ class DocumentSigner
 
             $documentQuery = $pdo->prepare(
                 "SELECT id, status, original_file_path, final_file_path,
-                        initial_sha256_hash, final_sha256_hash, is_sequential
+                        initial_sha256_hash, final_sha256_hash, is_sequential, expires_at
                  FROM documents
                  WHERE id = ?
                  FOR UPDATE"
@@ -188,6 +194,15 @@ class DocumentSigner
             if (!$document || $document['status'] !== 'IN_PROGRESS') {
                 $pdo->rollBack();
                 return ['ok' => false, 'message' => 'Dokumen tidak sedang menunggu tanda tangan.'];
+            }
+
+            if (!empty($document['expires_at'])) {
+                $expiryTimestamp = strtotime((string) $document['expires_at']);
+
+                if ($expiryTimestamp !== false && date('Y-m-d', $expiryTimestamp) < date('Y-m-d')) {
+                    $pdo->rollBack();
+                    return ['ok' => false, 'message' => 'Dokumen telah melewati batas kedaluwarsa dan tidak dapat ditandatangani.'];
+                }
             }
 
             $signerQuery = $pdo->prepare(
@@ -212,26 +227,41 @@ class DocumentSigner
             );
             $userQuery->execute([$signerId]);
             $user = $userQuery->fetch(PDO::FETCH_ASSOC);
-            $signaturePath = $user['signature_image_path'] ?? '';
 
-            if (
-                !is_string($signaturePath)
-                || !preg_match('/\Auploads\/signatures\/[A-Za-z0-9._-]+\.png\z/i', $signaturePath)
-            ) {
+            if (!$user) {
                 $pdo->rollBack();
-                return ['ok' => false, 'message' => 'Gambar tanda tangan aktif belum tersedia. Unggah tanda tangan terlebih dahulu.'];
+                return ['ok' => false, 'message' => 'Akun Anda tidak aktif atau ditangguhkan.'];
             }
 
-            $signatureFile = dirname(__DIR__) . DIRECTORY_SEPARATOR
-                . str_replace('/', DIRECTORY_SEPARATOR, $signaturePath);
-            $signatureImageInfo = is_file($signatureFile) ? @getimagesize($signatureFile) : false;
-            if (!$signatureImageInfo || $signatureImageInfo[2] !== IMAGETYPE_PNG) {
-                $pdo->rollBack();
-                return ['ok' => false, 'message' => 'Berkas gambar tanda tangan tidak valid atau tidak ditemukan. Unggah ulang tanda tangan Anda.'];
-            }
-            $signatureImageHash = hash_file('sha256', $signatureFile);
-            if (!is_string($signatureImageHash)) {
-                throw new RuntimeException('Unable to calculate the signature image hash.');
+            $requiresSignatureImage = ($signer['stamp_type'] ?? 'DUAL_DISPLAY') !== 'QR_ONLY';
+            $signatureFile = '';
+            $signatureImageHash = null;
+
+            if ($requiresSignatureImage) {
+                $signaturePath = $user['signature_image_path'] ?? '';
+
+                if (
+                    !is_string($signaturePath)
+                    || !preg_match('/\Auploads\/signatures\/[A-Za-z0-9._-]+\.png\z/i', $signaturePath)
+                ) {
+                    $pdo->rollBack();
+                    return ['ok' => false, 'message' => 'Gambar tanda tangan aktif belum tersedia. Unggah tanda tangan terlebih dahulu.'];
+                }
+
+                $signatureFile = dirname(__DIR__) . DIRECTORY_SEPARATOR
+                    . str_replace('/', DIRECTORY_SEPARATOR, $signaturePath);
+                $signatureImageInfo = is_file($signatureFile) ? @getimagesize($signatureFile) : false;
+
+                if (!$signatureImageInfo || $signatureImageInfo[2] !== IMAGETYPE_PNG) {
+                    $pdo->rollBack();
+                    return ['ok' => false, 'message' => 'Berkas gambar tanda tangan tidak valid atau tidak ditemukan. Unggah ulang tanda tangan Anda.'];
+                }
+
+                $signatureImageHash = hash_file('sha256', $signatureFile);
+
+                if (!is_string($signatureImageHash)) {
+                    throw new RuntimeException('Unable to calculate the signature image hash.');
+                }
             }
 
             $hasFinalFile = is_string($document['final_file_path']) && $document['final_file_path'] !== '';

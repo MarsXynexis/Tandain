@@ -19,7 +19,11 @@ foreach ($data['signers'] as $signer) {
 
 $hasActiveCertificate = $currentSigner !== null && (int) ($currentSigner['has_active_cert'] ?? 0) === 1;
 $hasActiveSignature = $currentSigner !== null && !empty($currentSigner['has_active_signature']);
-$canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
+$currentStampType = (string) ($currentSigner['stamp_type'] ?? $document['signer_stamp_type'] ?? 'DUAL_DISPLAY');
+$requiresSignatureImage = $currentStampType !== 'QR_ONLY';
+$expiryTimestamp = !empty($document['expires_at']) ? strtotime((string) $document['expires_at']) : false;
+$isDocumentExpired = $expiryTimestamp !== false && date('Y-m-d', $expiryTimestamp) < date('Y-m-d');
+$canSign = $canDecide && !$isDocumentExpired && $hasActiveCertificate && (!$requiresSignatureImage || $hasActiveSignature);
 ?>
 
 <main class="flex-1 min-w-0 w-full p-6 lg:p-8 flex flex-col gap-6">
@@ -44,6 +48,11 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
 
             <?php if ($document['status'] === 'REJECTED' && !empty($document['rejection_reason'])): ?>
                 <?php $notice = ['type' => 'error', 'message' => 'Alasan penolakan: ' . $document['rejection_reason']]; ?>
+                <?php require 'views/layouts/notice.php'; ?>
+            <?php endif; ?>
+
+            <?php if ($document['status'] === 'CANCELLED' && !empty($document['rejection_reason'])): ?>
+                <?php $notice = ['type' => 'warning', 'message' => 'Alasan pembatalan: ' . $document['rejection_reason']]; ?>
                 <?php require 'views/layouts/notice.php'; ?>
             <?php endif; ?>
         </div>
@@ -346,7 +355,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                             <span class="material-symbols-outlined text-[16px]" aria-hidden="true">qr_code</span>
                                             <span>QR Saja</span>
                                         </button>
-                                        <?php if (!$hasActiveCertificate || !$hasActiveSignature): ?>
+                                        <?php if (!$hasActiveCertificate || ($requiresSignatureImage && !$hasActiveSignature)): ?>
                                             <div class="flex justify-between w-full mt-2 flex-wrap gap-2 text-[11px] font-semibold">
                                                 <?php if (!$hasActiveCertificate): ?>
                                                     <span class="inline-flex items-center gap-1 rounded-full bg-[#fee2e2] px-2 py-1 text-[#b91c1c]">
@@ -354,7 +363,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                                         Sertifikat belum aktif
                                                     </span>
                                                 <?php endif; ?>
-                                                <?php if (!$hasActiveSignature): ?>
+                                                <?php if ($requiresSignatureImage && !$hasActiveSignature): ?>
                                                     <span class="inline-flex items-center gap-1 rounded-full bg-[#fee2e2] px-2 py-1 text-[#b91c1c]">
                                                         <span class="material-symbols-outlined text-[13px]" aria-hidden="true">error</span>
                                                         Tanda tangan belum tersedia
@@ -387,7 +396,16 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                             Setujui
                                         </button>
                                     <?php else: ?>
-                                        <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-surface-container px-4 py-2.5 font-label-md text-label-md font-semibold text-on-surface-variant" title="Aktifkan sertifikat dan tanda tangan sebelum menyetujui">
+                                        <?php
+                                        if ($isDocumentExpired) {
+                                            $disabledTitle = 'Dokumen telah melewati batas kedaluwarsa';
+                                        } elseif (!$requiresSignatureImage) {
+                                            $disabledTitle = 'Aktifkan sertifikat sebelum menyetujui';
+                                        } else {
+                                            $disabledTitle = 'Aktifkan sertifikat dan tanda tangan sebelum menyetujui';
+                                        }
+                                        ?>
+                                        <span class="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-surface-container px-4 py-2.5 font-label-md text-label-md font-semibold text-on-surface-variant" title="<?= htmlspecialchars($disabledTitle, ENT_QUOTES, 'UTF-8'); ?>">
                                             <span class="material-symbols-outlined text-[18px]" aria-hidden="true">lock</span>
                                             Setujui
                                         </span>
@@ -535,10 +553,14 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                 widthPx = 46 * pxPerMm;
                             }
 
-                            const clampedLeft = Math.max(0, Math.min(Math.max(0, Math.min(1, signer.x)) * viewport.width, viewport.width - widthPx));
-                            const clampedTop = Math.max(0, Math.min(Math.max(0, Math.min(1, signer.y)) * viewport.height, viewport.height - heightPx));
+                            const slotWidthPx = Math.min(58 * pxPerMm, viewport.width);
+                            const slotHeightPx = Math.min(18 * pxPerMm, viewport.height);
+                            const slotLeft = Math.max(0, Math.min(Math.max(0, Math.min(1, signer.x)) * viewport.width, viewport.width - slotWidthPx));
+                            const slotTop = Math.max(0, Math.min(Math.max(0, Math.min(1, signer.y)) * viewport.height, viewport.height - slotHeightPx));
+                            const clampedLeft = Math.max(0, Math.min(slotLeft + (slotWidthPx - widthPx) / 2, viewport.width - widthPx));
+                            const clampedTop = Math.max(0, Math.min(slotTop + (slotHeightPx - heightPx) / 2, viewport.height - heightPx));
 
-                            marker.className = 'absolute z-10 flex items-center overflow-hidden bg-white shadow-sm';
+                            marker.className = 'absolute z-10 flex items-center overflow-hidden bg-transparent';
                             marker.style.width = `${widthPx}px`;
                             marker.style.height = `${heightPx}px`;
                             marker.style.left = `${clampedLeft}px`;
@@ -573,7 +595,7 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                                 box.style.display = 'flex';
                                 box.style.flexDirection = 'column';
                                 box.style.justifyContent = 'space-between';
-                                box.style.backgroundColor = '#ffffff';
+                                box.style.backgroundColor = 'transparent';
                                 box.style.boxSizing = 'border-box';
                                 box.style.height = '100%';
 

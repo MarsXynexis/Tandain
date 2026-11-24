@@ -101,17 +101,29 @@ class InboxController extends Controller
 
             $hasActiveCertificate = $currentSigner !== null && (int) ($currentSigner['has_active_cert'] ?? 0) === 1;
             $hasActiveSignature = $currentSigner !== null && !empty($currentSigner['has_active_signature']);
+            $currentStampType = (string) ($currentSigner['stamp_type'] ?? $data['document']['signer_stamp_type'] ?? 'DUAL_DISPLAY');
+            $requiresSignatureImage = $currentStampType !== 'QR_ONLY';
+            $expiryTimestamp = !empty($data['document']['expires_at']) ? strtotime((string) $data['document']['expires_at']) : false;
+            $isDocumentExpired = $expiryTimestamp !== false && date('Y-m-d', $expiryTimestamp) < date('Y-m-d');
 
-            if (!$hasActiveCertificate || !$hasActiveSignature) {
+            if ($isDocumentExpired) {
+                $data['signing_warning'] = 'Dokumen ini telah melewati batas kedaluwarsa (' . formatTanggalIndo($data['document']['expires_at']) . ') sehingga tidak dapat ditandatangani.';
+            } elseif (!$hasActiveCertificate || ($requiresSignatureImage && !$hasActiveSignature)) {
                 $missingItems = [];
+
                 if (!$hasActiveCertificate) {
                     $missingItems[] = 'sertifikat TTE aktif';
                 }
-                if (!$hasActiveSignature) {
+
+                if ($requiresSignatureImage && !$hasActiveSignature) {
                     $missingItems[] = 'gambar tanda tangan aktif';
                 }
 
-                $data['signing_warning'] = 'Untuk menyetujui dokumen, lengkapi terlebih dahulu ' . implode(' dan ', $missingItems) . '.';
+                if ($hasActiveCertificate && $requiresSignatureImage && !$hasActiveSignature) {
+                    $data['signing_warning'] = 'Untuk menyetujui dokumen, lengkapi gambar tanda tangan aktif terlebih dahulu atau pilih mode QR Saja.';
+                } else {
+                    $data['signing_warning'] = 'Untuk menyetujui dokumen, lengkapi terlebih dahulu ' . implode(' dan ', $missingItems) . '.';
+                }
             }
         }
 

@@ -50,6 +50,7 @@ class DocumentController extends Controller
         $expiresAt = $expiresAtInput !== '' ? $expiresAtInput : null;
         $isTriage = !empty($_POST['is_triage']);
         $sequential = !empty($_POST['is_sequential']);
+        $submittedDocumentNumber = trim((string) ($_POST['document_number'] ?? ''));
         $rawSigners = is_array($_POST['signers'] ?? null) ? $_POST['signers'] : [];
         $signerIds = array_values(array_unique(array_filter(array_map('trim', array_filter($rawSigners, 'is_string')))));
 
@@ -63,6 +64,10 @@ class DocumentController extends Controller
             $errorMessage = 'Mode pengajuan dokumen tidak valid.';
         } elseif ($expiresAt !== null && !$this->isValidDate($expiresAt)) {
             $errorMessage = 'Batas kedaluwarsa dokumen tidak valid.';
+        } elseif ($expiresAt !== null && $expiresAt < date('Y-m-d')) {
+            $errorMessage = 'Batas kedaluwarsa dokumen tidak boleh berada di masa lalu.';
+        } elseif (mb_strlen($submittedDocumentNumber) > 100) {
+            $errorMessage = 'Nomor naskah kedinasan maksimal terdiri dari 100 karakter.';
         } elseif ($submissionMode === 'upload') {
             if ($title === '') {
                 $errorMessage = 'Judul dokumen wajib diisi.';
@@ -130,14 +135,13 @@ class DocumentController extends Controller
                 $documentNumber = null;
 
                 if ($submissionMode === 'template' && $template) {
-                    $submittedNumber = trim($_POST['document_number'] ?? '');
-
-                    if ($submittedNumber !== '' && empty($documentModel->isDocumentNumberTaken($submittedNumber))) {
-                        $documentNumber = $submittedNumber;
+                    if ($submittedDocumentNumber !== '' && empty($documentModel->isDocumentNumberTaken($submittedDocumentNumber))) {
+                        $documentNumber = $submittedDocumentNumber;
                     } else {
                         $seq = $documentModel->getNextDocumentSequence();
                         $code = strtoupper(trim($template['template_code'] ?? 'SURAT'));
-                        $documentNumber = $seq . '/PL3/' . $code . '/PNJ/' . date('Y');
+                        $autoNumber = $seq . '/PL3/' . $code . '/PNJ/' . date('Y');
+                        $documentNumber = mb_substr($autoNumber, 0, 100);
                     }
                 }
 
@@ -353,6 +357,7 @@ class DocumentController extends Controller
         $data['documentId'] = $doc['id'];
         $data['signers'] = $documentModel->getSignersForPositioning($doc['id']);
         $data['pdfUrl'] = '/Tandain/document/file/' . $doc['id'];
+        $data['csrf_token'] = $this->getCsrfToken();
 
         $this->view('document/position', $data);
     }
@@ -441,34 +446,42 @@ class DocumentController extends Controller
 
         if ($doc && $doc['status'] === 'DRAFT') {
             $redirectUrl = '/Tandain/document/position/' . $doc['id'];
-            $positions = json_decode($_POST['positions'] ?? '[]', true);
-            $isSequential = in_array($doc['is_sequential'], [true, 1, '1', 't', 'true'], true);
 
-            if (!is_array($positions) || !$positions) {
-                $this->setFlash('error', 'Tempatkan kotak TTE dulu.');
-            } elseif (!$documentModel->updateSignerPositions($doc['id'], $positions, $isSequential, $userId, 'DRAFT')) {
-                $this->setFlash('error', 'Gagal menyimpan posisi tanda tangan.');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$this->verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+                $this->setFlash('error', 'Sesi formulir tidak valid. Silakan muat ulang halaman dan coba lagi.');
             } else {
-                $isUserCurrentTurn = false;
+                $positions = json_decode($_POST['positions'] ?? '[]', true);
 
-                foreach ($documentSignerModel->getSignerByDocumentId($doc['id']) as $signer) {
-                    if (
-                        ($signer['status'] ?? '') === 'CURRENT_TURN'
-                        && (string) ($signer['signer_id'] ?? '') === (string) $userId
-                    ) {
-                        $isUserCurrentTurn = true;
-                        break;
-                    }
-                }
-
-                if ($isUserCurrentTurn) {
-                    $redirectUrl = '/Tandain/inbox/detail?document_id=' . rawurlencode((string) $doc['id']);
-
-                    $this->setFlash('success', 'Silakan tandatangani Dokumen Anda.');
+                if (!is_array($positions) || !$positions) {
+                    $this->setFlash('error', 'Tempatkan semua kotak TTE.');
                 } else {
-                    $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');
+                    $saveResult = $documentModel->updateSignerPositions($doc['id'], $positions, $userId, 'DRAFT');
 
-                    $redirectUrl = '/Tandain/document';
+                    if (!$saveResult['ok']) {
+                        $this->setFlash('error', $saveResult['message']);
+                    } else {
+                        $isUserCurrentTurn = false;
+
+                        foreach ($documentSignerModel->getSignerByDocumentId($doc['id']) as $signer) {
+                            if (
+                                ($signer['status'] ?? '') === 'CURRENT_TURN'
+                                && (string) ($signer['signer_id'] ?? '') === (string) $userId
+                            ) {
+                                $isUserCurrentTurn = true;
+                                break;
+                            }
+                        }
+
+                        if ($isUserCurrentTurn) {
+                            $redirectUrl = '/Tandain/inbox/detail?document_id=' . rawurlencode((string) $doc['id']);
+
+                            $this->setFlash('success', 'Silakan tandatangani Dokumen Anda.');
+                        } else {
+                            $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');
+
+                            $redirectUrl = '/Tandain/document';
+                        }
+                    }
                 }
             }
         }
@@ -512,9 +525,49 @@ class DocumentController extends Controller
             $data['signedCount'] = $signedCount;
             $data['totalSigners'] = $totalSigners;
             $data['percent'] = $percent;
+            $data['can_cancel'] = in_array($document['status'], ['PENDING_TRIAGE', 'IN_PROGRESS'], true) && $signedCount === 0;
+            $data['csrf_token'] = $this->getCsrfToken();
 
             $this->view('document/detail', $data);
         }
+    }
+
+    public function cancel($id = null)
+    {
+        $this->authCheck();
+
+        $documentId = trim((string) ($id ?? ''));
+        $redirectUrl = '/Tandain/document';
+
+        if (isValidUuid($documentId)) {
+            $redirectUrl = '/Tandain/document/detail?id=' . rawurlencode($documentId);
+        }
+
+        if (
+            $_SERVER['REQUEST_METHOD'] !== 'POST'
+            || !isValidUuid($documentId)
+            || !$this->verifyCsrfToken($_POST['csrf_token'] ?? '')
+        ) {
+            $this->setFlash('error', 'Permintaan pembatalan dokumen tidak valid.');
+        } else {
+            $reasonInput = $_POST['cancellation_reason'] ?? '';
+            $reason = is_string($reasonInput) ? trim($reasonInput) : '';
+
+            if ($reason === '' || mb_strlen($reason) > 1000) {
+                $this->setFlash('error', 'Alasan pembatalan wajib diisi dan maksimal 1000 karakter.');
+            } else {
+                $documentModel = $this->model('Document');
+                $result = $documentModel->cancelDocument($documentId, $_SESSION['user']['id'], $reason, false);
+
+                if ($result['ok']) {
+                    $this->setFlash('success', $result['message']);
+                } else {
+                    $this->setFlash('error', $result['message']);
+                }
+            }
+        }
+
+        $this->redirect($redirectUrl);
     }
 
     public function signed()

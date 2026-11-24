@@ -55,6 +55,42 @@ class PDFStamper
         return $errorMessage;
     }
 
+    public static function getReferenceSlotDimensionsMm(): array
+    {
+        return [
+            'width' => self::DUAL_WIDTH_MM,
+            'height' => self::DUAL_HEIGHT_MM,
+        ];
+    }
+
+    public static function getPageSizes(string $sourcePdfPath): array
+    {
+        $pageSizes = [];
+
+        if (is_file($sourcePdfPath) && is_readable($sourcePdfPath)) {
+            try {
+                $pdf = new Fpdi();
+                $pageCount = (int) $pdf->setSourceFile($sourcePdfPath);
+
+                for ($page = 1; $page <= $pageCount; $page++) {
+                    $templateId = $pdf->importPage($page);
+                    $size = $pdf->getTemplateSize($templateId);
+
+                    if (is_array($size) && !empty($size['width']) && !empty($size['height'])) {
+                        $pageSizes[$page] = [
+                            'width' => (float) $size['width'],
+                            'height' => (float) $size['height'],
+                        ];
+                    }
+                }
+            } catch (Throwable $exception) {
+                $pageSizes = [];
+            }
+        }
+
+        return $pageSizes;
+    }
+
     public static function stamp(
         string $sourcePdfPath,
         string $signatureAbsolutePath,
@@ -69,18 +105,20 @@ class PDFStamper
             throw new RuntimeException('Berkas PDF sumber tidak tersedia atau tidak dapat dibaca.');
         }
 
-        if (!is_file($signatureAbsolutePath) || !is_readable($signatureAbsolutePath)) {
-            throw new RuntimeException('Berkas gambar tanda tangan tidak tersedia atau tidak dapat dibaca.');
-        }
-
-        $signatureInfo = @getimagesize($signatureAbsolutePath);
-
-        if (!$signatureInfo || $signatureInfo[2] !== IMAGETYPE_PNG) {
-            throw new RuntimeException('Berkas tanda tangan harus berupa gambar PNG yang valid.');
-        }
-
         if (!in_array($stampType, ['DUAL_DISPLAY', 'QR_ONLY', 'SIGNATURE_ONLY'], true)) {
             throw new InvalidArgumentException('Jenis stempel tidak valid.');
+        }
+
+        if ($stampType !== 'QR_ONLY') {
+            if ($signatureAbsolutePath === '' || !is_file($signatureAbsolutePath) || !is_readable($signatureAbsolutePath)) {
+                throw new RuntimeException('Berkas gambar tanda tangan tidak tersedia atau tidak dapat dibaca.');
+            }
+
+            $signatureInfo = @getimagesize($signatureAbsolutePath);
+
+            if (!$signatureInfo || $signatureInfo[2] !== IMAGETYPE_PNG) {
+                throw new RuntimeException('Berkas tanda tangan harus berupa gambar PNG yang valid.');
+            }
         }
 
         if (
@@ -184,13 +222,12 @@ class PDFStamper
             throw new RuntimeException('Halaman PDF terlalu kecil untuk memuat stempel.');
         }
 
-        $x = self::coordinateToMillimeters($coordX, $pageWidth);
-        $y = self::coordinateToMillimeters($coordY, $pageHeight);
-        $x = max(0.0, min($x, $pageWidth - $stampWidth));
-        $y = max(0.0, min($y, $pageHeight - $stampHeight));
-
-        $pdf->SetFillColor(255, 255, 255);
-        $pdf->Rect($x, $y, $stampWidth, $stampHeight, 'F');
+        $slotWidth = min(self::DUAL_WIDTH_MM, $pageWidth);
+        $slotHeight = min(self::DUAL_HEIGHT_MM, $pageHeight);
+        $slotX = max(0.0, min(self::coordinateToMillimeters($coordX, $pageWidth), $pageWidth - $slotWidth));
+        $slotY = max(0.0, min(self::coordinateToMillimeters($coordY, $pageHeight), $pageHeight - $slotHeight));
+        $x = max(0.0, min($slotX + ($slotWidth - $stampWidth) / 2.0, $pageWidth - $stampWidth));
+        $y = max(0.0, min($slotY + ($slotHeight - $stampHeight) / 2.0, $pageHeight - $stampHeight));
 
         if ($stampType === 'QR_ONLY') {
             self::drawQrCode($pdf, $verificationUrl, $x, $y, self::QR_SIZE_MM);
