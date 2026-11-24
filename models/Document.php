@@ -209,7 +209,7 @@ class Document
         if (!empty($userId)) {
             $sql = "SELECT d.id, d.requester_id, d.document_number, d.title, d.status, d.routing_type, d.created_at, d.completed_at, u.full_name AS requester_name, u.identity_number AS requester_nim, ds.status AS signer_status, ds.signed_at FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id LEFT JOIN document_signers ds ON ds.document_id = d.id AND ds.signer_id = :signer_id WHERE (d.requester_id = :requester_id OR (ds.signer_id IS NOT NULL AND ds.status != 'WAITING'))";
         } else {
-            $sql = "SELECT d.id, d.requester_id, d.document_number, d.title, d.status, d.routing_type, d.created_at, d.completed_at, u.full_name AS requester_name, u.identity_number AS requester_nim, NULL AS signer_status, NULL AS signed_at FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id WHERE 1=1";
+            $sql = "SELECT d.id, d.requester_id, d.document_number, d.title, d.status, d.routing_type, d.created_at, d.completed_at, u.full_name AS requester_name, u.identity_number AS requester_nim, NULL AS signer_status, NULL AS signed_at FROM " . $this->table . " d JOIN users u ON u.id = d.requester_id WHERE d.status <> 'DRAFT'";
         }
 
         if (!empty($search)) {
@@ -329,74 +329,13 @@ class Document
 
     public function getDashboardStatistics()
     {
-        $sql = "SELECT COUNT(*) AS total_documents, COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS total_completed, COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END) AS total_in_progress, COUNT(CASE WHEN status = 'PENDING_TRIAGE' THEN 1 END) AS total_pending_triage FROM " . $this->table;
+        $sql = "SELECT COUNT(CASE WHEN status <> 'DRAFT' THEN 1 END) AS total_documents, COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS total_completed, COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END) AS total_in_progress, COUNT(CASE WHEN status = 'PENDING_TRIAGE' THEN 1 END) AS total_pending_triage FROM " . $this->table;
 
         $this->db->query($sql);
 
         return $this->db->single();
     }
 
-    public function countUserDocuments($userId, $search = '', $filter = 'all')
-    {
-        $sql = "SELECT COUNT(*) AS total FROM " . $this->table . " d WHERE d.requester_id = :user_id";
-
-        if (!empty($search)) {
-            $sql .= " AND (d.title ILIKE :search OR d.document_number ILIKE :search)";
-        }
-
-        if ($filter === 'completed') {
-            $sql .= " AND d.status = 'COMPLETED'";
-        } else if ($filter === 'in_progress') {
-            $sql .= " AND d.status IN ('PENDING_TRIAGE', 'IN_PROGRESS')";
-        } else if ($filter === 'draft') {
-            $sql .= " AND d.status = 'DRAFT'";
-        }
-
-        $this->db->query($sql);
-        $this->db->bind('user_id', $userId);
-
-        if (!empty($search)) {
-            $this->db->bind('search', '%' . $search . '%');
-        }
-
-        $row = $this->db->single();
-
-        return (int) ($row['total'] ?? 0);
-    }
-
-    public function getUserDocuments($userId, $search = '', $filter = 'all', $limit = 8, $offset = 0)
-    {
-        $sql = "SELECT d.id, d.title, d.document_number, d.status, d.created_at, d.original_file_path, d.final_file_path, 
-                (SELECT COUNT(*) FROM document_signers s WHERE s.document_id = d.id) AS total_signers, 
-                (SELECT COUNT(*) FROM document_signers s WHERE s.document_id = d.id AND s.status = 'SIGNED') AS signed_count 
-                FROM " . $this->table . " d WHERE d.requester_id = :user_id";
-
-        if (!empty($search)) {
-            $sql .= " AND (d.title ILIKE :search OR d.document_number ILIKE :search)";
-        }
-
-        if ($filter === 'completed') {
-            $sql .= " AND d.status = 'COMPLETED'";
-        } else if ($filter === 'in_progress') {
-            $sql .= " AND d.status IN ('PENDING_TRIAGE', 'IN_PROGRESS')";
-        } else if ($filter === 'draft') {
-            $sql .= " AND d.status = 'DRAFT'";
-        }
-
-        $sql .= " ORDER BY d.created_at DESC LIMIT :limit OFFSET :offset";
-
-        $this->db->query($sql);
-        $this->db->bind('user_id', $userId);
-
-        if (!empty($search)) {
-            $this->db->bind('search', '%' . $search . '%');
-        }
-
-        $this->db->bind('limit', (int) $limit);
-        $this->db->bind('offset', (int) $offset);
-
-        return $this->db->resultSet();
-    }
     public function getAllUserDocuments($userId)
     {
         $sql = "SELECT d.id, d.title, d.document_number, d.status, d.created_at, d.original_file_path, d.final_file_path,
@@ -410,20 +349,6 @@ class Document
         $this->db->bind('user_id', $userId);
 
         return $this->db->resultSet();
-    }
-
-    public function getUserStatusCounts($userId)
-    {
-        $sql = "SELECT COUNT(*) AS total_all, 
-                COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS total_completed, 
-                COUNT(CASE WHEN status = 'DRAFT' THEN 1 END) AS total_draft, 
-                COUNT(CASE WHEN status IN ('PENDING_TRIAGE', 'IN_PROGRESS') THEN 1 END) AS total_in_progress 
-                FROM " . $this->table . " WHERE requester_id = :user_id";
-
-        $this->db->query($sql);
-        $this->db->bind('user_id', $userId);
-
-        return $this->db->single();
     }
 
     public function getDocumentByIdAndUser($id, $userId)
@@ -511,7 +436,7 @@ class Document
             $document = $this->db->single();
 
             if ($document) {
-                $signersSql = "SELECT s.*, u.full_name, u.identity_number, u.position, u.study_program, r.display_name AS role_display_name, c.certificate_serial, c.status AS cert_status, c.valid_from, c.valid_until
+                $signersSql = "SELECT s.*, u.full_name, u.identity_number, u.position, u.study_program, r.display_name AS role_display_name, c.certificate_serial, c.public_key, c.status AS cert_status, c.valid_from, c.valid_until, c.revoked_at
                                FROM document_signers s
                                JOIN users u ON u.id = s.signer_id
                                LEFT JOIN roles r ON r.id = u.role_id

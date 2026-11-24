@@ -43,6 +43,7 @@ function renderStatusBadge($status, $size = 'normal')
         'SUSPENDED' => ['Ditangguhkan', 'block', 'error'],
         'REVOKED' => ['Dicabut', 'block', 'error'],
         'EXPIRED' => ['Kedaluwarsa', 'schedule', 'warning'],
+        'NOT_YET_VALID' => ['Belum Berlaku', 'schedule', 'warning'],
         'CERT_ACTIVE' => ['Sertifikat Aktif', 'verified', 'success'],
         'CERT_INACTIVE' => ['Tanpa Sertifikat Aktif', 'gpp_maybe', 'neutral'],
         'YOU' => ['Anda', 'person', 'success'],

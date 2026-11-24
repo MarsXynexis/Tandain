@@ -23,9 +23,46 @@ class Controller
         exit;
     }
 
+    protected function refreshAuthenticatedUser()
+    {
+        $isAuthenticated = false;
+
+        if (isset($_SESSION['user']['id'])) {
+            $userModel = $this->model('User');
+            $freshUser = $userModel->findById($_SESSION['user']['id']);
+
+            if ($freshUser && ($freshUser['status'] ?? '') === 'ACTIVE') {
+                $_SESSION['user'] = [
+                    'id' => $freshUser['id'],
+                    'full_name' => $freshUser['full_name'],
+                    'email' => $freshUser['email'],
+                    'role_id' => $freshUser['role_id'],
+                    'role_name' => $freshUser['role_name'],
+                    'position' => $freshUser['position'],
+                    'study_program' => $freshUser['study_program'] ?? null,
+                    'role_display_name' => $freshUser['role_display_name'],
+                ];
+
+                $isAuthenticated = true;
+            } else {
+                unset($_SESSION['user'], $_SESSION['csrf_token']);
+
+                session_regenerate_id(true);
+            }
+        }
+
+        return $isAuthenticated;
+    }
+
     public function authCheck()
     {
-        if (!isset($_SESSION['user'])) {
+        $hadSession = isset($_SESSION['user']);
+
+        if (!$this->refreshAuthenticatedUser()) {
+            if ($hadSession) {
+                $this->setFlash('error', 'Akun Anda tidak aktif atau telah ditangguhkan. Hubungi Administrator Tata Usaha.');
+            }
+
             $this->redirect('/Tandain/login');
         }
     }

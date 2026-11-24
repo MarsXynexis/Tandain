@@ -3,7 +3,7 @@
 <?php require_once 'views/layouts/navbar.php'; ?>
 
 <?php
-$docCounts = ['all' => 0, 'completed' => 0, 'in_progress' => 0, 'draft' => 0];
+$docCounts = ['all' => 0, 'completed' => 0, 'in_progress' => 0, 'draft' => 0, 'rejected' => 0];
 $docRows = [];
 
 foreach ($documents as $docItem) {
@@ -13,6 +13,8 @@ foreach ($documents as $docItem) {
     $filterStatus = 'in_progress';
   } elseif ($docItem['status'] === 'DRAFT') {
     $filterStatus = 'draft';
+  } elseif ($docItem['status'] === 'REJECTED') {
+    $filterStatus = 'rejected';
   } else {
     $filterStatus = 'other';
   }
@@ -52,6 +54,7 @@ foreach ($documents as $docItem) {
             <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="completed" aria-pressed="false">Selesai (<?= $docCounts['completed']; ?>)</button>
             <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="in_progress" aria-pressed="false">Sedang Diproses (<?= $docCounts['in_progress']; ?>)</button>
             <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="draft" aria-pressed="false">Draft (<?= $docCounts['draft']; ?>)</button>
+            <button class="btn-sm inline-flex doc-filter shrink-0 whitespace-nowrap transition-colors font-medium text-on-surface-variant hover:text-primary" type="button" data-filter="rejected" aria-pressed="false">Ditolak (<?= $docCounts['rejected']; ?>)</button>
           </div>
         </div>
       </div>
@@ -161,7 +164,7 @@ foreach ($documents as $docItem) {
         </table>
       </div>
 
-      <footer class="table-footer flex flex-col items-start justify-between gap-3 border-t border-surface-container-high bg-white sm:flex-row sm:items-center">
+      <footer id="doc-footer" class="table-footer flex flex-col items-start justify-between gap-3 border-t border-surface-container-high bg-white sm:flex-row sm:items-center">
         <p id="doc-count" class="text-on-surface-variant">Menampilkan <strong id="doc-visible-count" class="text-primary">0</strong> dari <strong id="doc-filter-count" class="text-primary"><?= $docCounts['all']; ?></strong> dokumen</p>
         <nav id="doc-pagination" class="flex min-w-0 max-w-full items-center gap-2" aria-label="Halaman dokumen">
           <button id="doc-previous" class="btn-sm inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-white font-semibold text-primary transition-colors hover:bg-surface-container-low" type="button" aria-label="Halaman sebelumnya">
@@ -186,6 +189,7 @@ foreach ($documents as $docItem) {
     const filterButtons = document.querySelectorAll('.doc-filter');
     const rows = Array.from(document.querySelectorAll('.doc-row'));
     const emptyRow = document.getElementById('doc-empty');
+    const docFooter = document.getElementById('doc-footer');
     const pagination = document.getElementById('doc-pagination');
     const previousButton = document.getElementById('doc-previous');
     const nextButton = document.getElementById('doc-next');
@@ -253,6 +257,7 @@ foreach ($documents as $docItem) {
       nextButton.classList.toggle('opacity-40', nextButton.disabled);
       nextButton.classList.toggle('cursor-not-allowed', nextButton.disabled);
       pagination.classList.toggle('hidden', totalPages <= 1);
+      docFooter.classList.toggle('hidden', matchedRows.length === 0);
     };
 
     previousButton.addEventListener('click', () => {

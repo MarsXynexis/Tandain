@@ -10,7 +10,6 @@ class InboxController extends Controller
         $data['active_menu'] = 'signed';
         $data['user'] = $_SESSION['user'];
 
-
         $documentSignerModel = $this->model('DocumentSigner');
 
         $data['documents'] = $documentSignerModel->getDocumentsBySignerId($data['user']['id']);

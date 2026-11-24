@@ -5,20 +5,20 @@ class DocumentController extends Controller
     private const MAX_SIZE = 2097152;
 
     public function index()
-{
-    $this->authCheck();
+    {
+        $this->authCheck();
 
-    $documentModel = $this->model('Document');
-    $userId = $_SESSION['user']['id'];
+        $documentModel = $this->model('Document');
+        $userId = $_SESSION['user']['id'];
 
-    $data['title'] = 'Dokumen Diunggah - Tandain';
-    $data['active_menu'] = 'uploaded';
-    $data['user'] = $_SESSION['user'];
-    $data['documents'] = $documentModel->getAllUserDocuments($userId);
+        $data['title'] = 'Dokumen Diunggah - Tandain';
+        $data['active_menu'] = 'uploaded';
+        $data['user'] = $_SESSION['user'];
+        $data['documents'] = $documentModel->getAllUserDocuments($userId);
 
-    $this->view('document/index', $data);
+        $this->view('document/index', $data);
+    }
 
-}
     public function create()
     {
         $this->authCheck();

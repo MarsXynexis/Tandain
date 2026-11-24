@@ -8,7 +8,6 @@
     ],
     'signed' => [
       ['label' => 'Persetujuan Dokumen', 'href' => '/Tandain/inbox'],
-
     ],
     'signature_image' => [
       ['label' => 'Tanda Tangan & Sertifikat', 'href' => '/Tandain/certificate'],

@@ -35,7 +35,7 @@ class TriageController extends Controller
 
         $doc = !empty($id) ? $docModel->findByIdWithRequester($id) : null;
 
-        if (empty($doc)) {
+        if (empty($doc) || ($doc['status'] ?? '') === 'DRAFT') {
             $this->setFlash('error', 'Dokumen yang ingin ditelaah tidak ditemukan.');
 
             $this->redirect('/Tandain/triage');
@@ -60,7 +60,7 @@ class TriageController extends Controller
         $version = $_GET['version'] ?? 'latest';
         $relativePath = '';
 
-        if ($doc) {
+        if ($doc && ($doc['status'] ?? '') !== 'DRAFT') {
             if ($version !== 'original' && !empty($doc['final_file_path'])) {
                 $relativePath = ltrim((string) $doc['final_file_path'], '/');
             } else {
@@ -68,7 +68,7 @@ class TriageController extends Controller
             }
         }
 
-        if (empty($doc) || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath) || !is_file($relativePath)) {
+        if (empty($doc) || ($doc['status'] ?? '') === 'DRAFT' || !preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePath) || !is_file($relativePath)) {
             http_response_code(404);
         } else {
             header('Content-Type: application/pdf');
@@ -88,7 +88,7 @@ class TriageController extends Controller
 
         $users = [];
 
-        if (!isset($_SESSION['user'])) {
+        if (!$this->refreshAuthenticatedUser()) {
             http_response_code(401);
         } else {
             $keyword = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';

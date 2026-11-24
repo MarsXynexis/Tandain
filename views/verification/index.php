@@ -3,7 +3,7 @@ $isLoggedIn = !empty($data['user']['id']);
 $formWidth = $isLoggedIn ? 'max-w-5xl' : 'max-w-3xl';
 $status = $data['status'] ?? 'upload';
 $document = $data['document'] ?? null;
-$hasResult = in_array($status, ['success', 'expired'], true) && !empty($document);
+$hasResult = in_array($status, ['success', 'expired', 'warning'], true) && !empty($document);
 $signers = $hasResult && is_array($document['signers'] ?? null) ? $document['signers'] : [];
 $filePath = $hasResult ? ($document['final_file_path'] ?? '') : '';
 $fileUrl = ($hasResult && $filePath !== '' && !empty($document['id'])) ? '/Tandain/verification/file/' . rawurlencode($document['id']) : '';
@@ -22,9 +22,14 @@ require_once 'views/layouts/header.php';
   <div class="flex min-h-screen min-w-0 flex-1 flex-col">
     <header class="sticky top-0 z-30 border-b border-outline-variant bg-surface-container-lowest">
       <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6 lg:px-8">
-        <a href="/Tandain/verification" class="flex items-center gap-2.5">
-          <img src="/Tandain/assets/img/app-icon.png" alt="" class="size-10 shrink-0 object-contain">
-          <span class="font-headline-sm text-headline-sm font-bold text-primary">Tandain</span>
+        <a href="/Tandain/verification" class="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+          <img src="/Tandain/assets/img/app-icon.png" alt="Logo Tandain" class="size-10 shrink-0 rounded-xl object-contain shadow-sm">
+          <div class="min-w-0">
+            <span class="block truncate font-headline-sm text-[18px] font-bold leading-tight tracking-tight text-[#003865]">Tandain eSign</span>
+            <span class="hidden truncate text-[11px] font-medium text-slate-600 sm:block">
+              Digital Signature Platform <span class="mx-0.5 text-slate-400">·</span> Powered By <span class="font-semibold text-[#003865]">Tandain</span>
+            </span>
+          </div>
         </a>
 
         <a href="/Tandain/login" class="btn-md inline-flex gap-2 border border-outline-variant font-semibold text-primary hover:bg-surface-container-low">
@@ -39,7 +44,21 @@ require_once 'views/layouts/header.php';
 
   <?php if ($hasResult): ?>
 
-    <?php if ($status === 'expired' || !empty($data['is_expired'])): ?>
+    <?php if ($status === 'warning'): ?>
+
+      <section class="bg-[#fffbeb] border border-[#fde68a] rounded-xl p-5 shadow-sm">
+        <div class="flex items-center gap-4">
+          <div class="flex-shrink-0 h-11 w-11 rounded-full bg-surface-container-lowest shadow-sm border border-[#fef3c7] flex items-center justify-center text-[#d97706]">
+            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+          </div>
+          <div class="flex-1">
+            <h1 class="font-headline-lg text-headline-lg font-bold text-[#78350f]"><?= htmlspecialchars(($data['warning_title'] ?? '') !== '' ? $data['warning_title'] : 'Dokumen Terdaftar dengan Peringatan', ENT_QUOTES, 'UTF-8'); ?></h1>
+            <p class="font-body-md text-body-md text-[#92400e] mt-0.5 leading-relaxed"><?= htmlspecialchars(($data['warning_message'] ?? '') !== '' ? $data['warning_message'] : 'Berkas cocok dengan arsip Tandain, namun status sertifikat penandatangan perlu diperhatikan.', ENT_QUOTES, 'UTF-8'); ?></p>
+          </div>
+        </div>
+      </section>
+
+    <?php elseif ($status === 'expired' || !empty($data['is_expired'])): ?>
 
       <section class="bg-[#fffbeb] border border-[#fde68a] rounded-xl p-5 shadow-sm">
         <div class="flex items-center gap-4">
@@ -151,11 +170,19 @@ require_once 'views/layouts/header.php';
                     <?php renderStatusBadge($signer['status']); ?>
                   </div>
 
-                  <div class="flex items-center justify-between text-[10.5px] text-slate-500 pt-1.5 border-t border-slate-100">
+                  <div class="flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-slate-500 pt-1.5 border-t border-slate-100">
                     <?php if ($isSigned && !empty($signer['signed_at'])): ?>
                       <span class="font-code-tabular font-medium text-slate-600"><?= formatTanggalIndo($signer['signed_at'], 'datetime'); ?></span>
                     <?php else: ?>
                       <span class="font-body-sm text-[11px] text-slate-400">Belum dibubuhkan</span>
+                    <?php endif; ?>
+
+                    <?php if (($signer['cert_effective_status'] ?? '') === 'REVOKED'): ?>
+                      <?php renderStatusBadge('REVOKED', 'small'); ?>
+                    <?php elseif (($signer['cert_effective_status'] ?? '') === 'EXPIRED'): ?>
+                      <?php renderStatusBadge('EXPIRED', 'small'); ?>
+                    <?php elseif (($signer['cert_effective_status'] ?? '') === 'NOT_YET_VALID'): ?>
+                      <?php renderStatusBadge('NOT_YET_VALID', 'small'); ?>
                     <?php endif; ?>
                   </div>
                 </div>
@@ -198,8 +225,8 @@ require_once 'views/layouts/header.php';
             <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">cancel</span>
           </div>
           <div class="flex-1 space-y-1">
-            <h2 class="text-lg font-bold text-red-800 font-headline-sm">Dokumen Tidak Terdaftar</h2>
-            <p class="text-sm text-red-700 font-body-sm leading-relaxed">Berkas tidak cocok dengan dokumen final bertanda tangan yang terdaftar di Tandain, atau proses tanda tangan belum selesai.</p>
+            <h2 class="text-lg font-bold text-red-800 font-headline-sm"><?= htmlspecialchars(($data['error_title'] ?? '') !== '' ? $data['error_title'] : 'Dokumen Tidak Terdaftar', ENT_QUOTES, 'UTF-8'); ?></h2>
+            <p class="text-sm text-red-700 font-body-sm leading-relaxed"><?= htmlspecialchars(($data['error_message'] ?? '') !== '' ? $data['error_message'] : 'Berkas tidak cocok dengan dokumen final bertanda tangan yang terdaftar di Tandain, atau proses tanda tangan belum selesai.', ENT_QUOTES, 'UTF-8'); ?></p>
           </div>
         </div>
 
@@ -279,9 +306,29 @@ require_once 'views/layouts/header.php';
         <?php endif; ?>
 
         <?php foreach ($signerCertificates as $signer): ?>
+          <?php
+          $certEffectiveStatus = $signer['cert_effective_status'] ?? '';
+
+          if ($certEffectiveStatus === 'REVOKED') {
+              $certStatusText = 'Dicabut';
+          } elseif ($certEffectiveStatus === 'EXPIRED') {
+              $certStatusText = 'Kedaluwarsa';
+          } elseif ($certEffectiveStatus === 'NOT_YET_VALID') {
+              $certStatusText = 'Belum berlaku';
+          } elseif ($certEffectiveStatus === 'ACTIVE') {
+              $certStatusText = 'Aktif';
+          } else {
+              $certStatusText = 'Tidak diketahui';
+          }
+
+          $rsaStatusText = !empty($signer['rsa_verified']) ? 'Tanda tangan RSA-SHA256 terverifikasi' : 'Tanda tangan RSA-SHA256 belum terverifikasi';
+          ?>
           <div>
             <dt class="text-on-surface-variant">Nomor seri sertifikat · <?= htmlspecialchars($signer['full_name'] ?? 'Penandatangan', ENT_QUOTES, 'UTF-8'); ?></dt>
-            <dd class="break-all font-mono"><?= htmlspecialchars($signer['certificate_serial'], ENT_QUOTES, 'UTF-8'); ?></dd>
+            <dd class="break-all font-mono">
+              <?= htmlspecialchars($signer['certificate_serial'], ENT_QUOTES, 'UTF-8'); ?>
+              <span class="block font-sans text-xs text-on-surface-variant mt-0.5">Status sertifikat: <?= htmlspecialchars($certStatusText, ENT_QUOTES, 'UTF-8'); ?> · <?= htmlspecialchars($rsaStatusText, ENT_QUOTES, 'UTF-8'); ?></span>
+            </dd>
           </div>
         <?php endforeach; ?>
       </dl>

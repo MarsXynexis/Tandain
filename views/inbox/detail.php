@@ -69,6 +69,9 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                             <button id="pdf-zoom-in" type="button" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant" aria-label="Perbesar PDF">
                                 <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">zoom_in</span>
                             </button>
+                            <button id="pdf-zoom-reset" type="button" class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant font-label-sm text-[11px] font-semibold text-primary hover:bg-surface-container transition-colors disabled:opacity-50" aria-label="Reset zoom ke 100%">
+                                Reset
+                            </button>
                         </div>
                     </div>
 
@@ -439,39 +442,67 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
         const zoomValue = document.getElementById('pdf-zoom-value');
         const zoomInButton = document.getElementById('pdf-zoom-in');
         const zoomOutButton = document.getElementById('pdf-zoom-out');
+        const zoomResetButton = document.getElementById('pdf-zoom-reset');
+        let currentZoomPercent = 100;
+
+        const applyPdfZoom = () => {
+            const factor = currentZoomPercent / 100;
+
+            pdfContainer.querySelectorAll('.pdf-page-slot').forEach((slot) => {
+                const baseWidth = Number(slot.dataset.baseWidth || 0);
+                const baseHeight = Number(slot.dataset.baseHeight || 0);
+                const wrapper = slot.querySelector('.pdf-page');
+
+                if (baseWidth > 0 && baseHeight > 0 && wrapper) {
+                    slot.style.width = `${baseWidth * factor}px`;
+                    slot.style.height = `${baseHeight * factor}px`;
+                    wrapper.style.transform = `scale(${factor})`;
+                }
+            });
+        };
 
         const setPdfZoom = (value) => {
-            const zoomPercent = Math.max(50, Math.min(200, Number(value)));
-            zoomRange.value = String(zoomPercent);
-            zoomValue.textContent = `${zoomPercent}%`;
-            pdfContainer.style.zoom = String(zoomPercent / 100);
+            currentZoomPercent = Math.max(50, Math.min(200, Number(value)));
+            zoomRange.value = String(currentZoomPercent);
+            zoomValue.textContent = `${currentZoomPercent}%`;
+            applyPdfZoom();
 
-            zoomOutButton.disabled = zoomPercent <= 50;
-            zoomInButton.disabled = zoomPercent >= 200;
+            zoomOutButton.disabled = currentZoomPercent <= 50;
+            zoomInButton.disabled = currentZoomPercent >= 200;
+            zoomResetButton.disabled = currentZoomPercent === 100;
         };
 
         zoomRange.addEventListener('input', (event) => setPdfZoom(event.target.value));
-        zoomOutButton.addEventListener('click', () => setPdfZoom(Number(zoomRange.value) - 10));
-        zoomInButton.addEventListener('click', () => setPdfZoom(Number(zoomRange.value) + 10));
+        zoomOutButton.addEventListener('click', () => setPdfZoom(currentZoomPercent - 10));
+        zoomInButton.addEventListener('click', () => setPdfZoom(currentZoomPercent + 10));
+        zoomResetButton.addEventListener('click', () => setPdfZoom(100));
         setPdfZoom(100);
 
         pdfjsLib.getDocument(pdfUrl).promise
             .then(async (pdf) => {
+                const baseContainerWidth = pdfContainer.clientWidth;
+
                 for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
                     const page = await pdf.getPage(pageNumber);
                     const baseViewport = page.getViewport({
                         scale: 1
                     });
-                    const scale = Math.min(1.3, pdfContainer.clientWidth / baseViewport.width);
+                    const scale = Math.min(1.3, baseContainerWidth / baseViewport.width);
                     const viewport = page.getViewport({
                         scale: Math.max(scale, 0.1)
                     });
                     const pxPerMm = viewport.scale * PT_PER_MM;
                     const scaleFactor = viewport.scale / 1.3;
+                    const pageSlot = document.createElement('div');
+                    pageSlot.className = 'pdf-page-slot mx-auto overflow-hidden';
+                    pageSlot.dataset.baseWidth = String(viewport.width);
+                    pageSlot.dataset.baseHeight = String(viewport.height);
+
                     const pageWrapper = document.createElement('div');
-                    pageWrapper.className = 'pdf-page relative mx-auto overflow-hidden border border-outline-variant bg-white shadow-sm';
+                    pageWrapper.className = 'pdf-page relative overflow-hidden border border-outline-variant bg-white shadow-sm';
                     pageWrapper.style.width = `${viewport.width}px`;
                     pageWrapper.style.height = `${viewport.height}px`;
+                    pageWrapper.style.transformOrigin = 'top left';
                     pageWrapper.dataset.page = String(pageNumber);
 
                     const canvas = document.createElement('canvas');
@@ -480,7 +511,9 @@ $canSign = $canDecide && $hasActiveCertificate && $hasActiveSignature;
                     canvas.style.width = `${viewport.width}px`;
                     canvas.style.height = `${viewport.height}px`;
                     pageWrapper.appendChild(canvas);
-                    pdfContainer.appendChild(pageWrapper);
+                    pageSlot.appendChild(pageWrapper);
+                    pdfContainer.appendChild(pageSlot);
+                    applyPdfZoom();
 
                     await page.render({
                         canvasContext: canvas.getContext('2d'),

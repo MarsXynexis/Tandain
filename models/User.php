@@ -236,7 +236,7 @@ class User
 
     public function getFilteredUsers($search = '', $roleName = '', $status = '')
     {
-        $sql = "SELECT users.id, users.full_name, users.identity_number, users.email, users.position, users.study_program, users.status, users.created_at, roles.name AS role_name, roles.display_name AS role_display_name, CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id LEFT JOIN signer_certificates sc ON sc.user_id = users.id AND sc.status = 'ACTIVE' WHERE 1=1";
+        $sql = "SELECT DISTINCT users.id, users.full_name, users.identity_number, users.email, users.position, users.study_program, users.status, users.created_at, roles.name AS role_name, roles.display_name AS role_display_name, CASE WHEN sc.id IS NOT NULL THEN 1 ELSE 0 END AS has_active_cert FROM " . $this->table . " AS users JOIN roles ON roles.id = users.role_id LEFT JOIN signer_certificates sc ON sc.user_id = users.id AND sc.status = 'ACTIVE' AND CURRENT_TIMESTAMP BETWEEN sc.valid_from AND sc.valid_until WHERE 1=1";
 
         if (!empty($search)) {
             $sql .= " AND (users.full_name ILIKE :search OR users.identity_number ILIKE :search OR users.email ILIKE :search OR COALESCE(users.position, '') ILIKE :search OR COALESCE(users.study_program, '') ILIKE :search)";

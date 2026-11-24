@@ -75,8 +75,8 @@ class CertificateController extends Controller
 
                 if ($keypair !== null) {
                     $serialNumber = 'CERT-PNJ-TIK-' . date('Y') . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
-                    $validFrom = date('Y-m-d H:i:s');
-                    $validUntil = date('Y-m-d H:i:s', strtotime('+1 year'));
+                    $validFrom = date('c');
+                    $validUntil = date('c', strtotime('+1 year'));
 
                     $created = $certificateModel->createCertificate(
                         $userId,
@@ -142,7 +142,7 @@ class CertificateController extends Controller
         $statusCode = 200;
         $payload = [];
 
-        if (!isset($_SESSION['user'])) {
+        if (!$this->refreshAuthenticatedUser()) {
             $statusCode = 401;
             $payload = [
                 'message' => 'Sesi Anda telah berakhir. Silakan masuk kembali.',

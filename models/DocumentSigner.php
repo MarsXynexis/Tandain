@@ -41,7 +41,7 @@ class DocumentSigner
         JOIN documents d ON d.id = ds.document_id
         JOIN users req ON req.id = d.requester_id
         JOIN roles requester_role ON requester_role.id = req.role_id
-        LEFT JOIN signer_certificates sc ON sc.user_id = ds.signer_id AND sc.status = 'ACTIVE'
+        LEFT JOIN signer_certificates sc ON sc.user_id = ds.signer_id AND sc.status = 'ACTIVE' AND CURRENT_TIMESTAMP BETWEEN sc.valid_from AND sc.valid_until
         WHERE ds.signer_id = :signer_id
           AND NOT ds.status = 'WAITING'
           AND d.status IN ('IN_PROGRESS', 'COMPLETED', 'REJECTED')
@@ -115,6 +115,8 @@ class DocumentSigner
             LEFT JOIN roles requester_role ON requester_role.id = req.role_id
             WHERE d.id = :document_id
               AND ds.signer_id = :signer_id
+              AND ds.status <> 'WAITING'
+              AND d.status IN ('IN_PROGRESS', 'COMPLETED', 'REJECTED', 'CANCELLED')
             LIMIT 1";
 
             $this->db->query($sql);
@@ -517,6 +519,20 @@ class DocumentSigner
             if (!$signer) {
                 $pdo->rollBack();
                 return ['ok' => false, 'message' => 'Dokumen tidak sedang menunggu giliran Anda.'];
+            }
+
+            $userQuery = $pdo->prepare(
+                "SELECT status
+                 FROM users
+                 WHERE id = ?
+                 FOR UPDATE"
+            );
+            $userQuery->execute([$signerId]);
+            $user = $userQuery->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user || ($user['status'] ?? '') !== 'ACTIVE') {
+                $pdo->rollBack();
+                return ['ok' => false, 'message' => 'Akun Anda tidak aktif atau ditangguhkan.'];
             }
 
             $rejectSigner = $pdo->prepare(

@@ -81,35 +81,54 @@ class Certificate
 
     public function createCertificate($userId, $privateKey, $publicKey, $certificateSerial, $validFrom, $validUntil)
     {
-        $this->db->query("SELECT COUNT(*) AS count FROM " . $this->table . " WHERE user_id = :user_id AND status = 'ACTIVE'");
-        $this->db->bind('user_id', $userId);
-        $activeCertificates = $this->db->single();
+        $created = false;
+        $pdo = $this->db->getConnection();
 
-        if (($activeCertificates['count'] ?? 0) > 0) {
-            $this->db->query("UPDATE " . $this->table . " SET status = 'REVOKED', revoked_at = CURRENT_TIMESTAMP WHERE user_id = :user_id AND status = 'ACTIVE'");
+        try {
+            $this->db->beginTransaction();
+
+            $this->db->query("SELECT id FROM users WHERE id = :user_id FOR UPDATE");
             $this->db->bind('user_id', $userId);
-            $this->db->execute();
+            $lockedUser = $this->db->single();
+
+            if (!empty($lockedUser)) {
+                $this->db->query("UPDATE " . $this->table . " SET status = 'REVOKED', revoked_at = CURRENT_TIMESTAMP WHERE user_id = :user_id AND status = 'ACTIVE'");
+                $this->db->bind('user_id', $userId);
+                $this->db->execute();
+
+                $sql = "INSERT INTO " . $this->table . " (user_id, certificate_serial, public_key, encrypted_private_key, valid_from, valid_until, status) VALUES (:user_id, :certificate_serial, :public_key, :encrypted_private_key, :valid_from, :valid_until, 'ACTIVE')";
+
+                $this->db->query($sql);
+                $this->db->bind('user_id', $userId);
+                $this->db->bind('certificate_serial', $certificateSerial);
+                $this->db->bind('public_key', $publicKey);
+                $this->db->bind('encrypted_private_key', $privateKey);
+                $this->db->bind('valid_from', $validFrom);
+                $this->db->bind('valid_until', $validUntil);
+
+                $created = $this->db->execute();
+
+                $this->db->commit();
+            } else {
+                $this->db->rollBack();
+            }
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            $created = false;
         }
 
-        $sql = "INSERT INTO " . $this->table . " (user_id, certificate_serial, public_key, encrypted_private_key, valid_from, valid_until, status) VALUES (:user_id, :certificate_serial, :public_key, :encrypted_private_key, :valid_from, :valid_until, 'ACTIVE')";
-
-        $this->db->query($sql);
-        $this->db->bind('user_id', $userId);
-        $this->db->bind('certificate_serial', $certificateSerial);
-        $this->db->bind('public_key', $publicKey);
-        $this->db->bind('encrypted_private_key', $privateKey);
-        $this->db->bind('valid_from', $validFrom);
-        $this->db->bind('valid_until', $validUntil);
-
-        return $this->db->execute();
+        return $created;
     }
 
     public function revokeCertificate($userId, $certificateId)
     {
         $revoked = false;
 
-        if (is_string($certificateId) && preg_match('/\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i', $certificateId)) {
-            $sql = "UPDATE " . $this->table . " SET status = 'REVOKED', revoked_at = CURRENT_TIMESTAMP WHERE id = :certificate_id AND user_id = :user_id AND status = 'ACTIVE'";
+        if (isValidUuid($certificateId) && isValidUuid($userId)) {
+            $sql = "UPDATE " . $this->table . " SET status = 'REVOKED', revoked_at = CURRENT_TIMESTAMP WHERE id = :certificate_id AND user_id = :user_id AND status = 'ACTIVE' AND valid_until >= CURRENT_TIMESTAMP";
 
             $this->db->query($sql);
             $this->db->bind('user_id', $userId);

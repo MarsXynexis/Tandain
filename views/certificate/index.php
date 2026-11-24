@@ -35,7 +35,18 @@
           <tbody class="divide-y divide-outline-variant/60">
             <?php foreach ($certificates as $certificate): ?>
               <?php
-              $status = $certificate['status'] ?? '';
+              $rawStatus = $certificate['status'] ?? '';
+              $validFromTimestamp = !empty($certificate['valid_from']) ? strtotime((string) $certificate['valid_from']) : false;
+              $validUntilTimestamp = !empty($certificate['valid_until']) ? strtotime((string) $certificate['valid_until']) : false;
+              $now = time();
+
+              if ($rawStatus === 'ACTIVE' && $validUntilTimestamp !== false && $validUntilTimestamp < $now) {
+                  $displayStatus = 'EXPIRED';
+              } elseif ($rawStatus === 'ACTIVE' && $validFromTimestamp !== false && $validFromTimestamp > $now) {
+                  $displayStatus = 'NOT_YET_VALID';
+              } else {
+                  $displayStatus = $rawStatus;
+              }
               ?>
               <tr class="text-sm text-on-surface">
                 <td class="font-code-tabular whitespace-nowrap text-sm font-medium text-primary">
@@ -45,20 +56,20 @@
                 <td class="table-date text-on-surface-variant">
                   <p>Dibuat: <?= !empty($certificate['valid_from']) ? htmlspecialchars(formatTanggalIndo($certificate['valid_from']), ENT_QUOTES, 'UTF-8') : '-'; ?></p>
 
-                  <?php if ($status === 'ACTIVE'): ?>
+                  <?php if (in_array($displayStatus, ['ACTIVE', 'EXPIRED', 'NOT_YET_VALID'], true)): ?>
                     <p>Berakhir: <?= !empty($certificate['valid_until']) ? htmlspecialchars(formatTanggalIndo($certificate['valid_until']), ENT_QUOTES, 'UTF-8') : '-'; ?></p>
-                  <?php elseif ($status === 'REVOKED' && !empty($certificate['revoked_at'])): ?>
+                  <?php elseif ($displayStatus === 'REVOKED' && !empty($certificate['revoked_at'])): ?>
                     <p>Dicabut: <?= htmlspecialchars(formatTanggalIndo($certificate['revoked_at']), ENT_QUOTES, 'UTF-8'); ?></p>
                   <?php endif; ?>
                 </td>
 
                 <td class="text-center">
-                  <?php renderStatusBadge($status); ?>
+                  <?php renderStatusBadge($displayStatus); ?>
                 </td>
 
                 <td>
                   <div class="flex items-center justify-end">
-                    <?php if ($status === 'ACTIVE'): ?>
+                    <?php if (in_array($displayStatus, ['ACTIVE', 'NOT_YET_VALID'], true)): ?>
                       <button
                         type="button"
                         data-revoke-id="<?= htmlspecialchars($certificate['id'], ENT_QUOTES, 'UTF-8'); ?>"
