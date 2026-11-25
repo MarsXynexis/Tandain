@@ -6,12 +6,24 @@ function setupSignaturePositioner(config) {
   const PT_PER_MM = 72 / 25.4;
   const SLOT_WIDTH_MM = 58;
   const SLOT_HEIGHT_MM = 18;
+  const ZOOM_MIN = 50;
+  const ZOOM_MAX = 200;
+  const ZOOM_STEP = 10;
 
-  const scrollContainer = document.getElementById('pdf-scroll-container');
+  const scrollContainer = document.getElementById('pdf-scroll-container') || document.getElementById('pdf-scroll');
   const container = document.getElementById('pdf-container');
   const loading = document.getElementById('pdf-loading');
   const clientError = document.getElementById('client-error');
+  const zoomRange = document.getElementById('pdf-zoom-range');
+  const zoomValue = document.getElementById('pdf-zoom-value');
+  const zoomInButton = document.getElementById('pdf-zoom-in');
+  const zoomOutButton = document.getElementById('pdf-zoom-out');
   const boxes = {};
+  const pageInfos = [];
+
+  let zoomPercent = 100;
+  let renderToken = 0;
+  let renderTimer = null;
 
   function getSlotDimensionsPx(scale) {
     const pxPerMm = scale * PT_PER_MM;
@@ -211,6 +223,152 @@ function setupSignaturePositioner(config) {
     refreshOverlapState();
   }
 
+  function updateZoomControls() {
+    if (zoomRange && zoomValue && zoomOutButton && zoomInButton) {
+      zoomRange.value = String(zoomPercent);
+      zoomValue.textContent = zoomPercent + '%';
+      zoomOutButton.disabled = zoomPercent <= ZOOM_MIN;
+      zoomInButton.disabled = zoomPercent >= ZOOM_MAX;
+    }
+  }
+
+  async function renderPageCanvas(info, token) {
+    let completed = false;
+    const scale = info.fitScale * (zoomPercent / 100);
+    const viewport = info.page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.style.display = 'block';
+    canvas.style.width = info.wrap.style.width;
+    canvas.style.height = info.wrap.style.height;
+
+    if (info.renderTask) {
+      info.renderTask.cancel();
+    }
+
+    const task = info.page.render({
+      canvasContext: canvas.getContext('2d'),
+      viewport
+    });
+
+    info.renderTask = task;
+
+    let renderFailed = false;
+
+    try {
+      await task.promise;
+    } catch (error) {
+      renderFailed = true;
+    }
+
+    if (!renderFailed && (!info.canvas || token === renderToken)) {
+      if (info.canvas) {
+        info.canvas.replaceWith(canvas);
+      } else {
+        info.wrap.prepend(canvas);
+      }
+
+      info.canvas = canvas;
+      completed = true;
+    }
+
+    return completed;
+  }
+
+  function resizePage(info) {
+    const wrap = info.wrap;
+    const oldW = wrap.clientWidth;
+    const oldH = wrap.clientHeight;
+    const scale = info.fitScale * (zoomPercent / 100);
+    const viewport = info.page.getViewport({ scale });
+    const placed = Object.values(boxes)
+      .filter((el) => el && el.parentElement === wrap)
+      .map((el) => ({
+        el,
+        fx: oldW > 0 ? el.offsetLeft / oldW : 0,
+        fy: oldH > 0 ? el.offsetTop / oldH : 0,
+      }));
+
+    wrap.dataset.scale = String(scale);
+    wrap.style.width = viewport.width + 'px';
+    wrap.style.height = viewport.height + 'px';
+
+    if (info.canvas) {
+      info.canvas.style.width = viewport.width + 'px';
+      info.canvas.style.height = viewport.height + 'px';
+    }
+
+    const newW = wrap.clientWidth;
+    const newH = wrap.clientHeight;
+
+    placed.forEach((item) => {
+      const dims = getSlotDimensionsPx(scale);
+      const w = Math.min(dims.width, newW);
+      const h = Math.min(dims.height, newH);
+
+      item.el.style.width = w + 'px';
+      item.el.style.height = h + 'px';
+      item.el.style.left = Math.max(0, Math.min(item.fx * newW, newW - w)) + 'px';
+      item.el.style.top = Math.max(0, Math.min(item.fy * newH, newH - h)) + 'px';
+    });
+
+    refreshOverlapState();
+  }
+
+  async function rerenderAll() {
+    const token = renderToken;
+    const middle = window.innerHeight / 2;
+    const ordered = pageInfos.slice().sort((a, b) => {
+      const ra = a.wrap.getBoundingClientRect();
+      const rb = b.wrap.getBoundingClientRect();
+      const da = Math.abs(ra.top + ra.height / 2 - middle);
+      const db = Math.abs(rb.top + rb.height / 2 - middle);
+
+      return da - db;
+    });
+
+    for (const info of ordered) {
+      if (token !== renderToken) {
+        break;
+      }
+
+      await renderPageCanvas(info, token);
+    }
+  }
+
+  function setPdfZoom(value) {
+    const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(Number(value) || 100)));
+
+    if (next === zoomPercent) {
+      updateZoomControls();
+    } else {
+      const scrollRatio = scrollContainer && scrollContainer.scrollHeight > 0
+        ? scrollContainer.scrollTop / scrollContainer.scrollHeight
+        : 0;
+
+      zoomPercent = next;
+      updateZoomControls();
+      pageInfos.forEach(resizePage);
+
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollRatio * scrollContainer.scrollHeight;
+      }
+
+      renderToken += 1;
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(rerenderAll, 150);
+    }
+  }
+
+  if (zoomRange && zoomOutButton && zoomInButton) {
+    zoomRange.addEventListener('input', (event) => setPdfZoom(event.target.value));
+    zoomOutButton.addEventListener('click', () => setPdfZoom(zoomPercent - ZOOM_STEP));
+    zoomInButton.addEventListener('click', () => setPdfZoom(zoomPercent + ZOOM_STEP));
+    updateZoomControls();
+  }
+
   pdfjsLib.getDocument(PDF_URL).promise
     .then(async (pdf) => {
       loading.remove();
@@ -221,7 +379,8 @@ function setupSignaturePositioner(config) {
         const pageWidthMm = baseViewport.width / PT_PER_MM;
         const pageHeightMm = baseViewport.height / PT_PER_MM;
         const availableWidth = container.clientWidth;
-        const scale = Math.max(0.1, Math.min(1.3, availableWidth / baseViewport.width));
+        const fitScale = Math.max(0.1, Math.min(1.3, availableWidth / baseViewport.width));
+        const scale = fitScale * (zoomPercent / 100);
         const viewport = page.getViewport({ scale });
 
         const wrap = document.createElement('div');
@@ -231,15 +390,18 @@ function setupSignaturePositioner(config) {
         wrap.dataset.tooSmall = (pageWidthMm < SLOT_WIDTH_MM || pageHeightMm < SLOT_HEIGHT_MM) ? '1' : '0';
         wrap.style.width = viewport.width + 'px';
         wrap.style.height = viewport.height + 'px';
-
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        canvas.style.display = 'block';
-        wrap.appendChild(canvas);
         container.appendChild(wrap);
 
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        const info = {
+          page,
+          wrap,
+          fitScale,
+          canvas: null,
+          renderTask: null,
+        };
+        pageInfos.push(info);
+
+        await renderPageCanvas(info, renderToken);
       }
 
       const initialPositions = Array.isArray(config.initialPositions) ? config.initialPositions : [];

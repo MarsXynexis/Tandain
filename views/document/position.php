@@ -19,8 +19,28 @@
   <div class="flex flex-col lg:flex-row gap-4 items-start">
 
     <div id="pdf-scroll-container" class="flex-1 min-w-0 w-full max-w-none lg:sticky lg:top-20 lg:h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+
+      <div class="sticky top-0 z-20 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 shadow-sm">
+        <span class="text-sm font-semibold text-primary">Pratinjau Dokumen</span>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="pdf-zoom-out" type="button" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Perkecil PDF">
+            <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">zoom_out</span>
+          </button>
+
+          <input id="pdf-zoom-range" type="range" min="50" max="200" step="10" value="100" class="w-24 accent-brand" aria-label="Skala tampilan PDF">
+
+          <span id="pdf-zoom-value" class="min-w-[42px] text-center font-code-tabular text-[11px] text-on-surface-variant">100%</span>
+
+          <button id="pdf-zoom-in" type="button" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Perbesar PDF">
+            <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">zoom_in</span>
+          </button>
+        </div>
+      </div>
+
       <div class="text-sm text-on-surface-variant py-6 text-center" id="pdf-loading">Memuat dokumen...</div>
       <div id="pdf-container" class="space-y-4 overflow-x-auto pb-4"></div>
+
     </div>
 
     <div class="w-full lg:w-72 shrink-0 space-y-2 lg:sticky lg:top-20">
@@ -76,11 +96,7 @@
       </div>
     </div>
 
-
-
   </div>
-
-
 
 </main>
 
