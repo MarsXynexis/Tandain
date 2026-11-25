@@ -49,6 +49,7 @@ $requesterEmail = $user['email'] ?? '-';
       <?php require 'views/layouts/notice.php'; ?>
 
       <input id="submission-mode" name="submission_mode" type="hidden" value="upload">
+      <input id="csrf-token" name="csrf_token" type="hidden" value="<?= htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
       <section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 lg:p-5 shadow-sm">
 
@@ -322,7 +323,7 @@ $requesterEmail = $user['email'] ?? '-';
 
   <script>
     const TEMPLATES = <?= json_encode($templateList, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-    const NEXT_DOC_SEQ = <?= json_encode($next_doc_seq ?? '001', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    let nextDocSeq = <?= json_encode($next_doc_seq ?? '001', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const ME = <?= json_encode([
       'id' => $user['id'] ?? '',
       'name' => $requesterName,
@@ -501,7 +502,7 @@ $requesterEmail = $user['email'] ?? '-';
         : 'SURAT';
       const currentYear = new Date().getFullYear();
 
-      return NEXT_DOC_SEQ + '/PL3/' + rawCode + '/PNJ/' + currentYear;
+      return nextDocSeq + '/PL3/' + rawCode + '/PNJ/' + currentYear;
     }
 
     function buildTemplateValuesMap(selectedTemplate, forPreview) {
@@ -535,7 +536,7 @@ $requesterEmail = $user['email'] ?? '-';
         }
       });
 
-      if (!forPreview && window.PnjLetterRenderer) {
+      if (!forPreview && window.PnjLetterRenderer && (!map.tanggal_surat || String(map.tanggal_surat).trim() === '')) {
         map.tanggal_surat = window.PnjLetterRenderer.formatIndonesianDate();
       }
 
@@ -852,12 +853,31 @@ $requesterEmail = $user['email'] ?? '-';
           setSubmittingState(true);
 
           try {
+            const seqResponse = await fetch('/Tandain/document/nextSequence', {
+              method: 'GET',
+              cache: 'no-store',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            });
+
+            if (seqResponse.ok) {
+              const seqPayload = await seqResponse.json();
+
+              if (seqPayload && seqPayload.ok && seqPayload.seq) {
+                nextDocSeq = String(seqPayload.seq);
+                renderTemplatePreview();
+              }
+            }
+
             const exportSheet = previewSheet.cloneNode(true);
             const exportValues = buildTemplateValuesMap(selected, false);
 
             window.PnjLetterRenderer.renderIntoSheet(exportSheet, selected.html_content, exportValues, { isPreview: false });
 
-            const pdfBlob = await window.PnjLetterRenderer.generatePdfBlob(exportSheet);
+            const renderResult = await window.PnjLetterRenderer.generatePdfWithSlots(exportSheet);
+            const pdfBlob = renderResult ? renderResult.blob : null;
+            const extractedSlots = renderResult && Array.isArray(renderResult.slots) ? renderResult.slots : [];
 
             if (!pdfBlob || pdfBlob.size === 0) {
               throw new Error('Gagal menghasilkan berkas PDF dari template.');
@@ -870,7 +890,9 @@ $requesterEmail = $user['email'] ?? '-';
             const formData = new FormData();
             const safeFilename = (selected.template_code || 'surat').toLowerCase().replace(/[^a-z0-9_-]/g, '-') + '.pdf';
             const pdfFile = new File([pdfBlob], safeFilename, { type: 'application/pdf' });
+            const csrfInput = document.getElementById('csrf-token');
 
+            formData.append('csrf_token', csrfInput ? csrfInput.value : '');
             formData.append('submission_mode', 'template');
             formData.append('template_id', selected.id);
             formData.append('document_number', exportValues.nomor_surat || '');
@@ -882,13 +904,46 @@ $requesterEmail = $user['email'] ?? '-';
             if (triageCheck.checked) {
               formData.append('is_triage', '1');
             } else {
+              const selectedSigners = signerIds();
+
               if (sequentialCheck.checked) {
                 formData.append('is_sequential', '1');
               }
 
-              signerIds().forEach((id) => {
+              selectedSigners.forEach((id) => {
                 formData.append('signers[]', id);
               });
+
+              if (extractedSlots.length > 0) {
+                const slotsByNumber = {};
+
+                extractedSlots.forEach((slotItem) => {
+                  const slotNumber = slotItem && Number.isInteger(Number(slotItem.slot)) ? Number(slotItem.slot) : 0;
+
+                  if (slotNumber >= 1 && !slotsByNumber[slotNumber]) {
+                    slotsByNumber[slotNumber] = slotItem;
+                  }
+                });
+
+                const autoPositions = [];
+
+                for (let i = 0; i < selectedSigners.length; i++) {
+                  const matchedSlot = slotsByNumber[i + 1];
+
+                  if (matchedSlot) {
+                    autoPositions.push({
+                      signer_id: selectedSigners[i],
+                      page: matchedSlot.page,
+                      x: matchedSlot.x,
+                      y: matchedSlot.y
+                    });
+                  }
+                }
+
+                if (autoPositions.length > 0) {
+                  formData.append('auto_positions', JSON.stringify(autoPositions));
+                }
+              }
             }
 
             const response = await fetch('/Tandain/document/create', {
@@ -904,8 +959,17 @@ $requesterEmail = $user['email'] ?? '-';
             if (contentType.indexOf('application/json') !== -1) {
               const payload = await response.json();
 
-              setSubmittingState(false);
-              showError(payload.error || 'Gagal mengajukan dokumen.');
+              if (response.ok && payload.ok && payload.redirect) {
+                window.location.href = payload.redirect;
+              } else {
+                if (payload.next_seq) {
+                  nextDocSeq = String(payload.next_seq);
+                  renderTemplatePreview();
+                }
+
+                setSubmittingState(false);
+                showError(payload.error || 'Gagal mengajukan dokumen.');
+              }
             } else if (!response.ok) {
               setSubmittingState(false);
               showError('Terjadi kesalahan saat mengirim dokumen (HTTP ' + response.status + ').');

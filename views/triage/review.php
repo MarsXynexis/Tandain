@@ -164,12 +164,19 @@ $fileDescription = $isCompletedSigned ? 'Berkas surat resmi bertanda tangan elek
         </div>
 
         <?php if ($canDispose): ?>
+          <?php $lockDocumentNumber = !empty($lock_document_number); ?>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label class="block font-label-md text-label-md text-primary font-semibold mb-2" for="document_number">
-                Nomor Naskah Kedinasan Resmi PNJ <span class="font-normal text-on-surface-variant">(Opsional)</span>
+                Nomor Naskah Kedinasan Resmi PNJ<?php if (!$lockDocumentNumber): ?> <span class="font-normal text-on-surface-variant">(Opsional)</span><?php endif; ?>
               </label>
-              <input class="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition" id="document_number" name="document_number" type="text" value="<?= htmlspecialchars($document['document_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Otomatis terisi untuk template / kosongkan jika berkas unggahan">
+
+              <?php if ($lockDocumentNumber): ?>
+                <input class="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface-variant font-body-md text-body-md cursor-not-allowed outline-none" id="document_number" name="document_number" type="text" value="<?= htmlspecialchars($document['document_number'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                <p class="font-body-sm text-xs text-on-surface-variant mt-1.5">Nomor surat sudah tercetak pada berkas dan tidak dapat diubah.</p>
+              <?php else: ?>
+                <input class="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition" id="document_number" name="document_number" type="text" value="<?= htmlspecialchars($document['document_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Kosongkan jika berkas tidak bernomor / isi nomor agenda">
+              <?php endif; ?>
             </div>
 
             <div>

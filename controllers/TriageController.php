@@ -47,6 +47,7 @@ class TriageController extends Controller
             $data['current_signers'] = $signerModel->getSignerByDocumentId($id);
             $data['can_dispose'] = ($doc['status'] === 'PENDING_TRIAGE');
             $data['can_cancel'] = ($doc['status'] === 'IN_PROGRESS');
+            $data['lock_document_number'] = !empty($doc['document_number']) && $docModel->isCreatedFromTemplate($id);
             $data['csrf_token'] = $this->getCsrfToken();
 
             $this->view('triage/review', $data);
@@ -121,6 +122,10 @@ class TriageController extends Controller
             $docModel = $this->model('Document');
             $userModel = $this->model('User');
             $doc = !empty($documentId) ? $docModel->findById($documentId) : null;
+
+            if (!empty($doc) && !empty($doc['document_number']) && $docModel->isCreatedFromTemplate($documentId)) {
+                $documentNumber = trim((string) $doc['document_number']);
+            }
 
             $signersList = [];
             $assignedSignerIds = [];

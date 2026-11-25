@@ -188,6 +188,29 @@ function setupSignaturePositioner(config) {
     });
   }
 
+  function mountBoxOnPage(signerId, label, wrap, leftPx, topPx) {
+    const pageScale = Number(wrap.dataset.scale || 1.3);
+    const dims = getSlotDimensionsPx(pageScale);
+    const boxW = Math.min(dims.width, wrap.clientWidth);
+    const boxH = Math.min(dims.height, wrap.clientHeight);
+    const clampedLeft = Math.max(0, Math.min(leftPx, wrap.clientWidth - boxW));
+    const clampedTop = Math.max(0, Math.min(topPx, wrap.clientHeight - boxH));
+
+    const box = document.createElement('div');
+    box.className = 'absolute border-2 border-blue-600 bg-blue-100/70 text-xs font-semibold text-blue-900 flex items-center justify-center text-center px-1 cursor-move select-none z-10';
+    box.style.width = boxW + 'px';
+    box.style.height = boxH + 'px';
+    box.style.left = clampedLeft + 'px';
+    box.style.top = clampedTop + 'px';
+    box.textContent = label;
+
+    wrap.appendChild(box);
+    boxes[signerId] = box;
+    makeDraggable(box);
+    setStatus(signerId, true);
+    refreshOverlapState();
+  }
+
   pdfjsLib.getDocument(PDF_URL).promise
     .then(async (pdf) => {
       loading.remove();
@@ -218,6 +241,22 @@ function setupSignaturePositioner(config) {
 
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
       }
+
+      const initialPositions = Array.isArray(config.initialPositions) ? config.initialPositions : [];
+
+      initialPositions.forEach((pos) => {
+        const signerId = pos && pos.signer_id ? String(pos.signer_id) : '';
+        const btn = signerId ? document.querySelector('.add-box[data-signer="' + signerId + '"]') : null;
+        const pageNum = pos && pos.page ? parseInt(pos.page, 10) : 1;
+        const wrap = container.querySelector('.pdf-page[data-page="' + pageNum + '"]');
+
+        if (signerId && btn && wrap && !boxes[signerId] && wrap.dataset.tooSmall !== '1') {
+          const leftPx = Number(pos.x || 0) * wrap.clientWidth;
+          const topPx = Number(pos.y || 0) * wrap.clientHeight;
+
+          mountBoxOnPage(signerId, btn.dataset.label, wrap, leftPx, topPx);
+        }
+      });
     })
     .catch(() => {
       loading.textContent = 'Gagal memuat dokumen. Pastikan berkas PDF valid.';
@@ -241,12 +280,6 @@ function setupSignaturePositioner(config) {
           const dims = getSlotDimensionsPx(pageScale);
           const boxW = Math.min(dims.width, wrap.clientWidth);
           const boxH = Math.min(dims.height, wrap.clientHeight);
-
-          const box = document.createElement('div');
-          box.className = 'absolute border-2 border-blue-600 bg-blue-100/70 text-xs font-semibold text-blue-900 flex items-center justify-center text-center px-1 cursor-move select-none z-10';
-          box.style.width = boxW + 'px';
-          box.style.height = boxH + 'px';
-
           const bounds = getVisibleViewportBounds();
           const r = wrap.getBoundingClientRect();
           const maxLeft = Math.max(0, wrap.clientWidth - boxW);
@@ -254,7 +287,7 @@ function setupSignaturePositioner(config) {
           const baseLeft = Math.max(0, (wrap.clientWidth - boxW) / 2);
           const baseTop = Math.max(0, Math.min(Math.max(0, bounds.top - r.top) + 40, maxTop));
           const pageBoxes = Object.values(boxes).filter((existing) => existing.parentElement === wrap);
-          let placedLeft = Math.min(baseLeft, maxLeft);
+          const placedLeft = Math.min(baseLeft, maxLeft);
           let placedTop = baseTop;
           const stepY = boxH + 12;
 
@@ -275,15 +308,7 @@ function setupSignaturePositioner(config) {
             }
           }
 
-          box.style.left = placedLeft + 'px';
-          box.style.top = placedTop + 'px';
-
-          box.textContent = btn.dataset.label;
-          wrap.appendChild(box);
-          boxes[id] = box;
-          makeDraggable(box);
-          setStatus(id, true);
-          refreshOverlapState();
+          mountBoxOnPage(id, btn.dataset.label, wrap, placedLeft, placedTop);
         }
       }
     });

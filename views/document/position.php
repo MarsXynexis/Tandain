@@ -84,12 +84,31 @@
 
 </main>
 
+<?php
+$initialPositions = [];
+
+foreach ($signers as $s) {
+  $cx = (float) ($s['coord_x'] ?? 0);
+  $cy = (float) ($s['coord_y'] ?? 0);
+
+  if ($cx > 0 || $cy > 0) {
+    $initialPositions[] = [
+      'signer_id' => $s['id'],
+      'page' => max(1, (int) ($s['page_number'] ?? 1)),
+      'x' => $cx,
+      'y' => $cy,
+    ];
+  }
+}
+?>
+
 <script src="/Tandain/assets/js/pdf.min.js"></script>
 <script src="/Tandain/assets/js/signature-positioner.js"></script>
 <script>
   setupSignaturePositioner({
     pdfUrl: <?= json_encode($pdfUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    signerIds: <?= json_encode(array_column($signers, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+    signerIds: <?= json_encode(array_column($signers, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    initialPositions: <?= json_encode($initialPositions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
   });
 </script>
 <?php $confirmation = ['title' => 'Hapus Draf Dokumen', 'message' => 'Hapus draf dokumen ini secara permanen?', 'action' => 'Hapus Draf']; ?>

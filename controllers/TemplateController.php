@@ -246,11 +246,11 @@ class TemplateController extends Controller
 
         if ($title === '') {
             $error = 'Judul template surat wajib diisi.';
-        } elseif (strlen($title) > 200) {
+        } elseif (mb_strlen($title) > 200) {
             $error = 'Judul template maksimal 200 karakter.';
         } elseif ($templateCode === '') {
             $error = 'Kode template wajib diisi.';
-        } elseif (strlen($templateCode) > 50) {
+        } elseif (mb_strlen($templateCode) > 50) {
             $error = 'Kode template maksimal 50 karakter.';
         } elseif (!preg_match('/^[A-Z0-9_-]+$/', $templateCode)) {
             $error = 'Kode template hanya boleh berisi huruf kapital, angka, tanda hubung (-), atau garis bawah (_).';
@@ -260,7 +260,7 @@ class TemplateController extends Controller
             $error = 'Konten HTML surat wajib diisi.';
         } elseif ($hasUnsafeHtml) {
             $error = 'Konten HTML surat mengandung tag atau atribut berbahaya yang tidak diizinkan.';
-        } elseif (!preg_match('/\{\{kolom_ttd_[1-9][0-9]*\}\}/', $htmlContent)) {
+        } elseif (!preg_match('/\{\{\s*kolom_ttd_[1-9][0-9]*\s*\}\}/i', $htmlContent)) {
             $error = 'Konten HTML surat wajib memuat minimal satu slot tanda tangan seperti {{kolom_ttd_1}} atau {{kolom_ttd_2}}.';
         } elseif ($schemaResult['error'] !== '') {
             $error = $schemaResult['error'];
@@ -303,6 +303,24 @@ class TemplateController extends Controller
 
         $rowCount = max(count($fieldNames), count($fieldLabels));
         $allowedTypes = ['text', 'number', 'date', 'textarea', 'select'];
+        $reservedKeys = [
+            'nama_lengkap',
+            'nama',
+            'nomor_induk',
+            'nim',
+            'nip',
+            'nik',
+            'program_studi',
+            'study_program',
+            'prodi',
+            'jabatan',
+            'position',
+            'email',
+            'nomor_surat',
+            'document_number',
+            'tanggal_surat',
+            'qr_verifikasi',
+        ];
         $schemaFields = [];
         $usedKeys = [];
         $error = '';
@@ -335,6 +353,8 @@ class TemplateController extends Controller
                     $error = 'Nama tag field dinamis ke-' . ($i + 1) . ' wajib diisi dengan karakter huruf atau angka.';
                 } elseif ($label === '') {
                     $error = 'Label tampilan field "' . $normalizedName . '" wajib diisi.';
+                } elseif (in_array($normalizedName, $reservedKeys, true) || preg_match('/\Akolom_ttd_\d+\z/', $normalizedName) === 1) {
+                    $error = 'Kunci tag "' . $normalizedName . '" sudah dipakai oleh variabel sistem.';
                 } elseif (in_array($normalizedName, $usedKeys, true)) {
                     $error = 'Nama tag field "' . $normalizedName . '" tidak boleh duplikat.';
                 } elseif (!in_array($type, $allowedTypes, true)) {

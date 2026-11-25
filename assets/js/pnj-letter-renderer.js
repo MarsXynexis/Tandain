@@ -95,27 +95,13 @@
     return found;
   }
 
-  function renderSpecialSlot(slotKey, isPreview) {
+  function renderSignatureSlot(slotNumber, isPreview) {
     let html = '';
 
-    if (slotKey === 'kolom_ttd_1') {
-      if (isPreview) {
-        html = '<span class="pnj-ttd-placeholder" data-ttd-slot="1">Slot TTD Elektronik 1</span>';
-      } else {
-        html = '<span class="pnj-ttd-space" data-ttd-slot="1" style="height: 75px; min-height: 75px; width: 100%; display: block;"></span>';
-      }
-    } else if (slotKey === 'kolom_ttd_2') {
-      if (isPreview) {
-        html = '<span class="pnj-ttd-placeholder" data-ttd-slot="2">Slot TTD Elektronik 2</span>';
-      } else {
-        html = '<span class="pnj-ttd-space" data-ttd-slot="2" style="height: 75px; min-height: 75px; width: 100%; display: block;"></span>';
-      }
-    } else if (slotKey === 'qr_verifikasi') {
-      if (isPreview) {
-        html = '<span class="pnj-qr-placeholder" data-qr-slot="1">QR Verifikasi</span>';
-      } else {
-        html = '<span class="pnj-qr-space" data-qr-slot="1" style="width: 75px; height: 75px; min-height: 75px; display: inline-block;"></span>';
-      }
+    if (isPreview) {
+      html = '<span class="pnj-ttd-placeholder" data-ttd-slot="' + slotNumber + '">Slot TTD Elektronik ' + slotNumber + '</span>';
+    } else {
+      html = '<span class="pnj-ttd-space" data-ttd-slot="' + slotNumber + '" style="height: 75px; min-height: 75px; width: 100%; display: block;"></span>';
     }
 
     return html;
@@ -167,10 +153,13 @@
     const outputHtml = sourceHtml.replace(tagPattern, function (fullMatch, doubleKey, singleKey) {
       const rawKey = doubleKey || singleKey;
       const normalizedKey = String(rawKey).trim().toLowerCase();
+      const ttdMatch = normalizedKey.match(/^kolom_ttd_([1-9][0-9]*)$/);
       let replacement = '';
 
-      if (normalizedKey === 'kolom_ttd_1' || normalizedKey === 'kolom_ttd_2' || normalizedKey === 'qr_verifikasi') {
-        replacement = renderSpecialSlot(normalizedKey, isPreview);
+      if (normalizedKey === 'qr_verifikasi') {
+        replacement = '';
+      } else if (ttdMatch) {
+        replacement = renderSignatureSlot(ttdMatch[1], isPreview);
       } else {
         const resolved = resolveRegularTagValue(rawKey, map);
 
@@ -236,18 +225,24 @@
   function waitForSingleImage(img) {
     let imagePromise = null;
 
-    if (img.complete && img.naturalWidth > 0) {
-      if (typeof img.decode === 'function') {
-        imagePromise = img.decode().catch(function () {
-          return true;
-        });
+    if (img.complete) {
+      if (img.naturalWidth > 0) {
+        if (typeof img.decode === 'function') {
+          imagePromise = img.decode().then(function () {
+            return true;
+          }, function () {
+            return true;
+          });
+        } else {
+          imagePromise = Promise.resolve(true);
+        }
       } else {
-        imagePromise = Promise.resolve(true);
+        imagePromise = Promise.resolve(false);
       }
     } else {
       imagePromise = new Promise(function (resolve) {
         img.addEventListener('load', function () {
-          resolve(true);
+          resolve(img.naturalWidth > 0);
         }, { once: true });
 
         img.addEventListener('error', function () {
@@ -259,11 +254,20 @@
     return imagePromise;
   }
 
-  async function waitForAssets(container) {
+  async function waitForAssets(container, targetDoc) {
     const images = Array.prototype.slice.call(container.querySelectorAll('img'));
     const imagePromises = images.map(waitForSingleImage);
+    const results = await Promise.all(imagePromises);
 
-    await Promise.all(imagePromises);
+    if (results.some(function (loaded) {
+      return !loaded;
+    })) {
+      throw new Error('Gambar pada template surat (termasuk kop surat) gagal dimuat.');
+    }
+
+    if (targetDoc && targetDoc.fonts && targetDoc.fonts.ready) {
+      await targetDoc.fonts.ready;
+    }
 
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
@@ -272,7 +276,297 @@
     return true;
   }
 
-  async function generatePdfBlob(sheetEl) {
+  function getDirectTableParts(tableEl) {
+    let thead = null;
+    const colgroups = [];
+    const bodyRows = [];
+    const children = Array.prototype.slice.call(tableEl.children || []);
+
+    children.forEach(function (child) {
+      if (child.tagName === 'COLGROUP') {
+        colgroups.push(child);
+      } else if (child.tagName === 'THEAD' && !thead) {
+        thead = child;
+      } else if (child.tagName === 'TR') {
+        bodyRows.push(child);
+      } else if (child.tagName === 'TBODY' || child.tagName === 'TFOOT') {
+        Array.prototype.slice.call(child.children || []).forEach(function (row) {
+          if (row.tagName === 'TR') {
+            bodyRows.push(row);
+          }
+        });
+      }
+    });
+
+    return {
+      thead: thead,
+      colgroups: colgroups,
+      bodyRows: bodyRows
+    };
+  }
+
+  function captureTableColumnWidths(tableEl) {
+    const parts = getDirectTableParts(tableEl);
+    let firstRow = null;
+    let widths = [];
+
+    if (parts.thead) {
+      const headRows = Array.prototype.slice.call(parts.thead.children || []).filter(function (el) {
+        return el.tagName === 'TR';
+      });
+
+      if (headRows.length > 0) {
+        firstRow = headRows[0];
+      }
+    }
+
+    if (!firstRow && parts.bodyRows.length > 0) {
+      firstRow = parts.bodyRows[0];
+    }
+
+    if (firstRow && firstRow.cells && firstRow.cells.length > 0) {
+      const cells = Array.prototype.slice.call(firstRow.cells);
+      const hasColspan = cells.some(function (cell) {
+        return (cell.colSpan || 1) > 1;
+      });
+
+      if (!hasColspan) {
+        const measured = cells.map(function (cell) {
+          return Math.round(cell.getBoundingClientRect().width);
+        });
+
+        if (measured.every(function (w) {
+          return w > 0;
+        })) {
+          widths = measured;
+        }
+      }
+    }
+
+    return widths;
+  }
+
+  function applyRowColumnWidths(rowEl, colWidths) {
+    if (rowEl && colWidths.length > 0 && rowEl.cells && rowEl.cells.length === colWidths.length) {
+      for (let c = 0; c < colWidths.length; c++) {
+        rowEl.cells[c].style.width = colWidths[c] + 'px';
+      }
+    }
+  }
+
+  function splitTableAcrossPages(tableEl, targetEl, pageHeightPx, topMarginPx, bottomGuardPx, activeWin) {
+    const ownerDoc = tableEl.ownerDocument || document;
+    const colWidths = captureTableColumnWidths(tableEl);
+    let currentTable = tableEl;
+    let splitGuard = 0;
+
+    while (currentTable && splitGuard < 50) {
+      splitGuard += 1;
+
+      const parts = getDirectTableParts(currentTable);
+
+      if (parts.bodyRows.length <= 1) {
+        break;
+      }
+
+      if (parts.thead) {
+        const headRows = Array.prototype.slice.call(parts.thead.children || []).filter(function (el) {
+          return el.tagName === 'TR';
+        });
+
+        if (headRows.length > 0) {
+          applyRowColumnWidths(headRows[0], colWidths);
+        }
+      } else {
+        applyRowColumnWidths(parts.bodyRows[0], colWidths);
+      }
+
+      const sheetRect = targetEl.getBoundingClientRect();
+      const tableRect = currentTable.getBoundingClientRect();
+      const tableTop = tableRect.top - sheetRect.top;
+      const startPage = Math.max(0, Math.floor(tableTop / pageHeightPx));
+      const pageBottomLimit = (startPage + 1) * pageHeightPx - bottomGuardPx;
+      let splitIndex = -1;
+
+      for (let i = 0; i < parts.bodyRows.length; i++) {
+        const rowRect = parts.bodyRows[i].getBoundingClientRect();
+        const rowBottom = rowRect.bottom - sheetRect.top;
+
+        if (rowBottom > pageBottomLimit) {
+          splitIndex = i;
+          break;
+        }
+      }
+
+      if (splitIndex === -1) {
+        break;
+      }
+
+      if (splitIndex === 0) {
+        if (tableTop > startPage * pageHeightPx + topMarginPx + 4) {
+          const nextPageTop = (startPage + 1) * pageHeightPx + topMarginPx;
+          const pushPx = Math.ceil(nextPageTop - tableTop);
+
+          if (pushPx > 0) {
+            const currentMarginTop = parseFloat(activeWin.getComputedStyle(currentTable).marginTop) || 0;
+            currentTable.style.marginTop = (currentMarginTop + pushPx) + 'px';
+          }
+        } else {
+          break;
+        }
+      } else {
+        const nextTable = currentTable.cloneNode(false);
+        nextTable.removeAttribute('id');
+        nextTable.style.marginTop = '0px';
+
+        parts.colgroups.forEach(function (colgroup) {
+          nextTable.appendChild(colgroup.cloneNode(true));
+        });
+
+        if (parts.thead) {
+          const clonedThead = parts.thead.cloneNode(true);
+          const clonedHeadRows = Array.prototype.slice.call(clonedThead.children || []).filter(function (el) {
+            return el.tagName === 'TR';
+          });
+
+          if (clonedHeadRows.length > 0) {
+            applyRowColumnWidths(clonedHeadRows[0], colWidths);
+          }
+
+          nextTable.appendChild(clonedThead);
+        }
+
+        const nextTbody = ownerDoc.createElement('tbody');
+
+        for (let r = splitIndex; r < parts.bodyRows.length; r++) {
+          nextTbody.appendChild(parts.bodyRows[r]);
+        }
+
+        if (!parts.thead && parts.bodyRows[splitIndex]) {
+          applyRowColumnWidths(parts.bodyRows[splitIndex], colWidths);
+        }
+
+        nextTable.appendChild(nextTbody);
+
+        if (!currentTable.parentNode) {
+          break;
+        }
+
+        currentTable.style.marginBottom = '0px';
+        currentTable.parentNode.insertBefore(nextTable, currentTable.nextSibling);
+
+        const updatedSheetRect = targetEl.getBoundingClientRect();
+        const nextTableRect = nextTable.getBoundingClientRect();
+        const nextTop = nextTableRect.top - updatedSheetRect.top;
+        const nextPageStartTop = (startPage + 1) * pageHeightPx + topMarginPx;
+        const shiftPx = Math.ceil(nextPageStartTop - nextTop);
+
+        if (shiftPx > 0) {
+          nextTable.style.marginTop = shiftPx + 'px';
+        }
+
+        currentTable = nextTable;
+      }
+    }
+  }
+
+  function processBlockForPageBreaks(el, targetEl, pageHeightPx, topMarginPx, bottomGuardPx, activeWin) {
+    const sheetRect = targetEl.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
+    const elHeight = rect.height;
+
+    if (elHeight > 0 && elHeight < pageHeightPx * 0.85) {
+      const elTop = rect.top - sheetRect.top;
+      const elBottom = rect.bottom - sheetRect.top;
+      const startPage = Math.max(0, Math.floor(elTop / pageHeightPx));
+      const pageBottomLimit = (startPage + 1) * pageHeightPx - bottomGuardPx;
+
+      if (elBottom > pageBottomLimit) {
+        const nextPageTop = (startPage + 1) * pageHeightPx + topMarginPx;
+        const shiftPx = Math.ceil(nextPageTop - elTop);
+
+        if (shiftPx > 0) {
+          const currentMarginTop = parseFloat(activeWin.getComputedStyle(el).marginTop) || 0;
+          el.style.marginTop = (currentMarginTop + shiftPx) + 'px';
+        }
+      }
+    } else if (elHeight >= pageHeightPx * 0.85) {
+      if (el.tagName === 'TABLE') {
+        splitTableAcrossPages(el, targetEl, pageHeightPx, topMarginPx, bottomGuardPx, activeWin);
+      } else {
+        const children = Array.prototype.slice.call(el.children || []);
+
+        children.forEach(function (child) {
+          processBlockForPageBreaks(child, targetEl, pageHeightPx, topMarginPx, bottomGuardPx, activeWin);
+        });
+      }
+    }
+  }
+
+  function applyPageBreakAvoidance(targetEl, pageHeightPx, targetWin) {
+    if (targetEl.scrollHeight > pageHeightPx + 2) {
+      const bodyEl = targetEl.querySelector('.pnj-letter-body') || targetEl;
+      const footerEl = targetEl.querySelector('.pnj-letter-footer');
+      const candidates = Array.prototype.slice.call(bodyEl.children);
+
+      if (footerEl) {
+        candidates.push(footerEl);
+      }
+
+      const topMarginPx = (16 / 297) * pageHeightPx;
+      const bottomGuardPx = (10 / 297) * pageHeightPx;
+      const activeWin = targetWin || window;
+
+      candidates.forEach(function (el) {
+        processBlockForPageBreaks(el, targetEl, pageHeightPx, topMarginPx, bottomGuardPx, activeWin);
+      });
+    }
+  }
+
+  function extractSignatureSlots(targetEl, captureWidth, totalPages, targetWin) {
+    const slots = [];
+    const seen = {};
+    const mmPerPx = 210 / captureWidth;
+    const sheetRect = targetEl.getBoundingClientRect();
+    const activeWin = targetWin || window;
+
+    targetEl.querySelectorAll('[data-ttd-slot]').forEach(function (el) {
+      const slotNum = parseInt(el.getAttribute('data-ttd-slot'), 10);
+
+      if (Number.isInteger(slotNum) && slotNum >= 1 && !seen[slotNum]) {
+        const rect = el.getBoundingClientRect();
+        const relLeftPx = rect.left - sheetRect.left;
+        const relTopPx = rect.top - sheetRect.top;
+        const centerYMM = (relTopPx + rect.height / 2) * mmPerPx;
+        const page = Math.max(1, Math.min(totalPages, Math.floor(centerYMM / 297) + 1));
+        const slotTopInPageMM = (relTopPx * mmPerPx) - ((page - 1) * 297);
+        const slotHeightMM = rect.height * mmPerPx;
+        const slotLeftMM = relLeftPx * mmPerPx;
+        const slotWidthMM = rect.width * mmPerPx;
+        const parentAlign = el.parentElement ? activeWin.getComputedStyle(el.parentElement).textAlign : '';
+        const rawLeftMM = parentAlign === 'center' ? slotLeftMM + (slotWidthMM - 58) / 2 : slotLeftMM;
+        const rawTopMM = slotTopInPageMM + Math.max(0, (slotHeightMM - 18) / 2);
+        const clampedLeftMM = Math.max(0, Math.min(rawLeftMM, 210 - 58));
+        const clampedTopMM = Math.max(0, Math.min(rawTopMM, 297 - 18));
+
+        seen[slotNum] = true;
+        slots.push({
+          slot: slotNum,
+          page: page,
+          x: Number((clampedLeftMM / 210).toFixed(6)),
+          y: Number((clampedTopMM / 297).toFixed(6))
+        });
+      }
+    });
+
+    slots.sort(function (a, b) {
+      return a.slot - b.slot;
+    });
+
+    return slots;
+  }
+
+  async function generatePdfWithSlots(sheetEl) {
     const sourceEl = resolveElement(sheetEl);
 
     if (!sourceEl) {
@@ -301,10 +595,11 @@
 
     document.body.appendChild(iframe);
 
-    let pdfBlob = null;
+    let output = null;
 
     try {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      const iframeWin = iframe.contentWindow;
+      const iframeDoc = iframe.contentDocument || iframeWin.document;
       iframeDoc.open();
       iframeDoc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Render</title>');
 
@@ -319,10 +614,19 @@
       iframeDoc.close();
 
       const targetEl = iframeDoc.querySelector('.pnj-a4-sheet') || iframeDoc.body.firstElementChild;
-      await waitForAssets(iframeDoc.body);
+      await waitForAssets(iframeDoc.body, iframeDoc);
 
       const captureWidth = targetEl.offsetWidth || 794;
-      const captureHeight = targetEl.offsetHeight || 1123;
+      const pageHeightPx = (captureWidth * 297) / 210;
+
+      applyPageBreakAvoidance(targetEl, pageHeightPx, iframeWin);
+
+      const captureHeight = Math.max(targetEl.offsetHeight, targetEl.scrollHeight, Math.ceil(pageHeightPx));
+
+      iframe.style.height = captureHeight + 'px';
+
+      const estimatedPages = Math.max(1, Math.ceil(((captureHeight * 210 / captureWidth) - 1) / 297));
+      const extractedSlots = extractSignatureSlots(targetEl, captureWidth, estimatedPages, iframeWin);
 
       const canvas = await window.html2canvas(targetEl, {
         scale: 2,
@@ -343,6 +647,7 @@
       const pageHeight = 297;
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let renderedPages = 1;
 
       if (imgHeight <= pageHeight + 1) {
         pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
@@ -356,25 +661,37 @@
         while (remainingHeight > 1) {
           yOffset -= pageHeight;
           pdf.addPage();
+          renderedPages += 1;
           pdf.addImage(imgData, 'JPEG', 0, yOffset, imgWidth, imgHeight);
           remainingHeight -= pageHeight;
         }
       }
 
-      pdfBlob = pdf.output('blob');
+      output = {
+        blob: pdf.output('blob'),
+        slots: extractedSlots,
+        pageCount: renderedPages
+      };
     } finally {
       if (iframe.parentNode) {
         iframe.parentNode.removeChild(iframe);
       }
     }
 
-    return pdfBlob;
+    return output;
+  }
+
+  async function generatePdfBlob(sheetEl) {
+    const result = await generatePdfWithSlots(sheetEl);
+
+    return result.blob;
   }
 
   window.PnjLetterRenderer = {
     replaceTags: replaceTags,
     renderIntoSheet: renderIntoSheet,
     generatePdfBlob: generatePdfBlob,
+    generatePdfWithSlots: generatePdfWithSlots,
     formatIndonesianDate: formatIndonesianDate
   };
 }(window, document));

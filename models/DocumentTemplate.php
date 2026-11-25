@@ -110,25 +110,32 @@ class DocumentTemplate
 
     public function createTemplate($data)
     {
+        $createdId = false;
         $schemaJson = is_string($data['placeholders_schema'] ?? null)
             ? $data['placeholders_schema']
             : json_encode($data['placeholders_schema'] ?? [], JSON_UNESCAPED_UNICODE);
 
         $isActive = !empty($data['is_active']) ? 'true' : 'false';
 
-        $sql = "INSERT INTO " . $this->table . " (created_by, template_code, title, description, html_content, placeholders_schema, is_active) VALUES (:created_by, :template_code, :title, :description, :html_content, CAST(:placeholders_schema AS JSONB), :is_active) RETURNING id";
+        try {
+            $sql = "INSERT INTO " . $this->table . " (created_by, template_code, title, description, html_content, placeholders_schema, is_active) VALUES (:created_by, :template_code, :title, :description, :html_content, CAST(:placeholders_schema AS JSONB), :is_active) RETURNING id";
 
-        $this->db->query($sql);
-        $this->db->bind('created_by', $data['created_by']);
-        $this->db->bind('template_code', strtoupper(trim($data['template_code'])));
-        $this->db->bind('title', trim($data['title']));
-        $this->db->bind('description', $data['description'] ?? '');
-        $this->db->bind('html_content', $data['html_content']);
-        $this->db->bind('placeholders_schema', $schemaJson);
-        $this->db->bind('is_active', $isActive);
+            $this->db->query($sql);
+            $this->db->bind('created_by', $data['created_by']);
+            $this->db->bind('template_code', strtoupper(trim($data['template_code'])));
+            $this->db->bind('title', trim($data['title']));
+            $this->db->bind('description', $data['description'] ?? '');
+            $this->db->bind('html_content', $data['html_content']);
+            $this->db->bind('placeholders_schema', $schemaJson);
+            $this->db->bind('is_active', $isActive);
 
-        $row = $this->db->single();
-        $createdId = !empty($row['id']) ? $row['id'] : false;
+            $row = $this->db->single();
+            $createdId = !empty($row['id']) ? $row['id'] : false;
+        } catch (Throwable $exception) {
+            error_log('DocumentTemplate::createTemplate failed: ' . $exception->getMessage());
+
+            $createdId = false;
+        }
 
         return $createdId;
     }
@@ -144,18 +151,25 @@ class DocumentTemplate
 
             $isActive = !empty($data['is_active']) ? 'true' : 'false';
 
-            $sql = "UPDATE " . $this->table . " SET template_code = :template_code, title = :title, description = :description, html_content = :html_content, placeholders_schema = CAST(:placeholders_schema AS JSONB), is_active = :is_active, updated_at = CURRENT_TIMESTAMP WHERE id = :id";
+            try {
+                $sql = "UPDATE " . $this->table . " SET template_code = :template_code, title = :title, description = :description, html_content = :html_content, placeholders_schema = CAST(:placeholders_schema AS JSONB), is_active = :is_active, updated_at = CURRENT_TIMESTAMP WHERE id = :id";
 
-            $this->db->query($sql);
-            $this->db->bind('id', $id);
-            $this->db->bind('template_code', strtoupper(trim($data['template_code'])));
-            $this->db->bind('title', trim($data['title']));
-            $this->db->bind('description', $data['description'] ?? '');
-            $this->db->bind('html_content', $data['html_content']);
-            $this->db->bind('placeholders_schema', $schemaJson);
-            $this->db->bind('is_active', $isActive);
+                $this->db->query($sql);
+                $this->db->bind('id', $id);
+                $this->db->bind('template_code', strtoupper(trim($data['template_code'])));
+                $this->db->bind('title', trim($data['title']));
+                $this->db->bind('description', $data['description'] ?? '');
+                $this->db->bind('html_content', $data['html_content']);
+                $this->db->bind('placeholders_schema', $schemaJson);
+                $this->db->bind('is_active', $isActive);
 
-            $updated = $this->db->execute();
+                $executed = $this->db->execute();
+                $updated = $executed && $this->db->rowCount() > 0;
+            } catch (Throwable $exception) {
+                error_log('DocumentTemplate::updateTemplate failed for ' . $id . ': ' . $exception->getMessage());
+
+                $updated = false;
+            }
         }
 
         return $updated;
@@ -170,11 +184,18 @@ class DocumentTemplate
             $isCurrentlyActive = ($template['is_active'] === true || $template['is_active'] === 't' || $template['is_active'] === '1' || $template['is_active'] === 1);
             $newStatus = $isCurrentlyActive ? 'false' : 'true';
 
-            $this->db->query("UPDATE " . $this->table . " SET is_active = :is_active, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
-            $this->db->bind('id', $id);
-            $this->db->bind('is_active', $newStatus);
+            try {
+                $this->db->query("UPDATE " . $this->table . " SET is_active = :is_active, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+                $this->db->bind('id', $id);
+                $this->db->bind('is_active', $newStatus);
 
-            $result = $this->db->execute();
+                $executed = $this->db->execute();
+                $result = $executed && $this->db->rowCount() > 0;
+            } catch (Throwable $exception) {
+                error_log('DocumentTemplate::toggleStatus failed for ' . $id . ': ' . $exception->getMessage());
+
+                $result = false;
+            }
         }
 
         return $result;
@@ -185,11 +206,17 @@ class DocumentTemplate
         $deleted = false;
 
         if (isValidUuid($id)) {
-            $this->db->query("DELETE FROM " . $this->table . " WHERE id = :id");
-            $this->db->bind('id', $id);
+            try {
+                $this->db->query("DELETE FROM " . $this->table . " WHERE id = :id");
+                $this->db->bind('id', $id);
 
-            $executed = $this->db->execute();
-            $deleted = $executed && $this->db->rowCount() > 0;
+                $executed = $this->db->execute();
+                $deleted = $executed && $this->db->rowCount() > 0;
+            } catch (Throwable $exception) {
+                error_log('DocumentTemplate::deleteTemplate failed for ' . $id . ': ' . $exception->getMessage());
+
+                $deleted = false;
+            }
         }
 
         return $deleted;

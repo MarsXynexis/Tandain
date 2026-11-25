@@ -37,6 +37,7 @@ class DocumentController extends Controller
             $data['can_sign'] = !empty($userModel->getAssignableSignersByIds([$_SESSION['user']['id']]));
             $data['templates'] = $templateModel->getActiveTemplates();
             $data['next_doc_seq'] = $documentModel->getNextDocumentSequence();
+            $data['csrf_token'] = $this->getCsrfToken();
 
             $this->view('document/create', $data);
         }
@@ -60,7 +61,9 @@ class DocumentController extends Controller
         $templateFields = [];
         $finalTitle = $title;
 
-        if ($submissionMode !== 'upload' && $submissionMode !== 'template') {
+        if (!$this->verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+            $errorMessage = 'Sesi formulir tidak valid. Silakan muat ulang halaman dan coba lagi.';
+        } elseif ($submissionMode !== 'upload' && $submissionMode !== 'template') {
             $errorMessage = 'Mode pengajuan dokumen tidak valid.';
         } elseif ($expiresAt !== null && !$this->isValidDate($expiresAt)) {
             $errorMessage = 'Batas kedaluwarsa dokumen tidak valid.';
@@ -116,6 +119,14 @@ class DocumentController extends Controller
         }
 
         $redirectUrl = '/Tandain/document/create';
+        $isAjax = (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+        $nextSeqForRetry = null;
+        $documentModel = $this->model('Document');
+
+        if ($errorMessage === '' && $submissionMode === 'template' && $template && $submittedDocumentNumber !== '' && !empty($documentModel->isDocumentNumberTaken($submittedDocumentNumber))) {
+            $errorMessage = 'Nomor surat baru saja digunakan pengajuan lain. Kirim ulang untuk memperbarui nomor surat.';
+            $nextSeqForRetry = $documentModel->getNextDocumentSequence();
+        }
 
         if ($errorMessage === '') {
             $dir = dirname(__DIR__) . '/uploads/documents/';
@@ -130,12 +141,11 @@ class DocumentController extends Controller
                 $errorMessage = 'Gagal menyimpan berkas.';
             } else {
                 $hash = hash_file('sha256', $dir . $filename);
-                $documentModel = $this->model('Document');
                 $userId = $_SESSION['user']['id'];
                 $documentNumber = null;
 
                 if ($submissionMode === 'template' && $template) {
-                    if ($submittedDocumentNumber !== '' && empty($documentModel->isDocumentNumberTaken($submittedDocumentNumber))) {
+                    if ($submittedDocumentNumber !== '') {
                         $documentNumber = $submittedDocumentNumber;
                     } else {
                         $seq = $documentModel->getNextDocumentSequence();
@@ -163,6 +173,10 @@ class DocumentController extends Controller
                     @unlink($dir . $filename);
 
                     $errorMessage = 'Gagal menyimpan dokumen ke sistem.';
+
+                    if ($submissionMode === 'template') {
+                        $nextSeqForRetry = $documentModel->getNextDocumentSequence();
+                    }
                 } else {
                     if ($submissionMode === 'template' && $template) {
                         $auditModel = $this->model('DocumentAuditLog');
@@ -175,6 +189,25 @@ class DocumentController extends Controller
                         $this->setFlash('success', 'Dokumen berhasil diajukan dan masuk antrean disposisi.');
 
                         $redirectUrl = '/Tandain/document';
+                    } elseif ($submissionMode === 'template') {
+                        $autoPositions = json_decode((string) ($_POST['auto_positions'] ?? '[]'), true);
+                        $autoCount = is_array($autoPositions) ? count($autoPositions) : 0;
+
+                        if ($autoCount > 0 && $autoCount === count($signerIds)) {
+                            $autoResult = $documentModel->updateSignerPositions($docId, $autoPositions, $userId, 'DRAFT');
+
+                            if ($autoResult['ok']) {
+                                $redirectUrl = $this->resolvePostPositionRedirect($this->model('DocumentSigner'), $docId, $userId);
+                            } else {
+                                $redirectUrl = '/Tandain/document/position/' . $docId;
+                            }
+                        } elseif ($autoCount > 0 && $autoCount < count($signerIds)) {
+                            $documentModel->saveDraftSignerPositions($docId, $autoPositions);
+
+                            $redirectUrl = '/Tandain/document/position/' . $docId;
+                        } else {
+                            $redirectUrl = '/Tandain/document/position/' . $docId;
+                        }
                     } else {
                         $redirectUrl = '/Tandain/document/position/' . $docId;
                     }
@@ -183,20 +216,74 @@ class DocumentController extends Controller
         }
 
         if ($errorMessage !== '') {
-            if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest') {
+            if ($isAjax) {
                 http_response_code(422);
 
                 header('Content-Type: application/json; charset=utf-8');
 
-                echo json_encode(['ok' => false, 'error' => $errorMessage]);
+                $errorPayload = ['ok' => false, 'error' => $errorMessage];
+
+                if ($nextSeqForRetry !== null) {
+                    $errorPayload['next_seq'] = $nextSeqForRetry;
+                }
+
+                echo json_encode($errorPayload);
             } else {
                 $this->setFlash('error', $errorMessage);
 
                 $this->redirect('/Tandain/document/create');
             }
+        } elseif ($isAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+
+            echo json_encode(['ok' => true, 'redirect' => $redirectUrl]);
         } else {
             $this->redirect($redirectUrl);
         }
+    }
+
+    public function nextSequence()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        if (!$this->refreshAuthenticatedUser()) {
+            http_response_code(401);
+
+            echo json_encode(['ok' => false, 'error' => 'Sesi login tidak valid.']);
+        } else {
+            $documentModel = $this->model('Document');
+            $seq = $documentModel->getNextDocumentSequence();
+
+            echo json_encode(['ok' => true, 'seq' => $seq]);
+        }
+    }
+
+    private function resolvePostPositionRedirect($documentSignerModel, $docId, $userId)
+    {
+        $isUserCurrentTurn = false;
+
+        foreach ($documentSignerModel->getSignerByDocumentId($docId) as $signer) {
+            if (
+                ($signer['status'] ?? '') === 'CURRENT_TURN'
+                && (string) ($signer['signer_id'] ?? '') === (string) $userId
+            ) {
+                $isUserCurrentTurn = true;
+                break;
+            }
+        }
+
+        if ($isUserCurrentTurn) {
+            $this->setFlash('success', 'Silakan tandatangani Dokumen Anda.');
+
+            $redirectUrl = '/Tandain/inbox/detail?document_id=' . rawurlencode((string) $docId);
+        } else {
+            $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');
+
+            $redirectUrl = '/Tandain/document';
+        }
+
+        return $redirectUrl;
     }
 
     private function validateTemplateSubmission($templateModel)
@@ -460,27 +547,7 @@ class DocumentController extends Controller
                     if (!$saveResult['ok']) {
                         $this->setFlash('error', $saveResult['message']);
                     } else {
-                        $isUserCurrentTurn = false;
-
-                        foreach ($documentSignerModel->getSignerByDocumentId($doc['id']) as $signer) {
-                            if (
-                                ($signer['status'] ?? '') === 'CURRENT_TURN'
-                                && (string) ($signer['signer_id'] ?? '') === (string) $userId
-                            ) {
-                                $isUserCurrentTurn = true;
-                                break;
-                            }
-                        }
-
-                        if ($isUserCurrentTurn) {
-                            $redirectUrl = '/Tandain/inbox/detail?document_id=' . rawurlencode((string) $doc['id']);
-
-                            $this->setFlash('success', 'Silakan tandatangani Dokumen Anda.');
-                        } else {
-                            $this->setFlash('success', 'Dokumen berhasil diajukan kepada penandatangan.');
-
-                            $redirectUrl = '/Tandain/document';
-                        }
+                        $redirectUrl = $this->resolvePostPositionRedirect($documentSignerModel, $doc['id'], $userId);
                     }
                 }
             }

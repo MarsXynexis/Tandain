@@ -97,13 +97,33 @@ class Document
         return $this->db->single();
     }
 
+    public function isCreatedFromTemplate($documentId)
+    {
+        $isTemplate = false;
+
+        if (isValidUuid($documentId)) {
+            $this->db->query("SELECT 1 FROM document_audit_logs WHERE document_id = :doc_id AND action = 'DOCUMENT_CREATED_FROM_TEMPLATE' LIMIT 1");
+            $this->db->bind('doc_id', $documentId);
+
+            $isTemplate = !empty($this->db->single());
+        }
+
+        return $isTemplate;
+    }
+
     public function applyTriageDisposition($id, $adminId, $documentNumber, $signersList, $isSequential = true, $expiresAt = null)
     {
         try {
             $this->db->query("BEGIN");
             $this->db->execute();
 
-            $sqlUpdate = "UPDATE " . $this->table . " SET triage_handled_by = :admin_id, document_number = :document_number, is_sequential = :is_sequential, issued_at = CURRENT_TIMESTAMP, expires_at = :expires_at, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND status = 'PENDING_TRIAGE'";
+            $isFromTemplate = $this->isCreatedFromTemplate($id);
+
+            if ($isFromTemplate) {
+                $sqlUpdate = "UPDATE " . $this->table . " SET triage_handled_by = :admin_id, document_number = COALESCE(NULLIF(document_number, ''), :document_number), is_sequential = :is_sequential, issued_at = CURRENT_TIMESTAMP, expires_at = :expires_at, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND status = 'PENDING_TRIAGE' RETURNING document_number";
+            } else {
+                $sqlUpdate = "UPDATE " . $this->table . " SET triage_handled_by = :admin_id, document_number = :document_number, is_sequential = :is_sequential, issued_at = CURRENT_TIMESTAMP, expires_at = :expires_at, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND status = 'PENDING_TRIAGE' RETURNING document_number";
+            }
 
             $this->db->query($sqlUpdate);
             $this->db->bind('id', $id);
@@ -111,9 +131,10 @@ class Document
             $this->db->bind('document_number', !empty($documentNumber) ? $documentNumber : null);
             $this->db->bind('is_sequential', $isSequential ? 'true' : 'false');
             $this->db->bind('expires_at', !empty($expiresAt) ? $expiresAt : null);
-            $this->db->execute();
 
-            if ($this->db->rowCount() === 0) {
+            $updatedRow = $this->db->single();
+
+            if (!$updatedRow) {
                 throw new Exception('Dokumen tidak berada pada antrean disposisi.');
             }
 
@@ -138,8 +159,10 @@ class Document
                 $order++;
             }
 
-            if (!empty($documentNumber)) {
-                $auditNotes = 'Dokumen didisposisikan oleh Tata Usaha dengan nomor agenda ' . $documentNumber;
+            $effectiveDocumentNumber = trim((string) ($updatedRow['document_number'] ?? ''));
+
+            if ($effectiveDocumentNumber !== '') {
+                $auditNotes = 'Dokumen didisposisikan oleh Tata Usaha dengan nomor agenda ' . $effectiveDocumentNumber;
             } else {
                 $auditNotes = 'Dokumen didisposisikan oleh Tata Usaha';
             }
@@ -525,7 +548,7 @@ class Document
         $signers = [];
 
         if (isValidUuid($documentId)) {
-            $sql = "SELECT ds.signer_id AS id, ds.signing_order, ds.stamp_type, u.full_name AS name, u.position, u.study_program, r.display_name AS role_display_name
+            $sql = "SELECT ds.signer_id AS id, ds.signing_order, ds.stamp_type, ds.page_number, ds.coord_x, ds.coord_y, u.full_name AS name, u.position, u.study_program, r.display_name AS role_display_name
                     FROM document_signers ds
                     JOIN users u ON u.id = ds.signer_id
                     LEFT JOIN roles r ON r.id = u.role_id
@@ -772,93 +795,10 @@ class Document
                 }
 
                 $expectedLookup = array_flip($expectedSignerIds);
-                $slotDimensions = PDFStamper::getReferenceSlotDimensionsMm();
-                $validatedPositions = [];
-                $boxesByPage = [];
-
-                foreach ($positions as $position) {
-                    if (!is_array($position)) {
-                        throw new DomainException('Format koordinat posisi tanda tangan tidak valid.');
-                    }
-
-                    $signerId = trim((string) ($position['signer_id'] ?? ''));
-
-                    if (!isValidUuid($signerId) || !isset($expectedLookup[$signerId]) || isset($validatedPositions[$signerId])) {
-                        throw new DomainException('Data penandatangan pada posisi tanda tangan tidak valid.');
-                    }
-
-                    $rawPage = $position['page'] ?? null;
-                    $isPageInt = is_int($rawPage) || (is_string($rawPage) && preg_match('/\A[1-9]\d*\z/', $rawPage) === 1);
-                    $page = $isPageInt ? (int) $rawPage : 0;
-
-                    if ($page < 1 || $page > $pageCount || !isset($pageSizes[$page])) {
-                        throw new DomainException('Nomor halaman posisi tanda tangan melebihi jumlah halaman PDF.');
-                    }
-
-                    $rawX = $position['x'] ?? null;
-                    $rawY = $position['y'] ?? null;
-
-                    if (!is_numeric($rawX) || !is_numeric($rawY)) {
-                        throw new DomainException('Koordinat posisi tanda tangan tidak valid.');
-                    }
-
-                    $coordX = (float) $rawX;
-                    $coordY = (float) $rawY;
-
-                    if (
-                        !is_finite($coordX)
-                        || !is_finite($coordY)
-                        || $coordX < 0.0
-                        || $coordX > 1.0
-                        || $coordY < 0.0
-                        || $coordY > 1.0
-                    ) {
-                        throw new DomainException('Koordinat posisi tanda tangan berada di luar batas halaman.');
-                    }
-
-                    $pageWidth = (float) $pageSizes[$page]['width'];
-                    $pageHeight = (float) $pageSizes[$page]['height'];
-                    $slotWidth = (float) $slotDimensions['width'];
-                    $slotHeight = (float) $slotDimensions['height'];
-
-                    if ($pageWidth < $slotWidth || $pageHeight < $slotHeight) {
-                        throw new DomainException('Halaman PDF terlalu kecil untuk kotak TTE.');
-                    }
-
-                    $boxX = max(0.0, min($coordX * $pageWidth, $pageWidth - $slotWidth));
-                    $boxY = max(0.0, min($coordY * $pageHeight, $pageHeight - $slotHeight));
-
-                    $validatedPositions[$signerId] = [
-                        'signer_id' => $signerId,
-                        'page' => $page,
-                        'x' => $coordX,
-                        'y' => $coordY,
-                    ];
-                    $boxesByPage[$page][] = [
-                        'left' => $boxX,
-                        'top' => $boxY,
-                        'right' => $boxX + $slotWidth,
-                        'bottom' => $boxY + $slotHeight,
-                    ];
-                }
+                $validatedPositions = $this->validatePositionEntries($positions, $expectedLookup, $pageSizes);
 
                 if (count($validatedPositions) !== count($expectedSignerIds)) {
                     throw new DomainException('Tempatkan semua kotak TTE.');
-                }
-
-                foreach ($boxesByPage as $pageBoxes) {
-                    $boxTotal = count($pageBoxes);
-
-                    for ($i = 0; $i < $boxTotal; $i++) {
-                        for ($j = $i + 1; $j < $boxTotal; $j++) {
-                            $overlapWidth = min($pageBoxes[$i]['right'], $pageBoxes[$j]['right']) - max($pageBoxes[$i]['left'], $pageBoxes[$j]['left']);
-                            $overlapHeight = min($pageBoxes[$i]['bottom'], $pageBoxes[$j]['bottom']) - max($pageBoxes[$i]['top'], $pageBoxes[$j]['top']);
-
-                            if ($overlapWidth > 1.0 && $overlapHeight > 1.0) {
-                                throw new DomainException('Kotak TTE bertumpuk. Geser salah satunya.');
-                            }
-                        }
-                    }
                 }
 
                 $updateDoc = $pdo->prepare(
@@ -933,5 +873,180 @@ class Document
         }
 
         return $result;
+    }
+
+    public function saveDraftSignerPositions($documentId, $positions)
+    {
+        $saved = false;
+
+        if (isValidUuid($documentId) && is_array($positions) && count($positions) > 0) {
+            $pdo = $this->db->getConnection();
+
+            try {
+                $pdo->beginTransaction();
+
+                $docQuery = $pdo->prepare(
+                    "SELECT id, original_file_path, status
+                     FROM " . $this->table . "
+                     WHERE id = ?
+                     FOR UPDATE"
+                );
+                $docQuery->execute([$documentId]);
+                $doc = $docQuery->fetch(PDO::FETCH_ASSOC);
+
+                if (!$doc || ($doc['status'] ?? '') !== 'DRAFT') {
+                    throw new DomainException('Dokumen tidak berstatus draf.');
+                }
+
+                $relativePdfPath = ltrim((string) ($doc['original_file_path'] ?? ''), '/');
+
+                if (!preg_match('/\Auploads\/(?:documents|signed)\/[A-Za-z0-9._-]+\.pdf\z/i', $relativePdfPath)) {
+                    throw new DomainException('Berkas PDF dokumen tidak valid.');
+                }
+
+                $pageSizes = PDFStamper::getPageSizes($relativePdfPath);
+
+                if (count($pageSizes) < 1) {
+                    throw new DomainException('Berkas PDF dokumen tidak valid.');
+                }
+
+                $expectedSignersQuery = $pdo->prepare(
+                    "SELECT signer_id
+                     FROM document_signers
+                     WHERE document_id = ?
+                     FOR UPDATE"
+                );
+                $expectedSignersQuery->execute([$documentId]);
+                $expectedSignerIds = $expectedSignersQuery->fetchAll(PDO::FETCH_COLUMN);
+
+                if (count($expectedSignerIds) === 0 || count($positions) > count($expectedSignerIds)) {
+                    throw new DomainException('Daftar penandatangan draf tidak valid.');
+                }
+
+                $expectedLookup = array_flip($expectedSignerIds);
+                $validatedPositions = $this->validatePositionEntries($positions, $expectedLookup, $pageSizes);
+
+                $updatePos = $pdo->prepare(
+                    "UPDATE document_signers
+                     SET page_number = ?, coord_x = ?, coord_y = ?
+                     WHERE document_id = ? AND signer_id = ?"
+                );
+
+                foreach ($validatedPositions as $p) {
+                    $updatePos->execute([$p['page'], $p['x'], $p['y'], $documentId, $p['signer_id']]);
+
+                    if ($updatePos->rowCount() !== 1) {
+                        throw new DomainException('Gagal memperbarui posisi draf.');
+                    }
+                }
+
+                $pdo->commit();
+
+                $saved = true;
+            } catch (DomainException $exception) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+            } catch (Throwable $exception) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+
+                error_log('Document::saveDraftSignerPositions failed for ' . $documentId . ': ' . $exception->getMessage());
+            }
+        }
+
+        return $saved;
+    }
+
+    private function validatePositionEntries(array $positions, array $expectedLookup, array $pageSizes): array
+    {
+        $pageCount = count($pageSizes);
+        $slotDimensions = PDFStamper::getReferenceSlotDimensionsMm();
+        $validatedPositions = [];
+        $boxesByPage = [];
+
+        foreach ($positions as $position) {
+            if (!is_array($position)) {
+                throw new DomainException('Format koordinat posisi tanda tangan tidak valid.');
+            }
+
+            $signerId = trim((string) ($position['signer_id'] ?? ''));
+
+            if (!isValidUuid($signerId) || !isset($expectedLookup[$signerId]) || isset($validatedPositions[$signerId])) {
+                throw new DomainException('Data penandatangan pada posisi tanda tangan tidak valid.');
+            }
+
+            $rawPage = $position['page'] ?? null;
+            $isPageInt = is_int($rawPage) || (is_string($rawPage) && preg_match('/\A[1-9]\d*\z/', $rawPage) === 1);
+            $page = $isPageInt ? (int) $rawPage : 0;
+
+            if ($page < 1 || $page > $pageCount || !isset($pageSizes[$page])) {
+                throw new DomainException('Nomor halaman posisi tanda tangan melebihi jumlah halaman PDF.');
+            }
+
+            $rawX = $position['x'] ?? null;
+            $rawY = $position['y'] ?? null;
+
+            if (!is_numeric($rawX) || !is_numeric($rawY)) {
+                throw new DomainException('Koordinat posisi tanda tangan tidak valid.');
+            }
+
+            $coordX = (float) $rawX;
+            $coordY = (float) $rawY;
+
+            if (
+                !is_finite($coordX)
+                || !is_finite($coordY)
+                || $coordX < 0.0
+                || $coordX > 1.0
+                || $coordY < 0.0
+                || $coordY > 1.0
+            ) {
+                throw new DomainException('Koordinat posisi tanda tangan berada di luar batas halaman.');
+            }
+
+            $pageWidth = (float) $pageSizes[$page]['width'];
+            $pageHeight = (float) $pageSizes[$page]['height'];
+            $slotWidth = (float) $slotDimensions['width'];
+            $slotHeight = (float) $slotDimensions['height'];
+
+            if ($pageWidth < $slotWidth || $pageHeight < $slotHeight) {
+                throw new DomainException('Halaman PDF terlalu kecil untuk kotak TTE.');
+            }
+
+            $boxX = max(0.0, min($coordX * $pageWidth, $pageWidth - $slotWidth));
+            $boxY = max(0.0, min($coordY * $pageHeight, $pageHeight - $slotHeight));
+
+            $validatedPositions[$signerId] = [
+                'signer_id' => $signerId,
+                'page' => $page,
+                'x' => $coordX,
+                'y' => $coordY,
+            ];
+            $boxesByPage[$page][] = [
+                'left' => $boxX,
+                'top' => $boxY,
+                'right' => $boxX + $slotWidth,
+                'bottom' => $boxY + $slotHeight,
+            ];
+        }
+
+        foreach ($boxesByPage as $pageBoxes) {
+            $boxTotal = count($pageBoxes);
+
+            for ($i = 0; $i < $boxTotal; $i++) {
+                for ($j = $i + 1; $j < $boxTotal; $j++) {
+                    $overlapWidth = min($pageBoxes[$i]['right'], $pageBoxes[$j]['right']) - max($pageBoxes[$i]['left'], $pageBoxes[$j]['left']);
+                    $overlapHeight = min($pageBoxes[$i]['bottom'], $pageBoxes[$j]['bottom']) - max($pageBoxes[$i]['top'], $pageBoxes[$j]['top']);
+
+                    if ($overlapWidth > 1.0 && $overlapHeight > 1.0) {
+                        throw new DomainException('Kotak TTE bertumpuk. Geser salah satunya.');
+                    }
+                }
+            }
+        }
+
+        return $validatedPositions;
     }
 }
