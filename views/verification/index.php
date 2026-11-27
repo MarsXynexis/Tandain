@@ -1,6 +1,6 @@
 <?php
 $isLoggedIn = !empty($data['user']['id']);
-$formWidth = $isLoggedIn ? 'max-w-5xl' : 'max-w-3xl';
+$formContainerClass = $isLoggedIn ? 'w-full max-w-5xl' : 'mx-auto w-full max-w-3xl';
 $status = $data['status'] ?? 'upload';
 $document = $data['document'] ?? null;
 $hasResult = in_array($status, ['success', 'expired', 'warning'], true) && !empty($document);
@@ -53,7 +53,7 @@ require_once 'views/layouts/header.php';
             <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">warning</span>
           </div>
           <div class="flex-1">
-            <h1 class="font-headline-lg text-headline-lg font-bold text-[#78350f]"><?= htmlspecialchars(($data['warning_title'] ?? '') !== '' ? $data['warning_title'] : 'Dokumen Terdaftar dengan Peringatan', ENT_QUOTES, 'UTF-8'); ?></h1>
+            <h1 class="font-headline-sm text-headline-sm font-bold text-[#78350f]"><?= htmlspecialchars(($data['warning_title'] ?? '') !== '' ? $data['warning_title'] : 'Dokumen Terdaftar dengan Peringatan', ENT_QUOTES, 'UTF-8'); ?></h1>
             <p class="font-body-md text-body-md text-[#92400e] mt-0.5 leading-relaxed"><?= htmlspecialchars(($data['warning_message'] ?? '') !== '' ? $data['warning_message'] : 'Berkas cocok dengan arsip Tandain, namun status sertifikat penandatangan perlu diperhatikan.', ENT_QUOTES, 'UTF-8'); ?></p>
           </div>
         </div>
@@ -67,8 +67,8 @@ require_once 'views/layouts/header.php';
             <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">warning</span>
           </div>
           <div class="flex-1">
-            <h1 class="font-headline-lg text-headline-lg font-bold text-[#78350f]">Dokumen Kedaluwarsa</h1>
-            <p class="font-body-md text-body-md text-[#92400e] mt-0.5 leading-relaxed">Dokumen terdaftar di Tandain dan telah melewati masa berlaku</p>
+            <h1 class="font-headline-sm text-headline-sm font-bold text-[#78350f]">Dokumen Kedaluwarsa</h1>
+            <p class="font-body-md text-body-md text-[#92400e] mt-0.5 leading-relaxed">Tanda tangan terverifikasi asli, tetapi masa berlaku dokumen telah habis.</p>
           </div>
         </div>
       </section>
@@ -81,8 +81,8 @@ require_once 'views/layouts/header.php';
             <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
           </div>
           <div class="flex-1">
-            <h1 class="font-headline-lg text-headline-lg font-bold text-emerald-950">Dokumen Valid</h1>
-            <p class="font-body-md text-body-md text-emerald-900/90 mt-0.5 leading-relaxed">Dokumen terdaftar di Tandain dan masih berlaku</p>
+            <h1 class="font-headline-sm text-headline-sm font-bold text-emerald-950">Dokumen Valid</h1>
+            <p class="font-body-md text-body-md text-emerald-900/90 mt-0.5 leading-relaxed">Dokumen resmi terdaftar dan masa berlaku masih aktif</p>
           </div>
         </div>
       </section>
@@ -98,7 +98,7 @@ require_once 'views/layouts/header.php';
               <div class="p-1.5 rounded-lg bg-surface-container-low text-primary flex items-center justify-center">
                 <span class="material-symbols-outlined text-[20px]">description</span>
               </div>
-              <h2 class="font-headline-md text-headline-sm font-bold text-primary tracking-tight">Informasi Dokumen</h2>
+              <h2 class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">Informasi Dokumen</h2>
             </div>
           </div>
 
@@ -214,27 +214,27 @@ require_once 'views/layouts/header.php';
 
   <?php elseif ($status === 'error'): ?>
 
-    <div class="mx-auto w-full space-y-6 <?= $formWidth; ?>">
-      <div class="space-y-2">
+    <div class="space-y-6 <?= $formContainerClass; ?>">
+      <div class="space-y-2 <?= $isLoggedIn ? 'text-left' : 'text-center'; ?>">
         <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Verifikasi Dokumen</h1>
         <p class="font-body-md text-body-md text-on-surface-variant">Validasi keaslian berkas dan tanda tangan elektronik resmi</p>
       </div>
 
       <div class="space-y-6 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm sm:p-6">
-        <div class="rounded-xl border border-red-200 bg-red-50/70 p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0 shadow-sm">
-            <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">cancel</span>
+        <div class="rounded-xl border border-red-200 bg-red-50/70 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div class="h-11 w-11 rounded-full bg-surface-container-lowest shadow-sm border border-red-100 flex items-center justify-center text-red-600 shrink-0">
+            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">cancel</span>
           </div>
-          <div class="flex-1 space-y-1">
-            <h2 class="text-lg font-bold text-red-800 font-headline-sm"><?= htmlspecialchars(($data['error_title'] ?? '') !== '' ? $data['error_title'] : 'Dokumen Tidak Terdaftar', ENT_QUOTES, 'UTF-8'); ?></h2>
-            <p class="text-sm text-red-700 font-body-sm leading-relaxed"><?= htmlspecialchars(($data['error_message'] ?? '') !== '' ? $data['error_message'] : 'Berkas tidak cocok dengan dokumen final bertanda tangan yang terdaftar di Tandain, atau proses tanda tangan belum selesai.', ENT_QUOTES, 'UTF-8'); ?></p>
+          <div class="flex-1">
+            <h2 class="font-headline-sm text-headline-sm font-bold text-red-800"><?= htmlspecialchars(($data['error_title'] ?? '') !== '' ? $data['error_title'] : 'Dokumen Tidak Terdaftar', ENT_QUOTES, 'UTF-8'); ?></h2>
+            <p class="font-body-md text-body-md text-red-700 mt-0.5 leading-relaxed"><?= htmlspecialchars(($data['error_message'] ?? '') !== '' ? $data['error_message'] : 'Berkas tidak cocok dengan dokumen final bertanda tangan yang terdaftar di Tandain, atau proses tanda tangan belum selesai.', ENT_QUOTES, 'UTF-8'); ?></p>
           </div>
         </div>
 
         <div class="bg-surface-container-low border border-outline-variant/50 rounded-xl p-6 space-y-4">
           <h3 class="text-sm font-semibold text-primary font-headline-sm inline-flex items-center gap-2 pb-3 border-b border-outline-variant/40 w-full">
-            <span class="material-symbols-outlined text-[20px] text-on-surface-variant">description</span>
-            <span>Rincian Berkas Pemeriksaan</span>
+            <span class="material-symbols-outlined text-[20px] text-on-surface-variant flex items-center justify-center shrink-0">description</span>
+            <span class="leading-none">Rincian Berkas Pemeriksaan</span>
           </h3>
           <div class="grid grid-cols-1 gap-4 text-left font-body-sm sm:grid-cols-2">
             <div class="space-y-1">
@@ -258,8 +258,8 @@ require_once 'views/layouts/header.php';
 
   <?php else: ?>
 
-    <div class="mx-auto w-full space-y-6 <?= $formWidth; ?>">
-      <div class="space-y-2">
+    <div class="space-y-6 <?= $formContainerClass; ?>">
+      <div class="space-y-2 <?= $isLoggedIn ? 'text-left' : 'text-center'; ?>">
         <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Verifikasi Dokumen</h1>
         <p class="font-body-md text-body-md text-on-surface-variant">Validasi keaslian berkas dan tanda tangan elektronik resmi</p>
       </div>
@@ -296,7 +296,7 @@ require_once 'views/layouts/header.php';
   <?php endif; ?>
 
   <?php if ($hasFileHash || $signerCertificates): ?>
-    <details class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-5 <?= $hasResult ? '' : 'mx-auto w-full ' . $formWidth; ?>">
+    <details class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-5 <?= $hasResult ? '' : $formContainerClass; ?>">
       <summary class="cursor-pointer rounded font-medium text-primary focus-visible:outline-secondary">Rincian Teknis &amp; Kriptografi</summary>
       <dl class="mt-4 space-y-3 text-sm">
         <?php if ($hasFileHash): ?>
@@ -339,7 +339,7 @@ require_once 'views/layouts/header.php';
   <?php if ($fileUrl !== ''): ?>
     <section class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant pb-3">
-        <h2 class="font-headline-md text-headline-md font-bold text-primary">Pratinjau Dokumen</h2>
+        <h2 class="font-headline-sm text-headline-sm font-bold text-primary">Pratinjau Dokumen</h2>
         <a href="<?= htmlspecialchars($fileUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener" class="btn-sm inline-flex shrink-0 gap-1.5 border border-outline-variant bg-surface-container-lowest text-primary hover:bg-surface-container-low">
           <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
           Buka PDF
